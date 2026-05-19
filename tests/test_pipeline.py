@@ -642,14 +642,33 @@ class TestEstimatorKeyMapping:
         key_mapping = {
             "right_hip_flexion": "hip_flexion",
             "right_knee_flexion": "knee_flexion",
-            "right_ankle_angle": "ankle_dorsiflexion",
+            "right_ankle_dorsiflexion": "ankle_dorsiflexion",
             "left_hip_flexion": "hip_flexion",
             "left_knee_flexion": "knee_flexion",
-            "left_ankle_angle": "ankle_dorsiflexion",
+            "left_ankle_dorsiflexion": "ankle_dorsiflexion",
         }
         for raw, mapped in key_mapping.items():
             assert mapped in ("hip_flexion", "knee_flexion", "ankle_dorsiflexion",
                               "elbow_flexion")
+
+    def test_ankle_dorsiflexion_computed(self):
+        from movement_analytics.kinematics.joint_angles import compute_all_angles
+        positions = {
+            "pelvis": np.array([100, 200]),
+            "shoulder": np.array([100, 100]),
+            "right_hip": np.array([110, 200]),
+            "right_knee": np.array([110, 300]),
+            "right_ankle": np.array([110, 400]),
+            "right_toe": np.array([140, 400]),
+            "left_hip": np.array([90, 200]),
+            "left_knee": np.array([90, 300]),
+            "left_ankle": np.array([90, 400]),
+            "left_toe": np.array([60, 400]),
+        }
+        angles = compute_all_angles(positions)
+        assert "right_ankle_dorsiflexion" in angles
+        assert "left_ankle_dorsiflexion" in angles
+        assert "right_ankle_angle" in angles
 
 
 class TestNaNInterpolation:

@@ -68,7 +68,9 @@ def compute_all_angles(positions: dict) -> dict[str, float]:
             )
 
         if knee is not None and ankle is not None and toe is not None:
-            angles[f"{side}_ankle_angle"] = compute_joint_angle(knee, ankle, toe)
+            included = compute_joint_angle(knee, ankle, toe)
+            angles[f"{side}_ankle_angle"] = included
+            angles[f"{side}_ankle_dorsiflexion"] = 90.0 - included
 
         if shoulder is not None and elbow is not None and wrist is not None:
             angles[f"{side}_elbow_flexion"] = compute_flexion_angle(shoulder, elbow, wrist)

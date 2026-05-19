@@ -246,11 +246,11 @@ def process_video(
     key_mapping = {
         "right_hip_flexion": "hip_flexion",
         "right_knee_flexion": "knee_flexion",
-        "right_ankle_angle": "ankle_dorsiflexion",
+        "right_ankle_dorsiflexion": "ankle_dorsiflexion",
         "right_elbow_flexion": "elbow_flexion",
         "left_hip_flexion": "hip_flexion",
         "left_knee_flexion": "knee_flexion",
-        "left_ankle_angle": "ankle_dorsiflexion",
+        "left_ankle_dorsiflexion": "ankle_dorsiflexion",
         "left_elbow_flexion": "elbow_flexion",
     }
 
