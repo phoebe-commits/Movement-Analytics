@@ -67,7 +67,7 @@ A composite **0–100 score** computed from 6 weighted biomechanical domains:
 |---|---|---|
 | **Kinematics** | 25% | Hip/knee/ankle ROM (bilateral) vs. clinical norms |
 | **Smoothness** | 18% | SPARC of hip velocity (spectral arc length) |
-| **Symmetry** | 18% | Hip/knee/ankle Symmetry Index (left vs. right) |
+| **Symmetry** | 18% | Hip/knee/ankle/pelvis SI + hip waveform symmetry |
 | **Coordination** | 14% | Continuous Relative Phase consistency (bilateral hip) |
 | **Variability** | 13% | Stride time coefficient of variation |
 | **Temporal** | 12% | Cadence and stride time vs. normal ranges |

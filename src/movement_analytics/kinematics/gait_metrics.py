@@ -105,11 +105,11 @@ def symmetry_ratio(left: np.ndarray, right: np.ndarray) -> float:
 
 
 def waveform_symmetry(left: np.ndarray, right: np.ndarray) -> float:
-    """Waveform symmetry via normalized cross-correlation. 100 = identical waveforms.
+    """Waveform symmetry via normalized cross-correlation. 100 = identical shape.
 
-    Captures shape, timing, and amplitude differences simultaneously.
-    More sensitive than mean-based SI to phase-specific asymmetries.
-    Returns 0-100 scale for consistency with other metrics.
+    Captures shape and timing differences between bilateral signals.
+    Insensitive to amplitude scaling (NCC is normalized). Use SI for
+    amplitude-based asymmetry detection. |NCC| used: anti-phase = 100%.
     """
     l_centered = left - np.mean(left)
     r_centered = right - np.mean(right)
