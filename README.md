@@ -90,10 +90,12 @@ For each gait profile, the pipeline computes **50+ metrics** in real time:
 - **Symmetry Ratio** — bilateral comparison
 - **Signal Completeness** — per-domain fraction of present signals
 - **Confidence Factor** — pose quality degradation for video-derived MQS
-- **CRP Coordination** — inter-limb phase coupling consistency (Hilbert transform)
+- **CRP Coordination** — inter-limb (bilateral hip) and intra-limb (hip-knee) phase coupling
+- **Sufficient Evidence** — flag when signal completeness is too low for reliable scoring
+- **Stride-level ROM CV** — per-stride kinematic variability (diagnostic)
 - **Cadence** — steps per minute
 - **Stride time** — mean and coefficient of variation
-- **Gait phase** — stance/swing detection per frame
+- **Gait phase** — stance/swing detection with prominence-based heel strikes
 
 ---
 
@@ -254,7 +256,7 @@ The research document identifies **15 signals** across 6 domains that form the b
 | Movement Quality Score | 6-domain composite, validated on 9 profiles (58.3–98.3 range) |
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown) |
 | Video pose estimation | Experimental — MediaPipe sagittal plane, 61% coverage, confidence-weighted MQS |
-| CI/CD | GitHub Actions, 94 tests, ruff lint, 70% coverage gate |
+| CI/CD | GitHub Actions, 101 tests, ruff lint, 70% coverage gate (74% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 
