@@ -556,6 +556,49 @@ class TestEstimatorKeyMapping:
         assert "trunk_lean" in angles
 
 
+class TestSensitivityAnalysis:
+    """Verify MQS responds monotonically to continuous parameter degradation."""
+
+    def test_knee_rom_sensitivity(self):
+        mqs_scores = []
+        for knee_rom in [60, 45, 30, 15]:
+            params = GaitParameters(knee_rom=knee_rom)
+            _, ar, al, _ = generate_frames(params, fps=30, n_cycles=4)
+            s = compute_gait_summary(ar, al, fps=30)
+            mqs_scores.append(s["movement_quality_score"])
+        for i in range(len(mqs_scores) - 1):
+            assert mqs_scores[i] >= mqs_scores[i + 1], (
+                f"MQS should decrease as knee ROM decreases: "
+                f"knee_rom step {i} ({mqs_scores[i]:.1f}) < step {i+1} ({mqs_scores[i+1]:.1f})"
+            )
+
+    def test_noise_level_sensitivity(self):
+        mqs_scores = []
+        for noise in [0, 1, 2, 4]:
+            params = GaitParameters(noise_level=noise)
+            _, ar, al, _ = generate_frames(params, fps=30, n_cycles=4)
+            s = compute_gait_summary(ar, al, fps=30)
+            mqs_scores.append(s["movement_quality_score"])
+        for i in range(len(mqs_scores) - 1):
+            assert mqs_scores[i] >= mqs_scores[i + 1], (
+                f"MQS should decrease as noise increases: "
+                f"noise step {i} ({mqs_scores[i]:.1f}) < step {i+1} ({mqs_scores[i+1]:.1f})"
+            )
+
+    def test_asymmetry_sensitivity(self):
+        mqs_scores = []
+        for asym in [0, 0.1, 0.2, 0.35]:
+            params = GaitParameters(asymmetry=asym)
+            _, ar, al, _ = generate_frames(params, fps=30, n_cycles=4)
+            s = compute_gait_summary(ar, al, fps=30)
+            mqs_scores.append(s["movement_quality_score"])
+        for i in range(len(mqs_scores) - 1):
+            assert mqs_scores[i] >= mqs_scores[i + 1], (
+                f"MQS should decrease as asymmetry increases: "
+                f"asym step {i} ({mqs_scores[i]:.1f}) < step {i+1} ({mqs_scores[i+1]:.1f})"
+            )
+
+
 class TestBenchmarkRegression:
     """Lock MQS scores to detect unintended regressions."""
 
