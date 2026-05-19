@@ -465,6 +465,13 @@ def process_video(
 
     detected_frames = sum(1 for a in all_angles if a)
     detected_confidences = [c for c, a in zip(confidences, all_angles) if a]
+
+    joint_detection_rates = {}
+    all_joint_keys = angle_keys_right | angle_keys_left
+    for jk in all_joint_keys:
+        present = sum(1 for a in all_angles if jk in a)
+        joint_detection_rates[jk] = present / n if n > 0 else 0.0
+
     metadata = {
         "mean_confidence": float(np.mean(confidences)) if confidences else 0.0,
         "mean_detected_confidence": (
@@ -472,6 +479,7 @@ def process_video(
         ),
         "observed_fraction": detected_frames / len(all_angles) if all_angles else 0.0,
         "interpolation_fractions": interpolation_fractions,
+        "joint_detection_rates": joint_detection_rates,
         "confidences": confidences,
         "n_frames": len(all_angles) or len(frames),
     }

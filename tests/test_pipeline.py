@@ -1369,6 +1369,56 @@ class TestVideoSignalProcessing:
             assert meta["mean_detected_confidence"] == pytest.approx(0.85, abs=0.01)
 
 
+    def test_joint_detection_rates_in_metadata(self):
+        from movement_analytics.pose.estimator import process_video
+
+        n_frames = 20
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "test.mp4")
+            h, w = 480, 640
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            writer = cv2.VideoWriter(vid_path, fourcc, 30, (w, h))
+            for _ in range(n_frames):
+                writer.write(np.zeros((h, w, 3), dtype=np.uint8))
+            writer.release()
+
+            call_count = [0]
+
+            def mock_process_frame(frame, min_visibility=0.5):
+                idx = call_count[0]
+                call_count[0] += 1
+                pos = {
+                    "pelvis": np.array([320.0, 200.0]),
+                    "shoulder": np.array([320.0, 120.0]),
+                    "neck": np.array([320.0, 110.0]),
+                    "left_hip": np.array([300.0, 200.0]),
+                    "right_hip": np.array([340.0, 200.0]),
+                    "left_knee": np.array([300.0, 320.0]),
+                    "right_knee": np.array([340.0, 320.0]),
+                    "left_ankle": np.array([300.0, 430.0]),
+                    "right_ankle": np.array([340.0, 430.0]),
+                    "left_shoulder": np.array([280.0, 120.0]),
+                    "right_shoulder": np.array([360.0, 120.0]),
+                }
+                return pos, 0.9
+
+            with patch(
+                "movement_analytics.pose.estimator.PoseEstimator"
+            ) as MockEst:
+                instance = MagicMock()
+                instance.process_frame = mock_process_frame
+                instance.__enter__ = lambda s: s
+                instance.__exit__ = lambda s, *a: None
+                MockEst.return_value = instance
+
+                _, _, _, _, meta = process_video(vid_path, store_frames=False)
+
+            assert "joint_detection_rates" in meta
+            rates = meta["joint_detection_rates"]
+            assert len(rates) > 0
+            for key, rate in rates.items():
+                assert 0.0 <= rate <= 1.0
+
     def test_adaptive_smooth_reduces_noise_in_low_conf_regions(self):
         from movement_analytics.pose.estimator import _adaptive_smooth
         rng = np.random.default_rng(42)
