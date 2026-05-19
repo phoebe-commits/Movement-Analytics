@@ -208,6 +208,7 @@ The MQS spread across profiles (58.7–98.3) provides meaningful differentiation
 | Intra-limb CRP (hip-knee) | Coordination | **Implemented** (v1.4) — scored bilaterally in coordination domain |
 | Gait Deviation Index (GDI) | Composite | **Implemented** (v1.5) — simplified GDI per Schwartz & Rozumalski 2008; compares stride-normalized waveforms (hip, knee, ankle) against normal reference, 100 = normal, ~10 points per SD of deviation |
 | DFA scaling exponent | Variability | **Implemented** (v1.6) — Hausdorff 2001, requires ≥16 strides, diagnostic only; α ~ 0.75 healthy, ~0.5 pathological |
+| Heel contact detection | Gait events | **Implemented** (v1.6) — heel landmark Y-position refines gait event timing from video; falls back to hip-peak proxy when unavailable |
 | Head stabilization index | New: Global | Requires head tracking with sufficient resolution |
 
 ### 4.2 Humanoid Robotics Extension
