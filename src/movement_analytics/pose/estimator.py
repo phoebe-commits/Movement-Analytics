@@ -10,6 +10,7 @@ import os
 import cv2
 import mediapipe as mp
 import numpy as np
+from scipy.interpolate import PchipInterpolator
 from scipy.signal import butter, filtfilt
 
 _BaseOptions = mp.tasks.BaseOptions
@@ -48,6 +49,7 @@ _PHYSIO_RANGES = {
     "knee_flexion": (-20.0, 160.0),
     "ankle_dorsiflexion": (-90.0, 60.0),
     "elbow_flexion": (-20.0, 170.0),
+    "shoulder_flexion": (-60.0, 180.0),
     "pelvis_obliquity": (-40.0, 40.0),
     "pelvic_obliquity": (-40.0, 40.0),
     "trunk_lean": (-45.0, 45.0),
@@ -79,6 +81,43 @@ def _lowpass_smooth(arr: np.ndarray, fps: float, cutoff: float = 6.0) -> np.ndar
     smoothed = arr.copy()
     smoothed[valid] = filtfilt(b, a, arr[valid])
     return smoothed
+
+
+def _adaptive_smooth(
+    arr: np.ndarray,
+    fps: float,
+    frame_confidences: np.ndarray,
+    base_cutoff: float = 6.0,
+    low_conf_cutoff: float = 3.0,
+    conf_threshold: float = 0.7,
+) -> np.ndarray:
+    """Two-pass smoothing: aggressive on low-confidence regions, gentle elsewhere.
+
+    Frames with confidence below conf_threshold get a tighter low-pass filter
+    (low_conf_cutoff Hz) before the standard pass, reducing MediaPipe jitter
+    in uncertain frames without over-smoothing confident regions.
+    """
+    valid = ~np.isnan(arr)
+    n_valid = np.sum(valid)
+    if n_valid < 13:
+        return arr
+    nyq = fps / 2
+    if nyq <= low_conf_cutoff:
+        return arr
+
+    out = arr.copy()
+
+    low_conf = frame_confidences < conf_threshold
+    low_conf_valid = low_conf & valid
+    if np.sum(low_conf_valid) >= 4:
+        indices = np.where(low_conf_valid)[0]
+        runs = np.split(indices, np.where(np.diff(indices) > 2)[0] + 1)
+        for run in runs:
+            if len(run) >= 4:
+                b, a = butter(2, low_conf_cutoff / nyq, btype="low")
+                out[run] = filtfilt(b, a, out[run])
+
+    return _lowpass_smooth(out, fps, cutoff=base_cutoff)
 
 
 _MODEL_URL = (
@@ -303,6 +342,8 @@ def process_video(
             "n_frames": len(frames),
         }
 
+    per_frame_confidences = confidences
+
     angle_keys_right = set()
     angle_keys_left = set()
     for a in all_angles:
@@ -321,10 +362,12 @@ def process_video(
         "right_knee_flexion": "knee_flexion",
         "right_ankle_dorsiflexion": "ankle_dorsiflexion",
         "right_elbow_flexion": "elbow_flexion",
+        "right_shoulder_flexion": "shoulder_flexion",
         "left_hip_flexion": "hip_flexion",
         "left_knee_flexion": "knee_flexion",
         "left_ankle_dorsiflexion": "ankle_dorsiflexion",
         "left_elbow_flexion": "elbow_flexion",
+        "left_shoulder_flexion": "shoulder_flexion",
     }
 
     for orig_key in angle_keys_right:
@@ -381,12 +424,19 @@ def process_video(
                 valid = ~nan_mask
                 if np.any(valid):
                     indices = np.arange(len(arr))
-                    arr[~valid] = np.interp(
-                        indices[~valid], indices[valid], arr[valid]
-                    )
+                    if np.sum(valid) >= 4:
+                        interp_fn = PchipInterpolator(
+                            indices[valid], arr[valid], extrapolate=True,
+                        )
+                        arr[~valid] = interp_fn(indices[~valid])
+                    else:
+                        arr[~valid] = np.interp(
+                            indices[~valid], indices[valid], arr[valid]
+                        )
             else:
                 interpolation_fractions[frac_key] = 0.0
-            smoothed = _lowpass_smooth(arr, actual_fps)
+            conf_arr = np.array(per_frame_confidences[:len(arr)])
+            smoothed = _adaptive_smooth(arr, actual_fps, conf_arr)
             d[key] = smoothed
             if key in _shared_keys:
                 processed_shared[key] = smoothed

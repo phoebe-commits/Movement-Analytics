@@ -228,6 +228,60 @@ def run_video_analysis(video_path: str, output_path: str | None = None,
     print("Done.")
 
 
+def run_multi_view_analysis(video_paths: list[str],
+                            view_labels: list[str] | None = None,
+                            output_path: str | None = None,
+                            display: bool = True,
+                            target_fps: int | None = None):
+    """Run multi-view analysis merging sagittal and frontal camera angles."""
+    from . import analyze_multi_view
+
+    fps_arg = float(target_fps) if target_fps else None
+    print(f"Multi-view analysis: {len(video_paths)} videos")
+    for i, p in enumerate(video_paths):
+        label = view_labels[i] if view_labels else f"view_{i}"
+        print(f"  [{label}] {p}")
+
+    summary = analyze_multi_view(video_paths, view_labels=view_labels, fps=fps_arg)
+
+    mqs = summary.get("movement_quality_score_weighted",
+                       summary.get("movement_quality_score", float("nan")))
+    conf = summary.get("mqs_confidence_factor", 1.0)
+    print("\n--- Multi-View Gait Summary ---")
+    print(f"  MQS (weighted): {mqs:.1f}  (confidence: {conf:.0%})")
+    print(f"  Sagittal view: {summary.get('sagittal_view', '?')}")
+    if "frontal_view" in summary:
+        print(f"  Frontal view:  {summary['frontal_view']}")
+    print()
+
+    for key, val in sorted(summary.items()):
+        if isinstance(val, (int, float)):
+            print(f"  {key}: {val:.2f}")
+        elif isinstance(val, list):
+            print(f"  {key}: {val}")
+    print()
+
+    if output_path:
+        import json
+        import os
+        os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+        with open(output_path, "w") as f:
+            serializable = {}
+            for k, v in summary.items():
+                if isinstance(v, float) and np.isnan(v):
+                    serializable[k] = None
+                elif isinstance(v, np.floating):
+                    serializable[k] = float(v)
+                elif isinstance(v, np.integer):
+                    serializable[k] = int(v)
+                else:
+                    serializable[k] = v
+            json.dump(serializable, f, indent=2)
+        print(f"Summary saved to {output_path}")
+
+    print("Done.")
+
+
 def generate_comparison_report(output_path: str, fps: int = 30, n_cycles: int = 4):
     """Generate a visual comparison report of MQS across all gait profiles."""
 
@@ -485,8 +539,14 @@ def main():
         help="Generate MQS comparison report across all profiles"
     )
     parser.add_argument(
-        "--video", "-v", default=None,
-        help="Input video file for pose estimation analysis"
+        "--video", "-v", nargs="+", default=None,
+        help="Input video file(s) for pose estimation analysis. "
+             "Multiple files enable multi-view compositing."
+    )
+    parser.add_argument(
+        "--view-labels", default=None,
+        help="Comma-separated view labels (e.g. 'sagittal,frontal') "
+             "matching --video order. Used for multi-view merging."
     )
     parser.add_argument(
         "--benchmark", action="store_true",
@@ -513,11 +573,22 @@ def main():
         return
 
     if args.video:
-        run_video_analysis(
-            args.video, args.output,
-            display=not args.no_display,
-            target_fps=args.fps if args.fps != 30 else None,
-        )
+        target_fps = args.fps if args.fps != 30 else None
+        if len(args.video) > 1:
+            labels = None
+            if args.view_labels:
+                labels = [s.strip() for s in args.view_labels.split(",")]
+            run_multi_view_analysis(
+                args.video, labels, args.output,
+                display=not args.no_display,
+                target_fps=target_fps,
+            )
+        else:
+            run_video_analysis(
+                args.video[0], args.output,
+                display=not args.no_display,
+                target_fps=target_fps,
+            )
         return
 
     if args.all_profiles:

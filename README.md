@@ -156,6 +156,9 @@ python -m movement_analytics --all-profiles --output output/gait --no-display
 
 # Analyze real video (downloads MediaPipe model on first run)
 python -m movement_analytics --video path/to/walking.mp4 --output output/analysis.mp4
+
+# Multi-view analysis (sagittal + frontal cameras)
+python -m movement_analytics --video side.mp4 front.mp4 --view-labels sagittal,frontal --output output/multi.json
 ```
 
 ### CLI Options
@@ -169,7 +172,9 @@ python -m movement_analytics --video path/to/walking.mp4 --output output/analysi
 --cycles, -c      Number of gait cycles (default: 6)
 --all-profiles    Generate all profiles
 --compare         Generate MQS comparison report across all profiles
---video, -v       Input video file for pose estimation analysis
+--video, -v       Input video file(s) for pose estimation analysis
+                  (multiple files enable multi-view compositing)
+--view-labels     Comma-separated view labels (e.g. 'sagittal,frontal')
 --benchmark       Output MQS benchmark JSON across all profiles
 --sensitivity     Generate MQS sensitivity analysis plots (PNG)
 ```
@@ -237,6 +242,15 @@ from movement_analytics import analyze_video
 result = analyze_video("path/to/walking.mp4")
 print(f"Video MQS: {result['movement_quality_score_weighted']:.1f}")
 print(f"Confidence: {result['mqs_confidence_factor']:.0%}")
+
+# Multi-view analysis (sagittal + frontal cameras)
+from movement_analytics import analyze_multi_view
+
+result = analyze_multi_view(
+    ["side_view.mp4", "front_view.mp4"],
+    view_labels=["sagittal", "frontal"],
+)
+print(f"Multi-view MQS: {result['movement_quality_score_weighted']:.1f}")
 ```
 
 ---
@@ -310,9 +324,10 @@ The research document identifies **20 signals** across 6 domains that form the b
 | Gait metrics engine | Implemented, 98% coverage (synthetic path) |
 | Movement Quality Score | 6-domain composite (MQS v1.7) with evidence gating, frontal-plane dedup, bilateral SPARC, intra-limb CRP, validated on 9 profiles (61.1–98.3 range) |
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown, NaN-safe) |
-| Video pose estimation | MediaPipe VIDEO mode with Butterworth temporal smoothing, physiological outlier rejection, heel contact detection, confidence-weighted MQS (detected-only confidence), frontal dedup, memory-efficient headless mode, 96% unit test coverage |
+| Video pose estimation | MediaPipe VIDEO mode with PCHIP interpolation, adaptive confidence-weighted smoothing, physiological outlier rejection, heel contact detection, confidence-weighted MQS (detected-only confidence), frontal dedup, memory-efficient headless mode, 96% unit test coverage |
+| Multi-view analysis | Sagittal + frontal camera merging into unified MQS, auto-detects best view per signal domain |
 | Gait Deviation Index | Simplified GDI (Schwartz & Rozumalski 2008), 100 = normal, validated on 9 profiles (78.1–100.0 range) |
-| CI/CD | GitHub Actions, 214 tests, ruff lint, 70% coverage gate (98% actual) |
+| CI/CD | GitHub Actions, 222 tests, ruff lint, 70% coverage gate (98% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 

@@ -1223,6 +1223,31 @@ class TestEstimatorKeyMapping:
         assert "right_ankle_angle" in angles
 
 
+    def test_shoulder_flexion_computed(self):
+        from movement_analytics.kinematics.joint_angles import compute_all_angles
+        positions = {
+            "pelvis": np.array([100.0, 200.0]),
+            "shoulder": np.array([100.0, 100.0]),
+            "neck": np.array([100.0, 90.0]),
+            "right_hip": np.array([110.0, 200.0]),
+            "right_knee": np.array([110.0, 300.0]),
+            "right_ankle": np.array([110.0, 400.0]),
+            "right_shoulder": np.array([120.0, 100.0]),
+            "right_elbow": np.array([130.0, 150.0]),
+            "right_wrist": np.array([135.0, 200.0]),
+            "left_hip": np.array([90.0, 200.0]),
+            "left_knee": np.array([90.0, 300.0]),
+            "left_ankle": np.array([90.0, 400.0]),
+            "left_shoulder": np.array([80.0, 100.0]),
+            "left_elbow": np.array([70.0, 150.0]),
+            "left_wrist": np.array([65.0, 200.0]),
+        }
+        angles = compute_all_angles(positions)
+        assert "right_shoulder_flexion" in angles
+        assert "left_shoulder_flexion" in angles
+        assert 0 < angles["right_shoulder_flexion"] < 180
+
+
 class TestNaNInterpolation:
     """Verify NaN interpolation in video processing angle arrays."""
 
@@ -1342,6 +1367,36 @@ class TestVideoSignalProcessing:
             assert "mean_detected_confidence" in meta
             assert meta["mean_detected_confidence"] > meta["mean_confidence"]
             assert meta["mean_detected_confidence"] == pytest.approx(0.85, abs=0.01)
+
+
+    def test_adaptive_smooth_reduces_noise_in_low_conf_regions(self):
+        from movement_analytics.pose.estimator import _adaptive_smooth
+        rng = np.random.default_rng(42)
+        t = np.linspace(0, 4 * np.pi, 200)
+        clean = np.sin(t) * 30
+        noisy = clean + rng.normal(0, 8, len(t))
+        conf = np.ones(200) * 0.9
+        conf[50:80] = 0.3
+        result = _adaptive_smooth(noisy, fps=30.0, frame_confidences=conf)
+        noise_after = float(np.std(result - clean))
+        noise_before = float(np.std(noisy - clean))
+        assert noise_after < noise_before
+
+    def test_adaptive_smooth_high_conf_matches_standard(self):
+        from movement_analytics.pose.estimator import _adaptive_smooth, _lowpass_smooth
+        t = np.linspace(0, 4 * np.pi, 200)
+        signal = np.sin(t) * 30 + np.random.default_rng(7).normal(0, 2, 200)
+        conf = np.ones(200) * 0.95
+        adaptive = _adaptive_smooth(signal, fps=30.0, frame_confidences=conf)
+        standard = _lowpass_smooth(signal, fps=30.0)
+        np.testing.assert_allclose(adaptive, standard, atol=0.5)
+
+    def test_adaptive_smooth_short_signal(self):
+        from movement_analytics.pose.estimator import _adaptive_smooth
+        arr = np.array([1.0, 2.0, 3.0])
+        conf = np.array([0.9, 0.1, 0.8])
+        result = _adaptive_smooth(arr, fps=30.0, frame_confidences=conf)
+        np.testing.assert_array_equal(result, arr)
 
 
 class TestKinematicVariability:

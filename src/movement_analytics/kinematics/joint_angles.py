@@ -75,6 +75,10 @@ def compute_all_angles(positions: dict) -> dict[str, float]:
         if shoulder is not None and elbow is not None and wrist is not None:
             angles[f"{side}_elbow_flexion"] = compute_flexion_angle(shoulder, elbow, wrist)
 
+        neck = positions.get("neck", positions.get("shoulder"))
+        if neck is not None and shoulder is not None and elbow is not None:
+            angles[f"{side}_shoulder_flexion"] = compute_flexion_angle(neck, shoulder, elbow)
+
     if positions.get("pelvis") is not None and positions.get("shoulder") is not None:
         angles["trunk_lean"] = segment_angle_to_vertical(
             positions["pelvis"], positions["shoulder"]
