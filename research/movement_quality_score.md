@@ -75,7 +75,7 @@ Computed bilaterally (2 signals), averaged. Hip velocity SPARC is used because h
 
 SI = 2 × |mean(L) − mean(R)| / (mean(L) + mean(R)) × 100. Three signals, averaged.
 
-Waveform symmetry (|NCC| × 100, where NCC = normalized cross-correlation of centered bilateral signals) is computed and reported alongside SI but not included in the MQS composite (v1.1.1). Waveform symmetry captures shape and timing differences that mean-based SI misses (e.g., noisy gait: SI=0.1%, waveform=92.9%). Anti-phase bilateral coupling (healthy gait) scores 100% because absolute NCC is used. Future versions may incorporate waveform symmetry into the composite once validation data is available.
+Waveform symmetry (|NCC| × 100, where NCC = normalized cross-correlation of centered bilateral signals) is integrated into the symmetry domain composite as of v1.2. The symmetry domain score = `min(SI_mean, hip_waveform_sym)`, ensuring that either amplitude asymmetry (caught by SI) or shape asymmetry (caught by waveform NCC) will penalize the score. Anti-phase bilateral coupling (healthy gait) scores 100% because absolute NCC is used. Waveform symmetry captures shape and timing differences that mean-based SI misses (e.g., noisy gait: SI=0.1%, waveform=92.9%).
 
 **Variability Domain (13%):**
 
@@ -176,6 +176,8 @@ The MQS spread across profiles (50.9–98.3) provides meaningful differentiation
 4. **Symmetry composite (v1.2):** The symmetry domain now uses `min(SI_mean, hip_waveform_sym)` where SI is the traditional mean-based Symmetry Index and hip waveform symmetry is the absolute normalized cross-correlation of bilateral hip flexion curves. The `min` operator ensures that either amplitude asymmetry (caught by SI) or shape asymmetry (caught by waveform NCC) will penalize the score. This addresses the prior limitation where mean-based SI alone missed phase-specific asymmetries. However, the waveform metric uses hip flexion only; extending to knee/ankle waveform correlation could improve sensitivity to distal asymmetries.
 
 5. **Coordination domain uses global CRP:** The CRP consistency metric captures bilateral phase coupling but does not account for within-limb coordination (e.g., thigh-shank CRP). Adding intra-limb CRP would improve detection of segmental coordination deficits.
+
+6. **Video MQS confidence degradation (v1.2):** When MQS is computed from video-derived poses, the raw score is scaled by a confidence factor: `CF = observed_fraction × mean_pose_confidence`. This ensures that poor detection rates or low landmark visibility produce a lower (more conservative) MQS rather than a misleadingly high score. The raw unscaled MQS is preserved as `mqs_raw` for debugging. Synthetic data (no pose metadata) always receives CF = 1.0.
 
 ---
 
