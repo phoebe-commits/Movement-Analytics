@@ -757,7 +757,7 @@ class TestSignalCompleteness:
         }
         c = mqs_signal_completeness(metrics)
         assert 0 < c["kinematics"] < 1.0
-        assert c["smoothness"] == pytest.approx(0.5)
+        assert c["smoothness"] == pytest.approx(0.25)
 
 
 class TestMQSConfidenceFactor:
@@ -1001,7 +1001,7 @@ class TestBenchmarkOutput:
             assert os.path.exists(path)
             with open(path) as f:
                 data = json.load(f)
-            assert data["version"] == "1.3.0"
+            assert data["version"] == "1.4.0"
             assert data["n_domains"] == 6
             assert "normal" in data["profiles"]
             normal = data["profiles"]["normal"]
@@ -1026,13 +1026,13 @@ class TestBenchmarkRegression:
     EXPECTED_MQS = {
         "normal": 98.3,
         "model_runway": 96.1,
-        "limp": 90.3,
-        "fast": 89.5,
-        "stiff_knee": 88.2,
-        "trendelenburg": 87.4,
-        "slow": 86.9,
-        "parkinsonian": 61.2,
-        "noisy": 58.3,
+        "fast": 90.1,
+        "limp": 88.8,
+        "trendelenburg": 87.3,
+        "slow": 83.8,
+        "stiff_knee": 82.9,
+        "noisy": 67.3,
+        "parkinsonian": 64.8,
     }
 
     MQS_TOLERANCE = 2.0

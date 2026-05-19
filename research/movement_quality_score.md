@@ -1,6 +1,6 @@
 # Movement Quality Score (MQS): Technical Specification
 
-**Version:** 1.3.0
+**Version:** 1.4.0
 **Date:** 2026-05-19
 
 ---
@@ -62,8 +62,9 @@ Sagittal-plane signals (hip, knee, ankle ROM) computed bilaterally (6 signals). 
 | Signal | Optimal Range | Worst-Case Bounds | Source |
 |---|---|---|---|
 | SPARC (hip velocity) | −2.0 to −1.3 | −6.0 to −0.5 | Balasubramanian et al., 2012/2015 |
+| SPARC (knee velocity) | −16.0 to −12.0 | −25.0 to −8.0 | Derived from synthetic profiles; normal knee SPARC ≈ −14.7 |
 
-Computed bilaterally (2 signals), averaged. Hip velocity SPARC is used because hip flexion has the smoothest sinusoidal profile in healthy gait, making it the most reliable smoothness indicator. Knee and ankle SPARC are excluded from the composite due to sharp phase transitions that inflate spectral complexity independent of movement quality.
+Computed bilaterally (4 signals: R/L hip + R/L knee SPARC), averaged. Hip velocity SPARC uses the Balasubramanian et al. reference range. Knee SPARC uses a separate range calibrated from the synthetic gait model because the knee velocity profile has higher spectral complexity (stance flexion wave + swing peak) than the hip. The knee SPARC range [-16, -12] captures normal variation while penalizing stiff-knee gait (SPARC ≈ −21) and parkinsonian shuffling (SPARC ≈ −22). Ankle SPARC is excluded due to foot-contact transients that inflate spectral complexity.
 
 **Symmetry Domain (18%):**
 
@@ -162,9 +163,10 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.3, 6
 - Trendelenburg is strongly penalized in kinematics (pelvic obliquity 24° vs. 7° normal, trunk lean 16° vs. 5°)
 - Stiff knee is penalized in kinematics (knee ROM 25° vs. 50–70° normal)
 - Limp is penalized in symmetry (84.8) via both sagittal SI (hip SI 19.4%) and frontal-plane pelvis obliquity SI (21%) — the asymmetric pelvic drop is now detected (v1.3)
-- Noisy is penalized in smoothness and variability (SPARC degraded, stride CV 33%)
+- Noisy is penalized in smoothness (hip SPARC degraded) and variability (stride CV 33%)
 - Slow and fast are penalized in temporal (cadence outside 90–130 spm range)
-- Parkinsonian and noisy score lowest overall (MQS 61.2 and 58.3 respectively), both with smoothness = 0 (SPARC degraded). Noisy is penalized in variability (stride CV 16.2%) while parkinsonian shows moderate variability (CV 7.4%) — consistent with the shuffling-but-regular pattern of Parkinson's gait
+- Stiff-knee and parkinsonian are heavily penalized in smoothness via knee SPARC (v1.4): stiff_knee knee SPARC ≈ −21 (reduced swing velocity), parkinsonian ≈ −22 (shuffling rhythm)
+- Parkinsonian scores lowest overall (MQS 64.8), with smoothness = 19.8 (both hip and knee SPARC degraded). Noisy scores 67.3, penalized in variability (stride CV 16.2%) while parkinsonian shows moderate variability (CV 7.4%) — consistent with the shuffling-but-regular pattern of Parkinson's gait
 - Noisy gait shows reduced symmetry (92.9) thanks to waveform symmetry detecting shape-based asymmetry that mean-based SI misses; parkinsonian similarly at 95.7
 - Bilateral noise is generated with independent random seeds per side (v1.1.1)
 
@@ -176,7 +178,7 @@ The MQS spread across profiles (58.3–98.3) provides meaningful differentiation
 
 1. **Frontal plane coverage improving:** Pelvic obliquity and trunk lateral lean are scored in the kinematics domain (ROM) and symmetry domain (pelvis obliquity SI, v1.3). Trendelenburg gait is detected via kinematics (score drops to ~60), and asymmetric limping is detected via frontal-plane symmetry (pelvis obliquity SI = 21%). Frontal-plane signals from real video require either multi-camera setup or 3D pose lifting for reliable measurement.
 
-2. **Smoothness domain uses only hip SPARC:** This is by design (knee/ankle SPARC is confounded by phase transitions) but misses smoothness deficits in isolated distal joints.
+2. **Smoothness domain uses hip and knee SPARC:** Hip SPARC uses the Balasubramanian et al. reference range; knee SPARC uses a synthetic-derived range (v1.4). Ankle SPARC is excluded due to foot-contact transients. The knee SPARC range is not yet validated against clinical data.
 
 3. **Variability requires multiple strides:** With fewer than 3 detected strides, stride CV reliability degrades. The current implementation returns NaN for stride CV when fewer than 3 strides are detected, and the MQS scores missing variability as 50.0 (neutral). Missing kinematics, smoothness, and symmetry signals are excluded from their domain averages rather than defaulted to optimal values (v1.1.1).
 

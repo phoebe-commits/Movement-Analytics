@@ -434,7 +434,8 @@ _SIGNAL_RANGES = {
     "ankle_rom": (20.0, 35.0, 5.0, 50.0),
     "pelvic_obliquity": (0.0, 7.0, 0.0, 20.0),
     "trunk_lean": (0.0, 5.0, 0.0, 15.0),
-    "sparc": (-2.0, -1.3, -6.0, -0.5),
+    "sparc_hip": (-2.0, -1.3, -6.0, -0.5),
+    "sparc_knee": (-16.0, -12.0, -25.0, -8.0),
     "symmetry": (0.0, 10.0, 0.0, 50.0),
     "stride_cv": (0.0, 4.0, 0.0, 20.0),
     "cadence": (90.0, 130.0, 40.0, 180.0),
@@ -476,10 +477,12 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
 
     sm_scores = []
     for side in ["R", "L"]:
-        val = metrics.get(f"{side}_hip_flexion_SPARC")
-        if val is not None:
-            lo, hi, wlo, whi = _SIGNAL_RANGES["sparc"]
-            sm_scores.append(_signal_score(val, lo, hi, wlo, whi))
+        for joint, range_key in [("hip_flexion", "sparc_hip"),
+                                 ("knee_flexion", "sparc_knee")]:
+            val = metrics.get(f"{side}_{joint}_SPARC")
+            if val is not None:
+                lo, hi, wlo, whi = _SIGNAL_RANGES[range_key]
+                sm_scores.append(_signal_score(val, lo, hi, wlo, whi))
     domains["smoothness"] = float(np.mean(sm_scores)) if sm_scores else 50.0
 
     si_scores = []
@@ -548,8 +551,12 @@ def mqs_signal_completeness(metrics: dict) -> dict[str, float]:
                 kin_present += 1
     completeness["kinematics"] = kin_present / kin_expected if kin_expected else 0.0
 
-    sm_present = sum(1 for s in ["R", "L"] if metrics.get(f"{s}_hip_flexion_SPARC") is not None)
-    completeness["smoothness"] = sm_present / 2.0
+    sm_present = 0
+    for s in ["R", "L"]:
+        for joint in ["hip_flexion", "knee_flexion"]:
+            if metrics.get(f"{s}_{joint}_SPARC") is not None:
+                sm_present += 1
+    completeness["smoothness"] = sm_present / 4.0
 
     sy_present = sum(
         1 for j in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion",
