@@ -112,9 +112,10 @@ def _adaptive_smooth(
     if np.sum(low_conf_valid) >= 4:
         indices = np.where(low_conf_valid)[0]
         runs = np.split(indices, np.where(np.diff(indices) > 2)[0] + 1)
+        b, a = butter(2, low_conf_cutoff / nyq, btype="low")
+        padlen = 3 * max(len(b), len(a))
         for run in runs:
-            if len(run) >= 4:
-                b, a = butter(2, low_conf_cutoff / nyq, btype="low")
+            if len(run) > padlen:
                 out[run] = filtfilt(b, a, out[run])
 
     return _lowpass_smooth(out, fps, cutoff=base_cutoff)
