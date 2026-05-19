@@ -84,7 +84,9 @@ For each gait profile, the pipeline computes **50+ metrics** in real time:
 - **SPARC smoothness** — spectral arc length per joint velocity
 - **Normalized Jerk** — per joint
 - **Symmetry Index** — hip, knee, ankle (left vs. right)
+- **Waveform Symmetry** — shape-based bilateral comparison (NCC)
 - **Symmetry Ratio** — bilateral comparison
+- **Signal Completeness** — per-domain fraction of present signals
 - **CRP Coordination** — inter-limb phase coupling consistency (Hilbert transform)
 - **Cadence** — steps per minute
 - **Stride time** — mean and coefficient of variation

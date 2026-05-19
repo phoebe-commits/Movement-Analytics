@@ -75,6 +75,8 @@ Computed bilaterally (2 signals), averaged. Hip velocity SPARC is used because h
 
 SI = 2 × |mean(L) − mean(R)| / (mean(L) + mean(R)) × 100. Three signals, averaged.
 
+Waveform symmetry (|NCC| × 100, where NCC = normalized cross-correlation of centered bilateral signals) is computed and reported alongside SI but not included in the MQS composite (v1.1.1). Waveform symmetry captures shape and timing differences that mean-based SI misses (e.g., noisy gait: SI=0.1%, waveform=92.9%). Anti-phase bilateral coupling (healthy gait) scores 100% because absolute NCC is used. Future versions may incorporate waveform symmetry into the composite once validation data is available.
+
 **Variability Domain (13%):**
 
 | Signal | Optimal Range | Worst-Case Bounds | Source |
