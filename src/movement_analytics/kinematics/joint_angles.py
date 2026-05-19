@@ -78,4 +78,13 @@ def compute_all_angles(positions: dict) -> dict[str, float]:
             positions["pelvis"], positions["shoulder"]
         )
 
+    l_hip = positions.get("left_hip")
+    r_hip = positions.get("right_hip")
+    if l_hip is not None and r_hip is not None:
+        hip_vec = r_hip - l_hip
+        hip_dist = np.linalg.norm(hip_vec)
+        if hip_dist > 1e-6:
+            obliq = np.degrees(np.arctan2(hip_vec[1], hip_vec[0]))
+            angles["pelvic_obliquity"] = abs(obliq)
+
     return angles

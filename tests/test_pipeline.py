@@ -584,6 +584,22 @@ class TestEstimatorKeyMapping:
         angles = compute_all_angles(positions)
         assert "trunk_lean" in angles
 
+    def test_pelvic_obliquity_from_hip_heights(self):
+        from movement_analytics.kinematics.joint_angles import compute_all_angles
+        positions = {
+            "pelvis": np.array([100, 200]),
+            "shoulder": np.array([100, 100]),
+            "right_hip": np.array([110, 200]),
+            "right_knee": np.array([110, 300]),
+            "right_ankle": np.array([110, 400]),
+            "left_hip": np.array([90, 210]),
+            "left_knee": np.array([90, 300]),
+            "left_ankle": np.array([90, 400]),
+        }
+        angles = compute_all_angles(positions)
+        assert "pelvic_obliquity" in angles
+        assert angles["pelvic_obliquity"] > 0
+
     def test_video_key_mapping_correctness(self):
         key_mapping = {
             "right_hip_flexion": "hip_flexion",

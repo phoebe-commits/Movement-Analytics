@@ -269,6 +269,11 @@ def process_video(video_path: str, fps: float = None) -> tuple[list[np.ndarray],
         angles_right["trunk_lateral_lean"] = trunk
         angles_left["trunk_lateral_lean"] = trunk
 
+    if any("pelvic_obliquity" in a for a in all_angles):
+        obliq = np.array([a.get("pelvic_obliquity", np.nan) for a in all_angles])
+        angles_right["pelvis_obliquity"] = obliq
+        angles_left["pelvis_obliquity"] = obliq
+
     for d in (angles_right, angles_left):
         for key in d:
             arr = d[key]
@@ -282,19 +287,22 @@ def process_video(video_path: str, fps: float = None) -> tuple[list[np.ndarray],
                     d[key] = arr
 
     if "hip_flexion" in angles_right:
-        from scipy.signal import butter, filtfilt
-        hip = angles_right["hip_flexion"]
-        try:
-            b, a = butter(4, 6.0 / (actual_fps / 2), btype="low")
-            hip_filt = filtfilt(b, a, hip)
-        except Exception:
-            hip_filt = hip
-        hip_range = np.ptp(hip_filt)
-        if hip_range > 1e-6:
-            hip_norm = (hip_filt - hip_filt.min()) / hip_range
-        else:
-            hip_norm = np.zeros_like(hip_filt)
-        angles_right["cycle_phase"] = hip_norm
-        angles_left["cycle_phase"] = hip_norm
+        from ..kinematics.gait_metrics import detect_gait_events
+        knee = angles_right.get("knee_flexion", np.zeros(n))
+        events = detect_gait_events(
+            angles_right["hip_flexion"], knee, actual_fps
+        )
+        hs = events["heel_strikes"]
+        phase = np.zeros(n)
+        if len(hs) >= 2:
+            for j in range(len(hs) - 1):
+                start, end = hs[j], hs[j + 1]
+                phase[start:end] = np.linspace(0, 1, end - start, endpoint=False)
+            phase[hs[-1]:] = np.linspace(
+                0, (n - hs[-1]) / max(1, hs[-1] - hs[-2] if len(hs) >= 2 else 1),
+                n - hs[-1], endpoint=False,
+            ) % 1.0
+        angles_right["cycle_phase"] = phase
+        angles_left["cycle_phase"] = phase
 
     return frames, angles_right, angles_left, actual_fps
