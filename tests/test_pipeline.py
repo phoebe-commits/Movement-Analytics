@@ -1,7 +1,7 @@
 """End-to-end tests for the Movement Analytics pipeline.
 
 Validates gait model generation, metric computation, MQS scoring,
-and dashboard rendering across all 8 gait profiles.
+and dashboard rendering across all 9 gait profiles.
 """
 
 import numpy as np
@@ -277,3 +277,140 @@ class TestDashboard:
         for i in range(15):
             dashboard.update({"test_angle": float(i)}, {})
         assert len(dashboard.histories["test_angle"]) == 10
+
+
+class TestEdgeCases:
+    def test_rom_constant_signal(self):
+        assert rom(np.ones(100) * 45.0) == pytest.approx(0.0)
+
+    def test_rom_single_value(self):
+        assert rom(np.array([10.0])) == pytest.approx(0.0)
+
+    def test_sparc_constant_velocity(self):
+        vel = np.ones(100) * 5.0
+        s = sparc(vel, 30)
+        assert s <= 0
+
+    def test_symmetry_index_near_zero_signals(self):
+        a = np.ones(100) * 1e-8
+        b = np.ones(100) * 1e-8
+        si = symmetry_index(a, b)
+        assert si == pytest.approx(0.0)
+
+    def test_cv_near_zero_mean(self):
+        assert coefficient_of_variation(np.ones(100) * 1e-8) == pytest.approx(0.0)
+
+    def test_normalized_jerk_flat_signal(self):
+        flat = np.ones(100) * 30.0
+        assert normalized_jerk(flat, 30) == pytest.approx(0.0)
+
+    def test_signal_score_at_optimal_boundaries(self):
+        assert _signal_score(35, 35, 50, 10, 70) == 100.0
+        assert _signal_score(50, 35, 50, 10, 70) == 100.0
+
+    def test_signal_score_just_outside_optimal(self):
+        score_below = _signal_score(34, 35, 50, 10, 70)
+        score_above = _signal_score(51, 35, 50, 10, 70)
+        assert 90 < score_below < 100
+        assert 90 < score_above < 100
+
+    def test_signal_score_monotonic_degradation(self):
+        scores = [_signal_score(v, 35, 50, 10, 70) for v in range(10, 36)]
+        for i in range(len(scores) - 1):
+            assert scores[i] <= scores[i + 1]
+
+    def test_gait_events_short_signal(self):
+        from movement_analytics.kinematics.gait_metrics import detect_gait_events
+        hip = np.sin(np.linspace(0, np.pi, 10))
+        knee = np.zeros(10)
+        events = detect_gait_events(hip, knee, fps=30)
+        assert "cadence_steps_per_min" in events
+
+    def test_domain_weights_sum_to_one(self):
+        assert sum(_DOMAIN_WEIGHTS.values()) == pytest.approx(1.0)
+
+    def test_all_six_domains_present(self):
+        expected = {"kinematics", "smoothness", "symmetry",
+                    "coordination", "variability", "temporal"}
+        assert set(_DOMAIN_WEIGHTS.keys()) == expected
+
+
+class TestMQSRanking:
+    """Verify that MQS correctly ranks profiles in clinically expected order."""
+
+    @pytest.fixture(scope="class")
+    def all_mqs_scores(self):
+        scores = {}
+        for name, profile in GAIT_PROFILES.items():
+            right = generate_gait_cycle(profile.params, n_frames=60, n_cycles=6, side="right")
+            left = generate_gait_cycle(profile.params, n_frames=60, n_cycles=6, side="left")
+            summary = compute_gait_summary(right, left, fps=30)
+            scores[name] = summary
+        return scores
+
+    def test_normal_scores_highest(self, all_mqs_scores):
+        normal_mqs = all_mqs_scores["normal"]["movement_quality_score"]
+        for name, summary in all_mqs_scores.items():
+            if name == "normal":
+                continue
+            assert normal_mqs >= summary["movement_quality_score"], \
+                f"Normal ({normal_mqs:.1f}) should score >= {name} ({summary['movement_quality_score']:.1f})"
+
+    def test_parkinsonian_scores_lowest(self, all_mqs_scores):
+        park_mqs = all_mqs_scores["parkinsonian"]["movement_quality_score"]
+        for name, summary in all_mqs_scores.items():
+            if name in ("parkinsonian", "noisy"):
+                continue
+            assert park_mqs <= summary["movement_quality_score"], \
+                f"Parkinsonian ({park_mqs:.1f}) should score <= {name} ({summary['movement_quality_score']:.1f})"
+
+    def test_pathological_below_healthy(self, all_mqs_scores):
+        healthy = all_mqs_scores["normal"]["movement_quality_score"]
+        for name in ["parkinsonian", "noisy"]:
+            path_mqs = all_mqs_scores[name]["movement_quality_score"]
+            assert path_mqs < healthy * 0.75, \
+                f"{name} ({path_mqs:.1f}) should be <75% of normal ({healthy:.1f})"
+
+    def test_limp_penalized_in_symmetry(self, all_mqs_scores):
+        limp_sym = all_mqs_scores["limp"]["mqs_symmetry"]
+        normal_sym = all_mqs_scores["normal"]["mqs_symmetry"]
+        assert limp_sym < normal_sym
+
+    def test_parkinsonian_penalized_in_smoothness(self, all_mqs_scores):
+        assert all_mqs_scores["parkinsonian"]["mqs_smoothness"] < 50
+
+    def test_parkinsonian_penalized_in_variability(self, all_mqs_scores):
+        assert all_mqs_scores["parkinsonian"]["mqs_variability"] < 50
+
+
+class TestJointAngles:
+    def test_compute_all_angles_basic(self):
+        from movement_analytics.kinematics.joint_angles import compute_all_angles
+        positions = {
+            "pelvis": np.array([100, 200]),
+            "shoulder": np.array([100, 100]),
+            "right_hip": np.array([110, 200]),
+            "right_knee": np.array([110, 300]),
+            "right_ankle": np.array([110, 400]),
+            "right_toe": np.array([130, 410]),
+            "left_hip": np.array([90, 200]),
+            "left_knee": np.array([90, 300]),
+            "left_ankle": np.array([90, 400]),
+            "left_toe": np.array([70, 410]),
+        }
+        angles = compute_all_angles(positions)
+        assert "right_knee_flexion" in angles
+        assert "left_knee_flexion" in angles
+        assert "right_hip_flexion" in angles
+
+    def test_angle_between_perpendicular_vectors(self):
+        from movement_analytics.kinematics.joint_angles import angle_between_vectors
+        v1 = np.array([1, 0])
+        v2 = np.array([0, 1])
+        assert angle_between_vectors(v1, v2) == pytest.approx(90.0, abs=0.1)
+
+    def test_angle_between_parallel_vectors(self):
+        from movement_analytics.kinematics.joint_angles import angle_between_vectors
+        v1 = np.array([1, 0])
+        v2 = np.array([2, 0])
+        assert angle_between_vectors(v1, v2) == pytest.approx(0.0, abs=0.1)
