@@ -192,6 +192,8 @@ The MQS spread across profiles (58.3–98.3) provides meaningful differentiation
 |---|---|---|
 | Pelvic obliquity amplitude | Kinematics | **Implemented** (v1.1) |
 | Trunk lateral lean | Kinematics | **Implemented** (v1.1) |
+| Pelvis obliquity SI | Symmetry | **Implemented** (v1.3) — frontal-plane asymmetry detection |
+| Trunk lateral lean SI | Symmetry | **Implemented** (v1.3) — diagnostic only, not in MQS composite |
 | Intra-limb CRP (hip-knee) | Coordination | **Implemented** (v1.2) — reported as diagnostic, not in MQS |
 | DFA scaling exponent | Variability | Requires >50 strides for reliability |
 | Head stabilization index | New: Global | Requires head tracking with sufficient resolution |
