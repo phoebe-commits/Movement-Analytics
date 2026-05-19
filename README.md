@@ -98,6 +98,7 @@ For each gait profile, the pipeline computes **50+ metrics** in real time:
 - **Cadence** — steps per minute
 - **Stride time** — mean and coefficient of variation
 - **Double support time** — percentage of gait cycle with both feet on ground (diagnostic, from stance/swing ratio)
+- **Gait Deviation Index** — simplified GDI (Schwartz & Rozumalski 2008), stride-normalized waveform comparison vs. normal reference
 - **Gait phase** — stance/swing detection with prominence-based heel strikes
 
 ---
@@ -259,8 +260,9 @@ The research document identifies **16 signals** across 6 domains that form the b
 | Gait metrics engine | Implemented, 98% coverage (synthetic path) |
 | Movement Quality Score | 6-domain composite with frontal-plane symmetry, bilateral SPARC, and intra-limb CRP, validated on 9 profiles (58.7–98.3 range) |
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown) |
-| Video pose estimation | Experimental — MediaPipe sagittal plane, 61% coverage, confidence-weighted MQS |
-| CI/CD | GitHub Actions, 122 tests, ruff lint, 70% coverage gate (74% actual) |
+| Video pose estimation | Experimental — MediaPipe sagittal plane, 63% coverage, confidence-weighted MQS |
+| Gait Deviation Index | Simplified GDI (Schwartz & Rozumalski 2008), 100 = normal, validated on 9 profiles (78.1–100.0 range) |
+| CI/CD | GitHub Actions, 131 tests, ruff lint, 70% coverage gate (75% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 

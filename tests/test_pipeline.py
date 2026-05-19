@@ -640,6 +640,43 @@ class TestStridePelvicAsymmetry:
         assert "trunk_lean_asymmetry" in summary
 
 
+class TestGDI:
+    """Verify Gait Deviation Index computation."""
+
+    def test_gdi_present_in_summary(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(ar, al, fps=30)
+        assert "GDI" in summary
+
+    def test_normal_gdi_near_100(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(ar, al, fps=30)
+        assert summary["GDI"] == pytest.approx(100.0, abs=2.0)
+
+    def test_pathological_gdi_lower(self):
+        normal_p = GaitParameters()
+        _, nar, nal, _ = generate_frames(normal_p, fps=30, n_cycles=6)
+        normal_gdi = compute_gait_summary(nar, nal, fps=30)["GDI"]
+        for name in ["stiff_knee", "parkinsonian"]:
+            p = GAIT_PROFILES[name]
+            _, ar, al, _ = generate_frames(p.params, fps=30, n_cycles=6)
+            s = compute_gait_summary(ar, al, fps=30)
+            assert s["GDI"] < normal_gdi, (
+                f"{name} GDI ({s['GDI']:.1f}) should be lower than normal ({normal_gdi:.1f})"
+            )
+
+    def test_gdi_range(self):
+        for name in GAIT_PROFILES:
+            p = GAIT_PROFILES[name]
+            _, ar, al, _ = generate_frames(p.params, fps=30, n_cycles=6)
+            s = compute_gait_summary(ar, al, fps=30)
+            gdi = s.get("GDI", float("nan"))
+            if not np.isnan(gdi):
+                assert 0 <= gdi <= 100, f"{name}: GDI {gdi:.1f} out of range"
+
+
 class TestDoubleSupportTime:
     """Verify double support time estimation from gait events."""
 

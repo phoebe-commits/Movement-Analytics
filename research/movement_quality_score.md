@@ -204,7 +204,8 @@ The MQS spread across profiles (58.7–98.3) provides meaningful differentiation
 | Stride-phase pelvic asymmetry | Symmetry | **Implemented** (v1.3) — video-compatible, diagnostic only |
 | Stride-phase trunk asymmetry | Symmetry | **Implemented** (v1.3) — video-compatible, diagnostic only |
 | Double support time | Temporal | **Implemented** (v1.4) — computed as diagnostic; not scored in MQS (sinusoidal model → 50% stance → 0% DS; needs realistic toe-off detection) |
-| Intra-limb CRP (hip-knee) | Coordination | **Implemented** (v1.2) — reported as diagnostic, not in MQS |
+| Intra-limb CRP (hip-knee) | Coordination | **Implemented** (v1.4) — scored bilaterally in coordination domain |
+| Gait Deviation Index (GDI) | Composite | **Implemented** (v1.5) — simplified GDI per Schwartz & Rozumalski 2008; compares stride-normalized waveforms (hip, knee, ankle) against normal reference, 100 = normal, ~10 points per SD of deviation |
 | DFA scaling exponent | Variability | Requires >50 strides for reliability |
 | Head stabilization index | New: Global | Requires head tracking with sufficient resolution |
 

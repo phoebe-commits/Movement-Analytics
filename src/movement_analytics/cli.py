@@ -370,7 +370,7 @@ def run_benchmark(output_path: str | None = None, fps: int = 30, n_cycles: int =
                                 "mqs_sufficient_evidence")):
                 entry["domains"][k.replace("mqs_", "")] = round(v, 1)
             elif k in ("cadence", "stride_time_mean", "stride_time_CV",
-                       "n_strides", "double_support_pct"):
+                       "n_strides", "double_support_pct", "GDI"):
                 is_nan = isinstance(v, float) and np.isnan(v)
                 entry["key_metrics"][k] = None if is_nan else round(v, 2)
             elif (k.endswith("_ROM") or k.endswith("_SI")

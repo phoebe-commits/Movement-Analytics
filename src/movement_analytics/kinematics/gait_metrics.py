@@ -212,6 +212,96 @@ def stride_pelvic_asymmetry(
     return float(2 * abs(mean_a - mean_b) / denom * 100)
 
 
+_GDI_NORMAL_CACHE: dict = {}
+
+
+def _get_normal_reference() -> dict[str, np.ndarray]:
+    """Lazily generate and cache the normal gait reference waveforms (101 points per cycle).
+
+    Uses gait event detection to segment strides at heel strikes, matching
+    how test subjects are segmented in gait_deviation_index(). Each joint
+    reference is the mean of detected strides, normalized to 101 points.
+    """
+    if _GDI_NORMAL_CACHE:
+        return _GDI_NORMAL_CACHE
+    from ..generators.gait_model import GaitParameters, generate_gait_cycle
+    params = GaitParameters()
+    fps = 30
+    frames_per_cycle = max(fps * 60 // int(params.cadence * params.speed_factor) * 2, 20)
+    n_cycles = 6
+    n_frames = frames_per_cycle
+    right = generate_gait_cycle(params, n_frames=n_frames, n_cycles=n_cycles, side="right")
+    hip = right["hip_flexion"]
+    knee = right["knee_flexion"]
+    ankle = right.get("ankle_dorsiflexion")
+    events = detect_gait_events(hip, knee, fps, ankle_dorsiflexion=ankle)
+    hs = events["heel_strikes"]
+    if len(hs) < 3:
+        return _GDI_NORMAL_CACHE
+    ref_joints: dict[str, np.ndarray] = {}
+    for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]:
+        if joint not in right:
+            continue
+        strides = []
+        for i in range(len(hs) - 1):
+            seg = right[joint][hs[i]:hs[i + 1]]
+            if len(seg) >= 5:
+                strides.append(
+                    np.interp(np.linspace(0, 1, 101),
+                              np.linspace(0, 1, len(seg)), seg)
+                )
+        if strides:
+            ref_joints[joint] = np.mean(strides, axis=0)
+    _GDI_NORMAL_CACHE.update(ref_joints)
+    return _GDI_NORMAL_CACHE
+
+
+def gait_deviation_index(
+    angles: dict[str, np.ndarray],
+    heel_strikes: np.ndarray,
+) -> float:
+    """Simplified Gait Deviation Index (Schwartz & Rozumalski 2008).
+
+    Compares stride-normalized waveforms (hip, knee, ankle) against the
+    normal gait reference. Returns ~100 for normal gait, decreasing with
+    deviation. Each 1-SD deviation from normal reduces GDI by ~10 points.
+
+    Requires ≥2 complete strides. Returns NaN if insufficient data.
+    """
+    if len(heel_strikes) < 3:
+        return float("nan")
+
+    ref = _get_normal_reference()
+    joints = [j for j in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]
+              if j in angles and j in ref]
+    if not joints:
+        return float("nan")
+
+    distances = []
+    for i in range(len(heel_strikes) - 1):
+        start = heel_strikes[i]
+        end = heel_strikes[i + 1]
+        if end - start < 5:
+            continue
+        stride_dists = []
+        for joint in joints:
+            seg = angles[joint][start:end]
+            normalized = np.interp(
+                np.linspace(0, 1, 101), np.linspace(0, 1, len(seg)), seg
+            )
+            rms = np.sqrt(np.mean((normalized - ref[joint]) ** 2))
+            stride_dists.append(rms)
+        distances.append(np.mean(stride_dists))
+
+    if not distances:
+        return float("nan")
+
+    mean_dist = float(np.mean(distances))
+    # Scale: 10 points per ~5° RMS deviation (approximately 1 SD in clinical data)
+    gdi = 100.0 - (mean_dist / 5.0) * 10.0
+    return float(max(0.0, gdi))
+
+
 def detect_gait_events(hip_flexion: np.ndarray, knee_flexion: np.ndarray,
                        fps: float,
                        ankle_dorsiflexion: np.ndarray | None = None) -> dict:
@@ -363,6 +453,10 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
                 trunk, hs,
             )
 
+        gdi = gait_deviation_index(angles_right, hs)
+        if not np.isnan(gdi):
+            metrics["GDI"] = gdi
+
     if "hip_flexion" in angles_right:
         metrics["R_hip_CV"] = coefficient_of_variation(
             np.abs(angles_right["hip_flexion"])
@@ -440,7 +534,6 @@ _SIGNAL_RANGES = {
     "stride_cv": (0.0, 4.0, 0.0, 20.0),
     "cadence": (90.0, 130.0, 40.0, 180.0),
     "stride_time": (0.8, 1.3, 0.3, 2.5),
-    "double_support": (15.0, 25.0, 0.0, 50.0),
     "crp_mad": (0.0, 15.0, 0.0, 60.0),
     "crp_hip_knee": (15.0, 35.0, 0.0, 60.0),
 }
