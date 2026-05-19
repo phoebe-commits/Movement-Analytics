@@ -128,7 +128,17 @@ python -m movement_analytics --video path/to/walking.mp4 --output output/analysi
 --compare         Generate MQS comparison report across all profiles
 --video, -v       Input video file for pose estimation analysis
 --benchmark       Output MQS benchmark JSON across all profiles
+--sensitivity     Generate MQS sensitivity analysis plots (PNG)
 ```
+
+### Sensitivity Analysis
+
+```bash
+# Generate sensitivity plots showing MQS response to parameter variation
+python -m movement_analytics --sensitivity --output output/mqs_sensitivity.png
+```
+
+The sensitivity report sweeps three parameters (knee ROM, noise level, asymmetry) and plots how MQS and each domain score respond. All curves are monotonic — the score degrades continuously as movement quality worsens, with no discontinuities or inversions.
 
 ### Profile Comparison
 

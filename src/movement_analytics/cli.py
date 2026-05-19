@@ -372,6 +372,55 @@ def run_benchmark(output_path: str | None = None, fps: int = 30, n_cycles: int =
         print(text)
 
 
+def generate_sensitivity_report(output_path: str, fps: int = 30, n_cycles: int = 4):
+    """Generate sensitivity analysis plots showing MQS vs parameter variation."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    from .generators.gait_model import GaitParameters
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    fig.suptitle("MQS Sensitivity Analysis", fontsize=14, fontweight="bold")
+
+    sweeps = [
+        ("Knee ROM", "knee_rom", np.linspace(15, 70, 12)),
+        ("Noise Level", "noise_level", np.linspace(0, 6, 13)),
+        ("Asymmetry", "asymmetry", np.linspace(0, 0.5, 11)),
+    ]
+
+    for ax, (label, param, values) in zip(axes, sweeps):
+        mqs_vals = []
+        domain_data = {d: [] for d in ["kinematics", "smoothness", "symmetry",
+                                        "coordination", "variability", "temporal"]}
+        for v in values:
+            params = GaitParameters(**{param: v})
+            _, ar, al, _ = generate_frames(params, fps=fps, n_cycles=n_cycles)
+            summary = compute_gait_summary(ar, al, fps=fps)
+            mqs_vals.append(summary["movement_quality_score"])
+            for d in domain_data:
+                domain_data[d].append(summary.get(f"mqs_{d}", 50))
+
+        ax.plot(values, mqs_vals, "k-", linewidth=2.5, label="MQS")
+        colors = {"kinematics": "#52C8DC", "smoothness": "#C8A050",
+                  "symmetry": "#B464FF", "coordination": "#8CC864",
+                  "variability": "#64FFB4", "temporal": "#DC78A0"}
+        for d, color in colors.items():
+            ax.plot(values, domain_data[d], "--", color=color, alpha=0.7, label=d)
+        ax.set_xlabel(label, fontsize=11)
+        ax.set_ylabel("Score (0–100)", fontsize=11)
+        ax.set_ylim(-5, 105)
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=7, loc="lower left")
+
+    plt.tight_layout()
+    import os
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"Sensitivity report saved to {output_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Movement Analytics — synthetic gait analysis dashboard"
@@ -413,7 +462,16 @@ def main():
         "--benchmark", action="store_true",
         help="Run MQS benchmark across all profiles (outputs JSON)"
     )
+    parser.add_argument(
+        "--sensitivity", action="store_true",
+        help="Generate MQS sensitivity analysis plots (PNG)"
+    )
     args = parser.parse_args()
+
+    if args.sensitivity:
+        out = args.output or "output/mqs_sensitivity.png"
+        generate_sensitivity_report(out, fps=args.fps, n_cycles=args.cycles)
+        return
 
     if args.benchmark:
         run_benchmark(args.output, fps=args.fps, n_cycles=args.cycles)
