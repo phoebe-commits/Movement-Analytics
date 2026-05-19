@@ -554,3 +554,52 @@ class TestEstimatorKeyMapping:
         }
         angles = compute_all_angles(positions)
         assert "trunk_lean" in angles
+
+
+class TestBenchmarkRegression:
+    """Lock MQS scores to detect unintended regressions."""
+
+    EXPECTED_MQS = {
+        "normal": 98.3,
+        "model_runway": 96.2,
+        "limp": 91.1,
+        "fast": 89.5,
+        "stiff_knee": 88.2,
+        "trendelenburg": 87.4,
+        "slow": 86.9,
+        "parkinsonian": 52.3,
+        "noisy": 52.1,
+    }
+
+    MQS_TOLERANCE = 2.0
+
+    def test_mqs_scores_match_baseline(self):
+        for name, expected in self.EXPECTED_MQS.items():
+            profile = GAIT_PROFILES[name]
+            _, ar, al, _ = generate_frames(profile.params, fps=30, n_cycles=6)
+            summary = compute_gait_summary(ar, al, fps=30)
+            actual = summary["movement_quality_score"]
+            assert abs(actual - expected) <= self.MQS_TOLERANCE, (
+                f"{name}: MQS {actual:.1f} deviates from baseline "
+                f"{expected:.1f} by {abs(actual - expected):.1f} "
+                f"(tolerance {self.MQS_TOLERANCE})"
+            )
+
+    def test_ranking_preserved(self):
+        scores = {}
+        for name in self.EXPECTED_MQS:
+            profile = GAIT_PROFILES[name]
+            _, ar, al, _ = generate_frames(profile.params, fps=30, n_cycles=6)
+            summary = compute_gait_summary(ar, al, fps=30)
+            scores[name] = summary["movement_quality_score"]
+        sorted_expected = sorted(
+            self.EXPECTED_MQS.keys(),
+            key=lambda k: self.EXPECTED_MQS[k],
+            reverse=True,
+        )
+        sorted_actual = sorted(
+            scores.keys(), key=lambda k: scores[k], reverse=True
+        )
+        assert sorted_actual == sorted_expected, (
+            f"Ranking changed: expected {sorted_expected}, got {sorted_actual}"
+        )
