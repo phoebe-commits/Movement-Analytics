@@ -10,6 +10,7 @@ import os
 import cv2
 import mediapipe as mp
 import numpy as np
+from scipy.signal import butter, filtfilt
 
 _BaseOptions = mp.tasks.BaseOptions
 _PoseLandmarker = mp.tasks.vision.PoseLandmarker
@@ -41,6 +42,40 @@ LANDMARK_MAP = {
     "left_foot_index": LM.LEFT_FOOT_INDEX,
     "right_foot_index": LM.RIGHT_FOOT_INDEX,
 }
+
+_PHYSIO_RANGES = {
+    "hip_flexion": (-50.0, 120.0),
+    "knee_flexion": (-20.0, 160.0),
+    "ankle_dorsiflexion": (-90.0, 60.0),
+    "elbow_flexion": (-20.0, 170.0),
+    "pelvic_obliquity": (-40.0, 40.0),
+}
+
+
+def _reject_outliers(arr: np.ndarray, key: str) -> np.ndarray:
+    """Replace values outside physiological range with NaN."""
+    base = key.replace("right_", "").replace("left_", "")
+    for canon, (lo, hi) in _PHYSIO_RANGES.items():
+        if canon in base:
+            out = arr.copy()
+            mask = (out < lo) | (out > hi)
+            out[mask] = np.nan
+            return out
+    return arr
+
+
+def _lowpass_smooth(arr: np.ndarray, fps: float, cutoff: float = 6.0) -> np.ndarray:
+    """Apply Butterworth low-pass filter for temporal smoothing."""
+    valid = ~np.isnan(arr)
+    if np.sum(valid) < 13:
+        return arr
+    nyq = fps / 2
+    if nyq <= cutoff:
+        return arr
+    b, a = butter(2, cutoff / nyq, btype="low")
+    smoothed = arr.copy()
+    smoothed[valid] = filtfilt(b, a, arr[valid])
+    return smoothed
 
 
 def _download_model(model_path: str):
@@ -307,10 +342,22 @@ def process_video(
         angles_right["pelvis_obliquity_signed"] = obliq_signed
         angles_left["pelvis_obliquity_signed"] = obliq_signed
 
+    _shared_keys = {
+        "pelvis_obliquity", "pelvis_obliquity_signed",
+        "trunk_lateral_lean", "cycle_phase",
+    }
+    processed_shared: dict[str, np.ndarray] = {}
+
     interpolation_fractions = {}
     for side, d in [("R", angles_right), ("L", angles_left)]:
-        for key in d:
-            arr = d[key]
+        for key in list(d.keys()):
+            if key in _shared_keys and key in processed_shared:
+                d[key] = processed_shared[key]
+                interpolation_fractions[f"{side}_{key}"] = interpolation_fractions.get(
+                    f"R_{key}", 0.0
+                )
+                continue
+            arr = _reject_outliers(d[key], key)
             nan_mask = np.isnan(arr)
             frac_key = f"{side}_{key}"
             if np.any(nan_mask):
@@ -321,9 +368,12 @@ def process_video(
                     arr[~valid] = np.interp(
                         indices[~valid], indices[valid], arr[valid]
                     )
-                    d[key] = arr
             else:
                 interpolation_fractions[frac_key] = 0.0
+            smoothed = _lowpass_smooth(arr, actual_fps)
+            d[key] = smoothed
+            if key in _shared_keys:
+                processed_shared[key] = smoothed
 
     if "hip_flexion" in angles_right:
         from ..kinematics.gait_metrics import detect_gait_events
@@ -348,8 +398,12 @@ def process_video(
         angles_left["cycle_phase"] = phase
 
     detected_frames = sum(1 for a in all_angles if a)
+    detected_confidences = [c for c, a in zip(confidences, all_angles) if a]
     metadata = {
         "mean_confidence": float(np.mean(confidences)) if confidences else 0.0,
+        "mean_detected_confidence": (
+            float(np.mean(detected_confidences)) if detected_confidences else 0.0
+        ),
         "observed_fraction": detected_frames / len(all_angles) if all_angles else 0.0,
         "interpolation_fractions": interpolation_fractions,
         "confidences": confidences,

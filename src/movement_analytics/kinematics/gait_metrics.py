@@ -640,8 +640,10 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
     if pose_metadata is not None:
         obs = pose_metadata.get("observed_fraction", 1.0)
         conf = pose_metadata.get("mean_confidence", 1.0)
+        det_conf = pose_metadata.get("mean_detected_confidence", conf)
         metrics["pose_observed_fraction"] = obs
         metrics["pose_mean_confidence"] = conf
+        metrics["pose_mean_detected_confidence"] = det_conf
         interp = pose_metadata.get("interpolation_fractions", {})
         if interp:
             metrics["pose_interpolation_fraction"] = float(
@@ -892,7 +894,8 @@ def mqs_confidence_factor(metrics: dict) -> float:
     that was linearly interpolated (missing frames filled in).
     """
     obs = metrics.get("pose_observed_fraction")
-    conf = metrics.get("pose_mean_confidence")
+    conf = metrics.get("pose_mean_detected_confidence",
+                       metrics.get("pose_mean_confidence"))
     if obs is None and conf is None:
         return 1.0
     obs = np.clip(obs if obs is not None else 1.0, 0, 1)

@@ -310,9 +310,9 @@ The research document identifies **20 signals** across 6 domains that form the b
 | Gait metrics engine | Implemented, 98% coverage (synthetic path) |
 | Movement Quality Score | 6-domain composite (MQS v1.7) with evidence gating, frontal-plane dedup, bilateral SPARC, intra-limb CRP, validated on 9 profiles (61.1–98.3 range) |
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown, NaN-safe) |
-| Video pose estimation | MediaPipe VIDEO mode with temporal smoothing, heel contact detection, confidence-weighted MQS, frontal dedup, memory-efficient headless mode, 96% unit test coverage |
+| Video pose estimation | MediaPipe VIDEO mode with Butterworth temporal smoothing, physiological outlier rejection, heel contact detection, confidence-weighted MQS (detected-only confidence), frontal dedup, memory-efficient headless mode, 96% unit test coverage |
 | Gait Deviation Index | Simplified GDI (Schwartz & Rozumalski 2008), 100 = normal, validated on 9 profiles (78.1–100.0 range) |
-| CI/CD | GitHub Actions, 206 tests, ruff lint, 70% coverage gate (97% actual) |
+| CI/CD | GitHub Actions, 214 tests, ruff lint, 70% coverage gate (98% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 

@@ -1244,6 +1244,106 @@ class TestNaNInterpolation:
         assert np.all(np.isnan(arr))
 
 
+class TestVideoSignalProcessing:
+    """Validate outlier rejection, temporal smoothing, and confidence tracking."""
+
+    def test_reject_outliers_clamps_impossible_hip(self):
+        from movement_analytics.pose.estimator import _reject_outliers
+        arr = np.array([10.0, 200.0, 30.0, -100.0, 25.0])
+        result = _reject_outliers(arr, "right_hip_flexion")
+        assert np.isnan(result[1])
+        assert np.isnan(result[3])
+        assert result[0] == 10.0
+        assert result[4] == 25.0
+
+    def test_reject_outliers_passes_normal_knee(self):
+        from movement_analytics.pose.estimator import _reject_outliers
+        arr = np.array([0.0, 30.0, 60.0, 90.0, 120.0])
+        result = _reject_outliers(arr, "left_knee_flexion")
+        assert not np.any(np.isnan(result))
+
+    def test_reject_outliers_unknown_key_passthrough(self):
+        from movement_analytics.pose.estimator import _reject_outliers
+        arr = np.array([1000.0, -5000.0])
+        result = _reject_outliers(arr, "some_custom_signal")
+        np.testing.assert_array_equal(result, arr)
+
+    def test_lowpass_smooth_reduces_noise(self):
+        from movement_analytics.pose.estimator import _lowpass_smooth
+        t = np.linspace(0, 2 * np.pi, 200)
+        clean = np.sin(t) * 30
+        noisy = clean + np.random.default_rng(42).normal(0, 5, len(t))
+        smoothed = _lowpass_smooth(noisy, fps=30.0)
+        noise_before = float(np.std(noisy - clean))
+        noise_after = float(np.std(smoothed - clean))
+        assert noise_after < noise_before
+
+    def test_lowpass_smooth_short_signal_unchanged(self):
+        from movement_analytics.pose.estimator import _lowpass_smooth
+        arr = np.array([1.0, 2.0, 3.0])
+        result = _lowpass_smooth(arr, fps=30.0)
+        np.testing.assert_array_equal(result, arr)
+
+    def test_lowpass_smooth_preserves_nans(self):
+        from movement_analytics.pose.estimator import _lowpass_smooth
+        arr = np.array([1.0, np.nan, 3.0, np.nan, 5.0])
+        result = _lowpass_smooth(arr, fps=30.0)
+        assert np.isnan(result[1])
+        assert np.isnan(result[3])
+
+    def test_mean_detected_confidence_excludes_missing(self):
+        from movement_analytics.pose.estimator import process_video
+
+        n_frames = 30
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "test.mp4")
+            h, w = 480, 640
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            writer = cv2.VideoWriter(vid_path, fourcc, 30, (w, h))
+            for _ in range(n_frames):
+                writer.write(np.zeros((h, w, 3), dtype=np.uint8))
+            writer.release()
+
+            call_count = [0]
+            detected_confs = []
+
+            def mock_process_frame(frame, min_visibility=0.5):
+                idx = call_count[0]
+                call_count[0] += 1
+                if idx % 3 == 0:
+                    return None, 0.0
+                pos = {
+                    "pelvis": np.array([320.0, 200.0]),
+                    "shoulder": np.array([320.0, 120.0]),
+                    "neck": np.array([320.0, 110.0]),
+                    "left_hip": np.array([300.0, 200.0]),
+                    "right_hip": np.array([340.0, 200.0]),
+                    "left_knee": np.array([300.0, 320.0]),
+                    "right_knee": np.array([340.0, 320.0]),
+                    "left_ankle": np.array([300.0, 430.0]),
+                    "right_ankle": np.array([340.0, 430.0]),
+                    "left_shoulder": np.array([280.0, 120.0]),
+                    "right_shoulder": np.array([360.0, 120.0]),
+                }
+                detected_confs.append(0.85)
+                return pos, 0.85
+
+            with patch(
+                "movement_analytics.pose.estimator.PoseEstimator"
+            ) as MockEst:
+                instance = MagicMock()
+                instance.process_frame = mock_process_frame
+                instance.__enter__ = lambda s: s
+                instance.__exit__ = lambda s, *a: None
+                MockEst.return_value = instance
+
+                _, _, _, _, meta = process_video(vid_path, store_frames=False)
+
+            assert "mean_detected_confidence" in meta
+            assert meta["mean_detected_confidence"] > meta["mean_confidence"]
+            assert meta["mean_detected_confidence"] == pytest.approx(0.85, abs=0.01)
+
+
 class TestKinematicVariability:
     """Validate stride-to-stride kinematic variability metrics."""
 
