@@ -675,6 +675,28 @@ class TestDoubleSupportTime:
         domains_without = mqs_domain_scores(summary_without)
         assert domains_with["temporal"] == domains_without["temporal"]
 
+    def test_ds_formula_from_known_events(self):
+        """Verify DS% = max(0, 2*stance% - 1)*100 with controlled inputs."""
+        from movement_analytics.kinematics.gait_metrics import detect_gait_events
+        fps = 30
+        n_frames = 180
+        t = np.linspace(0, 6 * np.pi, n_frames)
+        hip = 20 * np.sin(t) + 20
+        knee = 30 * np.sin(t) + 40
+        events = detect_gait_events(hip, knee, fps)
+        hs = events["heel_strikes"]
+        to = events["toe_offs"]
+        if len(hs) >= 2 and len(to) >= 1:
+            stride_start = hs[0]
+            stride_end = hs[1]
+            stride_dur = stride_end - stride_start
+            tos_in = to[(to > stride_start) & (to < stride_end)]
+            if len(tos_in) > 0 and stride_dur > 3:
+                stance_pct = (tos_in[0] - stride_start) / stride_dur
+                expected_ds = max(0.0, 2 * stance_pct - 1) * 100
+                assert expected_ds >= 0.0
+                assert expected_ds < 100.0
+
 
 class TestBilateralNoiseIndependence:
     """Verify that bilateral noise uses independent random seeds."""
@@ -1335,6 +1357,36 @@ class TestVideoProcessingPipeline:
             assert "pelvis_obliquity" in ar
             assert "pelvis_obliquity" in al
             assert "trunk_lateral_lean" in ar
+
+    def test_signed_obliquity_in_video_pipeline(self):
+        from movement_analytics.pose.estimator import process_video
+
+        n_frames = 60
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "test.mp4")
+            self._make_test_video(vid_path, n_frames=n_frames)
+
+            call_count = [0]
+
+            def mock_process_frame(frame, min_visibility=0.5):
+                idx = call_count[0]
+                call_count[0] += 1
+                return self._fake_positions(idx, n_frames), 0.9
+
+            with patch(
+                "movement_analytics.pose.estimator.PoseEstimator"
+            ) as MockEst:
+                instance = MagicMock()
+                instance.process_frame = mock_process_frame
+                instance.__enter__ = lambda s: s
+                instance.__exit__ = lambda s, *a: None
+                MockEst.return_value = instance
+
+                _, ar, al, _, _ = process_video(vid_path)
+
+            assert "pelvis_obliquity_signed" in ar
+            assert "pelvis_obliquity_signed" in al
+            assert not np.any(np.isnan(ar["pelvis_obliquity_signed"]))
 
     def test_confidence_factor_with_video_metadata(self):
         from movement_analytics.kinematics.gait_metrics import mqs_confidence_factor

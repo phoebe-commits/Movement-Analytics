@@ -279,6 +279,11 @@ def process_video(
         obliq = np.array([a.get("pelvic_obliquity", np.nan) for a in all_angles])
         angles_right["pelvis_obliquity"] = obliq
         angles_left["pelvis_obliquity"] = obliq
+        obliq_signed = np.array(
+            [a.get("pelvic_obliquity_signed", np.nan) for a in all_angles]
+        )
+        angles_right["pelvis_obliquity_signed"] = obliq_signed
+        angles_left["pelvis_obliquity_signed"] = obliq_signed
 
     interpolation_fractions = {}
     for d in (angles_right, angles_left):
