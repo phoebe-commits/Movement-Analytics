@@ -1165,6 +1165,36 @@ class TestNaNInterpolation:
         assert np.all(np.isnan(arr))
 
 
+class TestKinematicVariability:
+    """Validate stride-to-stride kinematic variability metrics."""
+
+    def test_normal_zero_kinematic_cv(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        s = compute_gait_summary(ar, al, fps=30)
+        assert "kinematic_CV_mean" in s
+        assert s["kinematic_CV_mean"] < 0.1
+
+    def test_noisy_high_kinematic_cv(self):
+        p = GAIT_PROFILES["noisy"].params
+        _, ar, al, _ = generate_frames(p, fps=30, n_cycles=6)
+        s = compute_gait_summary(ar, al, fps=30)
+        assert s["kinematic_CV_mean"] > 5.0
+
+    def test_kinematic_cv_in_variability_domain(self):
+        """Variability domain should now use 2 signals."""
+        p = GAIT_PROFILES["noisy"].params
+        _, ar, al, _ = generate_frames(p, fps=30, n_cycles=6)
+        s = compute_gait_summary(ar, al, fps=30)
+        assert s["mqs_variability_completeness"] == pytest.approx(1.0)
+
+    def test_parkinsonian_moderate_kinematic_cv(self):
+        p = GAIT_PROFILES["parkinsonian"].params
+        _, ar, al, _ = generate_frames(p, fps=30, n_cycles=6)
+        s = compute_gait_summary(ar, al, fps=30)
+        assert 1.0 < s["kinematic_CV_mean"] < 15.0
+
+
 class TestSensitivityAnalysis:
     """Verify MQS responds monotonically to continuous parameter degradation."""
 
@@ -1297,8 +1327,8 @@ class TestBenchmarkRegression:
         "trendelenburg": 87.3,
         "slow": 83.8,
         "stiff_knee": 79.9,
-        "noisy": 58.7,
-        "parkinsonian": 59.9,
+        "noisy": 61.7,
+        "parkinsonian": 61.1,
     }
 
     MQS_TOLERANCE = 2.0

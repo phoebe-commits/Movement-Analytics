@@ -514,6 +514,11 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
                         )
                         metrics[f"{side_l}_{short}_ROM_CV"] = cv
 
+        rom_cvs = [v for k, v in metrics.items()
+                   if k.endswith("_ROM_CV") and not np.isnan(v)]
+        if rom_cvs:
+            metrics["kinematic_CV_mean"] = float(np.mean(rom_cvs))
+
         pelvis = angles_right.get("pelvis_obliquity")
         if pelvis is not None and len(hs) >= 3:
             metrics["pelvic_drop_asymmetry"] = stride_pelvic_asymmetry(
@@ -679,6 +684,7 @@ _SIGNAL_RANGES = {
     "sparc_knee": (-16.0, -12.0, -25.0, -8.0),
     "symmetry": (0.0, 10.0, 0.0, 50.0),
     "stride_cv": (0.0, 4.0, 0.0, 20.0),
+    "kinematic_cv": (0.0, 5.0, 0.0, 30.0),
     "cadence": (90.0, 130.0, 40.0, 180.0),
     "stride_time": (0.8, 1.3, 0.3, 2.5),
     "crp_mad": (0.0, 15.0, 0.0, 60.0),
@@ -764,12 +770,16 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
             coord_scores.append(_signal_score(hk_crp, lo, hi, wlo, whi))
     domains["coordination"] = float(np.mean(coord_scores)) if coord_scores else 50.0
 
+    var_scores = []
     cv_val = metrics.get("stride_time_CV", float("nan"))
-    lo, hi, wlo, whi = _SIGNAL_RANGES["stride_cv"]
-    if np.isnan(cv_val):
-        domains["variability"] = 50.0
-    else:
-        domains["variability"] = _signal_score(cv_val, lo, hi, wlo, whi)
+    if not np.isnan(cv_val):
+        lo, hi, wlo, whi = _SIGNAL_RANGES["stride_cv"]
+        var_scores.append(_signal_score(cv_val, lo, hi, wlo, whi))
+    kin_cv = metrics.get("kinematic_CV_mean", float("nan"))
+    if not np.isnan(kin_cv):
+        lo, hi, wlo, whi = _SIGNAL_RANGES["kinematic_cv"]
+        var_scores.append(_signal_score(kin_cv, lo, hi, wlo, whi))
+    domains["variability"] = float(np.mean(var_scores)) if var_scores else 50.0
 
     t_scores = []
     cad = metrics.get("cadence", float("nan"))
@@ -838,8 +848,12 @@ def mqs_signal_completeness(metrics: dict) -> dict[str, float]:
             coord_present += 1
     completeness["coordination"] = coord_present / coord_expected
 
-    cv_val = metrics.get("stride_time_CV", float("nan"))
-    completeness["variability"] = 0.0 if np.isnan(cv_val) else 1.0
+    var_present = 0
+    if _is_valid_metric(metrics.get("stride_time_CV")):
+        var_present += 1
+    if _is_valid_metric(metrics.get("kinematic_CV_mean")):
+        var_present += 1
+    completeness["variability"] = var_present / 2.0
 
     t_count = 0
     cad = metrics.get("cadence", float("nan"))
