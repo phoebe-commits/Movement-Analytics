@@ -87,6 +87,7 @@ For each gait profile, the pipeline computes **50+ metrics** in real time:
 - **Waveform Symmetry** — shape-based bilateral comparison (NCC)
 - **Symmetry Ratio** — bilateral comparison
 - **Signal Completeness** — per-domain fraction of present signals
+- **Confidence Factor** — pose quality degradation for video-derived MQS
 - **CRP Coordination** — inter-limb phase coupling consistency (Hilbert transform)
 - **Cadence** — steps per minute
 - **Stride time** — mean and coefficient of variation
@@ -250,8 +251,8 @@ The research document identifies **15 signals** across 6 domains that form the b
 | Gait metrics engine | Implemented, 98% coverage (synthetic path) |
 | Movement Quality Score | 6-domain composite, validated on 9 profiles (50.9–98.3 range) |
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown) |
-| Video pose estimation | Experimental — MediaPipe sagittal plane, 61% coverage via mock tests |
-| CI/CD | GitHub Actions, 87 tests, ruff lint, 65% coverage gate |
+| Video pose estimation | Experimental — MediaPipe sagittal plane, 61% coverage, confidence-weighted MQS |
+| CI/CD | GitHub Actions, 94 tests, ruff lint, 70% coverage gate |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 
