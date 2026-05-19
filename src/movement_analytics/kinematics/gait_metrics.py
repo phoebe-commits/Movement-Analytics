@@ -8,7 +8,7 @@ symmetry, variability, and temporal parameters. References:
 """
 
 import numpy as np
-from scipy.signal import butter, filtfilt, find_peaks
+from scipy.signal import butter, filtfilt, find_peaks, hilbert
 
 
 def angular_velocity(angles: np.ndarray, fps: float) -> np.ndarray:
@@ -112,6 +112,45 @@ def coefficient_of_variation(values: np.ndarray) -> float:
     return float(np.std(values) / abs(m) * 100)
 
 
+def continuous_relative_phase(signal_a: np.ndarray, signal_b: np.ndarray,
+                              fps: float) -> np.ndarray:
+    """Compute Continuous Relative Phase between two oscillating signals.
+
+    Uses Hilbert transform to extract instantaneous phase of each signal,
+    then computes the phase difference. Anti-phase coupling (~180°) is
+    expected for bilateral hip flexion in healthy gait.
+
+    Hamill J, van Emmerik REA, Heiderscheit BC, Li L. J Appl Biomech. 1999.
+    """
+    a_centered = signal_a - np.mean(signal_a)
+    b_centered = signal_b - np.mean(signal_b)
+
+    phase_a = np.angle(hilbert(a_centered))
+    phase_b = np.angle(hilbert(b_centered))
+
+    crp = np.degrees(phase_a - phase_b)
+    crp = (crp + 180) % 360 - 180
+    return crp
+
+
+def crp_consistency(signal_a: np.ndarray, signal_b: np.ndarray,
+                    fps: float) -> float:
+    """CRP consistency: how stable is the inter-limb phase relationship.
+
+    Returns the circular standard deviation of the CRP signal.
+    Lower = more consistent coordination. Healthy gait: CSD < 15°.
+    Pathological gait: CSD > 30°.
+
+    Uses circular statistics (mean resultant length) to handle wraparound.
+    """
+    crp = continuous_relative_phase(signal_a, signal_b, fps)
+    crp_rad = np.radians(crp)
+    R = np.sqrt(np.mean(np.cos(crp_rad))**2 + np.mean(np.sin(crp_rad))**2)
+    R = min(R, 1.0)
+    circular_sd = np.degrees(np.sqrt(-2 * np.log(R))) if R > 1e-10 else 180.0
+    return float(circular_sd)
+
+
 def rom(angles: np.ndarray) -> float:
     """Range of motion: max - min of angle time series."""
     return float(np.ptp(angles))
@@ -196,6 +235,16 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
             np.abs(angles_left["hip_flexion"])
         )
 
+    if "hip_flexion" in angles_right and "hip_flexion" in angles_left:
+        crp_mad = crp_consistency(
+            angles_right["hip_flexion"], angles_left["hip_flexion"], fps
+        )
+        metrics["hip_CRP_MAD"] = crp_mad
+    if "knee_flexion" in angles_right and "knee_flexion" in angles_left:
+        metrics["knee_CRP_MAD"] = crp_consistency(
+            angles_right["knee_flexion"], angles_left["knee_flexion"], fps
+        )
+
     metrics["movement_quality_score"] = movement_quality_score(metrics)
     mqs_breakdown = mqs_domain_scores(metrics)
     for domain, score in mqs_breakdown.items():
@@ -231,15 +280,17 @@ _SIGNAL_RANGES = {
     "stride_cv": (0.0, 4.0, 0.0, 20.0),
     "cadence": (90.0, 130.0, 40.0, 180.0),
     "stride_time": (0.8, 1.3, 0.3, 2.5),
+    "crp_mad": (0.0, 15.0, 0.0, 60.0),
 }
 
 # Domain weights from research framework (Section 10)
 _DOMAIN_WEIGHTS = {
-    "kinematics": 0.30,
-    "smoothness": 0.20,
-    "symmetry": 0.20,
-    "variability": 0.15,
-    "temporal": 0.15,
+    "kinematics": 0.25,
+    "smoothness": 0.18,
+    "symmetry": 0.18,
+    "coordination": 0.14,
+    "variability": 0.13,
+    "temporal": 0.12,
 }
 
 
@@ -269,6 +320,14 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
         lo, hi, wlo, whi = _SIGNAL_RANGES["symmetry"]
         sy_scores.append(_signal_score(val, lo, hi, wlo, whi))
     domains["symmetry"] = float(np.mean(sy_scores)) if sy_scores else 50.0
+
+    coord_scores = []
+    for crp_key in ["hip_CRP_MAD", "knee_CRP_MAD"]:
+        val = metrics.get(crp_key)
+        if val is not None:
+            lo, hi, wlo, whi = _SIGNAL_RANGES["crp_mad"]
+            coord_scores.append(_signal_score(val, lo, hi, wlo, whi))
+    domains["coordination"] = float(np.mean(coord_scores)) if coord_scores else 50.0
 
     cv_val = metrics.get("stride_time_CV", 0)
     lo, hi, wlo, whi = _SIGNAL_RANGES["stride_cv"]

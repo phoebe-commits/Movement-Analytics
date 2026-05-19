@@ -239,12 +239,13 @@ def generate_comparison_report(output_path: str, fps: int = 30, n_cycles: int = 
         "kinematics": (80, 200, 220),
         "smoothness": (200, 160, 80),
         "symmetry": (180, 100, 255),
+        "coordination": (140, 200, 100),
         "variability": (100, 255, 180),
         "temporal": (220, 120, 160),
     }
 
-    headers = ["Profile", "MQS", "Kin", "Smo", "Sym", "Var", "Tmp"]
-    header_x = [30, 220, 340, 480, 620, 760, 900]
+    headers = ["Profile", "MQS", "Kin", "Smo", "Sym", "Crd", "Var", "Tmp"]
+    header_x = [30, 200, 310, 420, 530, 640, 750, 860]
     for hx, ht in zip(header_x, headers):
         cv2.putText(img, ht, (hx, 85), cv2.FONT_HERSHEY_SIMPLEX, 0.50,
                     (150, 160, 170), 1, cv2.LINE_AA)
@@ -258,6 +259,7 @@ def generate_comparison_report(output_path: str, fps: int = 30, n_cycles: int = 
             "kinematics": summary.get("mqs_kinematics", 0),
             "smoothness": summary.get("mqs_smoothness", 0),
             "symmetry": summary.get("mqs_symmetry", 0),
+            "coordination": summary.get("mqs_coordination", 0),
             "variability": summary.get("mqs_variability", 0),
             "temporal": summary.get("mqs_temporal", 0),
         }
@@ -272,15 +274,15 @@ def generate_comparison_report(output_path: str, fps: int = 30, n_cycles: int = 
         cv2.putText(img, name, (30, y + 18), cv2.FONT_HERSHEY_SIMPLEX,
                     0.50, (200, 210, 220), 1, cv2.LINE_AA)
 
-        cv2.putText(img, f"{mqs:.0f}", (220, y + 18), cv2.FONT_HERSHEY_SIMPLEX,
+        cv2.putText(img, f"{mqs:.0f}", (200, y + 18), cv2.FONT_HERSHEY_SIMPLEX,
                     0.55, score_color, 2, cv2.LINE_AA)
 
         mqs_bar_w = int(mqs / 100 * bar_max_w)
-        cv2.rectangle(img, (260, y + 5), (260 + bar_max_w, y + 20), (45, 45, 50), -1)
-        cv2.rectangle(img, (260, y + 5), (260 + mqs_bar_w, y + 20), score_color, -1)
+        cv2.rectangle(img, (240, y + 5), (240 + bar_max_w, y + 20), (45, 45, 50), -1)
+        cv2.rectangle(img, (240, y + 5), (240 + mqs_bar_w, y + 20), score_color, -1)
 
-        domain_keys = ["kinematics", "smoothness", "symmetry", "variability", "temporal"]
-        domain_x_offsets = [340, 480, 620, 760, 900]
+        domain_keys = ["kinematics", "smoothness", "symmetry", "coordination", "variability", "temporal"]
+        domain_x_offsets = [310, 420, 530, 640, 750, 860]
 
         for dk, dx in zip(domain_keys, domain_x_offsets):
             val = domains[dk]
@@ -298,15 +300,15 @@ def generate_comparison_report(output_path: str, fps: int = 30, n_cycles: int = 
     y += 15
     cv2.putText(img, "Domains:", (30, y + 14), cv2.FONT_HERSHEY_SIMPLEX,
                 0.40, (120, 130, 140), 1, cv2.LINE_AA)
-    legend_items = [("Kin=Kinematics 30%", "kinematics"), ("Smo=Smoothness 20%", "smoothness"),
-                    ("Sym=Symmetry 20%", "symmetry"), ("Var=Variability 15%", "variability"),
-                    ("Tmp=Temporal 15%", "temporal")]
+    legend_items = [("Kin=Kinematics 25%", "kinematics"), ("Smo=Smoothness 18%", "smoothness"),
+                    ("Sym=Symmetry 18%", "symmetry"), ("Crd=Coordination 14%", "coordination"),
+                    ("Var=Variability 13%", "variability"), ("Tmp=Temporal 12%", "temporal")]
     lx = 110
     for label, dk in legend_items:
         cv2.circle(img, (lx, y + 10), 4, domain_colors[dk], -1)
         cv2.putText(img, label, (lx + 10, y + 14), cv2.FONT_HERSHEY_SIMPLEX,
-                    0.32, (120, 130, 140), 1, cv2.LINE_AA)
-        lx += 180
+                    0.30, (120, 130, 140), 1, cv2.LINE_AA)
+        lx += 165
 
     # Key findings
     y += 35

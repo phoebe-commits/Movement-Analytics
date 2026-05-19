@@ -32,6 +32,7 @@ COLORS = {
     "domain_sym": (180, 100, 255),
     "domain_var": (100, 255, 180),
     "domain_temp": (220, 120, 160),
+    "domain_coord": (140, 200, 100),
 }
 
 JOINT_COLORS = {
@@ -46,6 +47,7 @@ DOMAIN_COLORS = {
     "symmetry": COLORS["domain_sym"],
     "variability": COLORS["domain_var"],
     "temporal": COLORS["domain_temp"],
+    "coordination": COLORS["domain_coord"],
 }
 
 
@@ -111,6 +113,7 @@ class RealTimeDashboard:
             ("Kinematics", "mqs_kinematics", "domain_kin"),
             ("Smoothness", "mqs_smoothness", "domain_smooth"),
             ("Symmetry", "mqs_symmetry", "domain_sym"),
+            ("Coordination", "mqs_coordination", "domain_coord"),
             ("Variability", "mqs_variability", "domain_var"),
             ("Temporal", "mqs_temporal", "domain_temp"),
         ]

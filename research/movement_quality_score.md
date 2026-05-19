@@ -1,6 +1,6 @@
 # Movement Quality Score (MQS): Technical Specification
 
-**Version:** 1.0
+**Version:** 1.1
 **Date:** 2026-05-19
 
 ---
@@ -32,13 +32,14 @@ The MQS decomposes movement quality into five orthogonal domains, weighted by di
 
 | Domain | Weight | Rationale |
 |---|---|---|
-| **Kinematics** | 30% | Joint ROM is the primary descriptor of gait pathology (Perry & Burnfield, 2010) |
-| **Smoothness** | 20% | SPARC reliably tracks motor recovery and skill (Balasubramanian et al., 2012) |
-| **Symmetry** | 20% | Bilateral asymmetry is the defining feature of unilateral pathology (Robinson, 1987) |
-| **Variability** | 15% | Stride time CV predicts fall risk better than mean speed (Hausdorff et al., 2001) |
-| **Temporal** | 15% | Cadence and stride time deviations indicate compensatory strategies |
+| **Kinematics** | 25% | Joint ROM is the primary descriptor of gait pathology (Perry & Burnfield, 2010) |
+| **Smoothness** | 18% | SPARC reliably tracks motor recovery and skill (Balasubramanian et al., 2012) |
+| **Symmetry** | 18% | Bilateral asymmetry is the defining feature of unilateral pathology (Robinson, 1987) |
+| **Coordination** | 14% | CRP consistency measures inter-limb coupling quality (Hamill et al., 1999) |
+| **Variability** | 13% | Stride time CV predicts fall risk better than mean speed (Hausdorff et al., 2001) |
+| **Temporal** | 12% | Cadence and stride time deviations indicate compensatory strategies |
 
-Weights sum to 1.0. The 30-20-20-15-15 distribution reflects the relative volume of evidence supporting each domain's discriminative power.
+Weights sum to 1.0. The 25-18-18-14-13-12 distribution reflects the relative volume of evidence supporting each domain's discriminative power. The coordination domain was added in v1.1 to capture inter-limb phase coupling, which is orthogonal to bilateral symmetry (symmetry measures amplitude agreement; coordination measures timing agreement).
 
 ### 2.2 Signal Selection
 
@@ -80,7 +81,16 @@ SI = 2 × |mean(L) − mean(R)| / (mean(L) + mean(R)) × 100. Three signals, ave
 
 Single signal. Healthy adults: 1–3% CV; fallers show >6%.
 
-**Temporal Domain (15%):**
+**Coordination Domain (14%):**
+
+| Signal | Optimal Range | Worst-Case Bounds | Source |
+|---|---|---|---|
+| Hip CRP CSD | 0–15° | 0–60° | Hamill et al., 1999; Plotnik et al., 2005 |
+| Knee CRP CSD | 0–15° | 0–60° | Hamill et al., 1999 |
+
+Continuous Relative Phase (CRP) is computed via Hilbert transform of bilateral joint angle signals. Circular Standard Deviation (CSD) of the CRP time series measures coordination consistency regardless of the dominant phase relationship. This avoids assuming a specific phase offset (e.g., anti-phase), making the metric applicable to both synthetic and real data. Healthy gait shows CSD < 15°; pathological gait (e.g., Parkinson's) shows CSD > 30°. Two signals (hip and knee), averaged.
+
+**Temporal Domain (12%):**
 
 | Signal | Optimal Range | Worst-Case Bounds | Source |
 |---|---|---|---|
@@ -157,7 +167,7 @@ The MQS spread across profiles (60.2–100) provides meaningful differentiation.
 
 4. **Symmetry uses mean-based SI:** The SI formula uses absolute mean values, which can miss phase-specific asymmetries (e.g., asymmetric push-off timing with symmetric ROM). Waveform-based symmetry metrics (e.g., comparing full gait cycle curves) would improve sensitivity.
 
-5. **No coordination domain:** Inter-limb coordination (CRP) is identified in the research as signal #14 but not yet implemented in the MQS computation.
+5. **Coordination domain uses global CRP:** The CRP consistency metric captures bilateral phase coupling but does not account for within-limb coordination (e.g., thigh-shank CRP). Adding intra-limb CRP would improve detection of segmental coordination deficits.
 
 ---
 
@@ -169,7 +179,7 @@ The MQS spread across profiles (60.2–100) provides meaningful differentiation.
 |---|---|---|
 | Pelvic obliquity amplitude | Kinematics | Data available, scoring not yet integrated |
 | Trunk lateral lean | Kinematics | Data available, scoring not yet integrated |
-| CRP consistency | New: Coordination | Requires phase computation implementation |
+| Intra-limb CRP (thigh-shank) | Coordination | Requires segment-level angle decomposition |
 | DFA scaling exponent | Variability | Requires >50 strides for reliability |
 | Head stabilization index | New: Global | Requires head tracking with sufficient resolution |
 

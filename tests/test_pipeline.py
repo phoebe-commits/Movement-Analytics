@@ -14,8 +14,9 @@ from movement_analytics.generators.stick_figure import generate_frames
 from movement_analytics.kinematics.gait_metrics import (
     angular_velocity, sparc, symmetry_index, rom,
     normalized_jerk, coefficient_of_variation,
+    continuous_relative_phase, crp_consistency,
     compute_gait_summary, movement_quality_score, mqs_domain_scores,
-    _signal_score,
+    _signal_score, _DOMAIN_WEIGHTS,
 )
 from movement_analytics.visualization.dashboard import (
     RealTimeDashboard, create_dashboard_frame,
@@ -110,7 +111,7 @@ class TestMetrics:
             "cadence", "stride_time_mean",
             "movement_quality_score",
             "mqs_kinematics", "mqs_smoothness", "mqs_symmetry",
-            "mqs_variability", "mqs_temporal",
+            "mqs_coordination", "mqs_variability", "mqs_temporal",
         ]
         for key in required_keys:
             assert key in summary, f"Missing metric: {key}"
@@ -153,9 +154,7 @@ class TestMQS:
         l = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
         summary = compute_gait_summary(r, l, fps=30)
         domains = mqs_domain_scores(summary)
-        weights = {"kinematics": 0.30, "smoothness": 0.20, "symmetry": 0.20,
-                   "variability": 0.15, "temporal": 0.15}
-        expected = sum(domains[d] * weights[d] for d in weights)
+        expected = sum(domains[d] * _DOMAIN_WEIGHTS[d] for d in _DOMAIN_WEIGHTS)
         assert summary["movement_quality_score"] == pytest.approx(expected, abs=0.1)
 
     def test_mqs_bounded(self):
@@ -164,6 +163,38 @@ class TestMQS:
             l = generate_gait_cycle(profile.params, n_frames=60, n_cycles=3, side="left")
             summary = compute_gait_summary(r, l, fps=30)
             assert 0 <= summary["movement_quality_score"] <= 100, f"{name}: MQS out of bounds"
+
+
+class TestCRP:
+    def test_antiphase_signals_crp_near_180(self):
+        t = np.linspace(0, 4 * np.pi, 200)
+        a = np.sin(t)
+        b = np.sin(t + np.pi)
+        crp = continuous_relative_phase(a, b, fps=30)
+        assert np.abs(np.mean(np.abs(crp)) - 180) < 20
+
+    def test_inphase_signals_crp_near_zero(self):
+        t = np.linspace(0, 4 * np.pi, 200)
+        a = np.sin(t)
+        b = np.sin(t)
+        crp = continuous_relative_phase(a, b, fps=30)
+        assert np.mean(np.abs(crp)) < 20
+
+    def test_crp_consistency_low_for_stable_coupling(self):
+        t = np.linspace(0, 4 * np.pi, 200)
+        a = np.sin(t)
+        b = np.sin(t + np.pi)
+        csd = crp_consistency(a, b, fps=30)
+        assert csd < 20
+
+    def test_crp_in_gait_summary(self):
+        params = GaitParameters()
+        r = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        l = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
+        summary = compute_gait_summary(r, l, fps=30)
+        assert "hip_CRP_MAD" in summary
+        assert "knee_CRP_MAD" in summary
+        assert "mqs_coordination" in summary
 
 
 class TestFrameGeneration:
