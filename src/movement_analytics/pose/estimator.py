@@ -169,6 +169,7 @@ class PoseEstimator:
         self._video_mode = video_mode
         self._frame_count = 0
         self._ms_per_frame = 1000.0 / fps
+        self._last_pelvis: np.ndarray | None = None
 
     def process_frame(self, frame: np.ndarray,
                       min_visibility: float = 0.5) -> tuple[dict | None, float]:
@@ -197,7 +198,21 @@ class PoseEstimator:
             return None, 0.0
 
         h, w = frame.shape[:2]
-        landmarks = result.pose_landmarks[0]
+
+        if len(result.pose_landmarks) > 1 and self._last_pelvis is not None:
+            best_idx = 0
+            best_dist = float("inf")
+            for pi, pl in enumerate(result.pose_landmarks):
+                lh = pl[LM.LEFT_HIP.value]
+                rh = pl[LM.RIGHT_HIP.value]
+                pelvis = np.array([(lh.x + rh.x) / 2 * w, (lh.y + rh.y) / 2 * h])
+                dist = float(np.linalg.norm(pelvis - self._last_pelvis))
+                if dist < best_dist:
+                    best_dist = dist
+                    best_idx = pi
+            landmarks = result.pose_landmarks[best_idx]
+        else:
+            landmarks = result.pose_landmarks[0]
 
         def lm_visibility(name: str) -> float:
             idx = LANDMARK_MAP[name].value
@@ -228,6 +243,8 @@ class PoseEstimator:
 
         if pelvis is None or shoulder_center is None:
             return None, confidence
+
+        self._last_pelvis = pelvis.copy()
 
         positions = {
             "pelvis": pelvis,
@@ -317,7 +334,7 @@ def process_video(
 
     confidences = []
 
-    with PoseEstimator(video_mode=True, fps=actual_fps) as estimator:
+    with PoseEstimator(video_mode=True, fps=actual_fps, num_poses=3) as estimator:
         while True:
             ret, frame = cap.read()
             if not ret:
