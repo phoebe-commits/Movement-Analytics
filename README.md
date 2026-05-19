@@ -6,6 +6,12 @@
 
 A pipeline for generating synthetic human gait, extracting kinematic signals from video, computing movement quality metrics grounded in biomechanics literature, and visualizing results in real time. Built to establish the scientific and engineering foundation for a Movement Quality Score — a multidimensional scoring model for evaluating human and robotic movement from video.
 
+<p align="center">
+  <img src="docs/assets/normal_dashboard.gif" alt="Normal gait — real-time dashboard with MQS 98" width="90%">
+  <br>
+  <em>Real-time dashboard: stick-figure animation with bilateral joint angle plots, MQS gauge, and 6-domain breakdown</em>
+</p>
+
 ---
 
 ## Why This Exists
@@ -59,6 +65,23 @@ pose/           Pose estimation integration (MediaPipe)
 | `noisy` | High motor variability | 4° noise on all joints |
 | `parkinsonian` | Shuffling gait (Parkinson's) | Reduced ROM, diminished arm swing, short stride |
 
+<details>
+<summary><strong>Pathological gait examples (click to expand)</strong></summary>
+
+<p align="center">
+  <img src="docs/assets/parkinsonian_dashboard.gif" alt="Parkinsonian gait — MQS 61" width="90%">
+  <br>
+  <em>Parkinsonian gait (MQS 61): shuffling rhythm, reduced ROM, severely degraded smoothness (SPARC floor = 0)</em>
+</p>
+
+<p align="center">
+  <img src="docs/assets/limp_dashboard.gif" alt="Asymmetric limping gait — MQS 89" width="90%">
+  <br>
+  <em>Asymmetric limp (MQS 89): 35% left-right asymmetry detected via bilateral SI and frontal-plane pelvic drop</em>
+</p>
+
+</details>
+
 ### Movement Quality Score (MQS)
 
 A composite **0–100 score** computed from 6 weighted biomechanical domains:
@@ -73,6 +96,12 @@ A composite **0–100 score** computed from 6 weighted biomechanical domains:
 | **Temporal** | 12% | Cadence and stride time vs. normal ranges |
 
 MQS differentiates across profiles: normal gait scores highest across all domains, stiff-knee gait is penalized in kinematics (reduced knee ROM), noisy gait is penalized in smoothness and variability. Reference ranges sourced from Perry & Burnfield 2010, Winter 2009, Balasubramanian et al. 2012, Hausdorff et al. 2001, and Hamill et al. 1999.
+
+<p align="center">
+  <img src="docs/assets/mqs_comparison.png" alt="MQS comparison across 9 gait profiles" width="85%">
+  <br>
+  <em>MQS breakdown across 9 gait profiles — each domain reveals why a profile scores as it does</em>
+</p>
 
 **Synthetic vs. Video MQS:** Scores from the synthetic benchmark (above) use clean, noise-free angle trajectories and represent the scoring model's theoretical response. Video-derived MQS is scaled by a confidence factor (observed_fraction × mean_pose_confidence) to account for detection gaps and interpolation. When signal completeness drops below 50%, MQS returns NaN (insufficient evidence) instead of a misleading score. Video scores should be interpreted alongside `pose_observed_fraction`, `pose_interpolation_fraction`, and `mqs_confidence_factor` reported in the summary.
 
@@ -153,6 +182,12 @@ python -m movement_analytics --sensitivity --output output/mqs_sensitivity.png
 ```
 
 The sensitivity report sweeps four parameters (knee ROM, noise level, asymmetry, pelvic obliquity) across the 6-domain MQS model. All curves are monotonic — the score degrades continuously as movement quality worsens, with no discontinuities or inversions. The pelvic obliquity sweep demonstrates frontal-plane pathology detection: kinematics score drops sharply beyond the 7° clinical threshold.
+
+<p align="center">
+  <img src="docs/assets/mqs_sensitivity.png" alt="MQS sensitivity analysis" width="85%">
+  <br>
+  <em>MQS sensitivity: continuous, monotonic response to parameter degradation across all 6 domains</em>
+</p>
 
 ### Profile Comparison
 
