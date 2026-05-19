@@ -56,10 +56,25 @@ pose/           Pose estimation integration (MediaPipe)
 | `model_runway` | Trained fashion model walk | Exaggerated pelvis, controlled trunk |
 | `noisy` | High motor variability | 4° noise on all joints |
 
+### Movement Quality Score (MQS)
+
+A composite **0–100 score** computed from weighted biomechanical domains:
+
+| Domain | Weight | Signals Used |
+|---|---|---|
+| **Kinematics** | 30% | Hip/knee/ankle ROM (bilateral) vs. clinical norms |
+| **Smoothness** | 20% | SPARC of hip velocity (spectral arc length) |
+| **Symmetry** | 20% | Hip/knee/ankle Symmetry Index (left vs. right) |
+| **Variability** | 15% | Stride time coefficient of variation |
+| **Temporal** | 15% | Cadence and stride time vs. normal ranges |
+
+MQS differentiates across profiles: normal gait scores 100, stiff-knee gait 83.7 (reduced ROM detected), noisy gait 57.3 (degraded smoothness and variability).
+
 ### Computed Metrics
 
-For each gait profile, the pipeline computes **40+ metrics** in real time:
+For each gait profile, the pipeline computes **50+ metrics** in real time:
 
+- **Movement Quality Score** — composite 0–100 with 5-domain breakdown
 - **Joint ROM** — hip, knee, ankle (bilateral)
 - **Peak angular velocity** — per joint
 - **SPARC smoothness** — spectral arc length per joint velocity
@@ -113,13 +128,15 @@ Input: Gait Parameters (cadence, ROM, asymmetry, noise, etc.)
   ↓
 Gait Model → Biomechanically accurate joint angle trajectories
   ↓
-Stick Figure Renderer → Sagittal-plane walking animation frames
+Stick Figure Renderer → Sagittal-plane animation with color-coded joints
   ↓
-Joint Angle Computation → Per-frame angle extraction
+Joint Angle Computation → Per-frame bilateral angle extraction
   ↓
 Gait Metrics Engine → SPARC, NJ, SI, ROM, CV, cadence, phase detection
   ↓
-Real-Time Dashboard → Composite view: animation + plots + gauges
+Movement Quality Score → 5-domain composite (0–100)
+  ↓
+Real-Time Dashboard → MQS gauge + bilateral plots + metric panels
   ↓
 Output: Video file and/or live display
 ```
@@ -161,12 +178,13 @@ The research document identifies **15 signals** across 5 domains that form the b
 
 | Component | Status |
 |---|---|
-| Research document | Complete (70+ citations) |
+| Research document | Complete (90+ citations, v2.0) |
 | Gait model (8 profiles) | Complete |
 | Stick-figure renderer | Complete |
 | Joint angle computation | Complete |
 | Gait metrics engine | Complete |
-| Real-time dashboard | Complete |
+| Movement Quality Score | Complete (5-domain composite) |
+| Real-time dashboard | Complete (bilateral overlays, MQS gauge) |
 | Pose estimation on external video | In progress |
 | Movement Quality Score model | Planned |
 
