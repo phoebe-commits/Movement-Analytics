@@ -112,12 +112,22 @@ python -m movement_analytics --all-profiles --output output/gait --no-display
 ```
 --profile, -p     Gait profile (normal, slow, fast, limp, stiff_knee,
                   trendelenburg, model_runway, noisy)
---output, -o      Output video path (MP4)
+--output, -o      Output video path (MP4) or image path (PNG for --compare)
 --no-display      Skip live window (headless rendering)
 --fps             Frames per second (default: 30)
 --cycles, -c      Number of gait cycles (default: 6)
 --all-profiles    Generate all profiles
+--compare         Generate MQS comparison report across all profiles
 ```
+
+### Profile Comparison
+
+```bash
+# Generate MQS comparison chart
+python -m movement_analytics --compare --output output/mqs_comparison.png
+```
+
+The comparison report shows Movement Quality Score breakdowns across all 8 gait profiles, revealing how each domain (kinematics, smoothness, symmetry, variability, temporal) contributes to the overall score. Clinical reference ranges are displayed for context.
 
 ---
 
