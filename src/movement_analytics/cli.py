@@ -2,9 +2,10 @@
 
 Usage:
     python -m movement_analytics [--profile PROFILE] [--output PATH] [--no-display]
+    python -m movement_analytics --video path/to/walking.mp4 [--output PATH]
 
-Generates a synthetic walking animation, runs real-time kinematic analysis,
-and displays the composite dashboard.
+Generates a synthetic walking animation or analyzes real video, runs real-time
+kinematic analysis, and displays the composite dashboard.
 """
 
 import argparse
@@ -109,6 +110,96 @@ def run_analysis(profile_name: str = "normal", output_path: str | None = None,
 
         if display:
             cv2.imshow("Movement Analytics Dashboard", composite)
+            elapsed = time.perf_counter() - t_start
+            wait_ms = max(1, int((frame_time - elapsed) * 1000))
+            key = cv2.waitKey(wait_ms) & 0xFF
+            if key == ord("q") or key == 27:
+                break
+
+    if writer:
+        writer.release()
+        print(f"\nOutput saved to {output_path}")
+
+    if display:
+        cv2.destroyAllWindows()
+
+    print("Done.")
+
+
+def run_video_analysis(video_path: str, output_path: str | None = None,
+                       display: bool = True, target_fps: int | None = None):
+    """Run analysis on a real video file using MediaPipe pose estimation."""
+    from .pose.estimator import process_video
+
+    print(f"Processing video: {video_path}")
+    print("Running pose estimation (MediaPipe BlazePose)...")
+
+    frames, angles_right, angles_left, fps = process_video(video_path, fps=target_fps)
+
+    if not frames:
+        print("Error: No frames extracted from video.")
+        sys.exit(1)
+
+    print(f"  Extracted {len(frames)} frames at {fps:.1f} fps")
+
+    if not angles_right:
+        print("Warning: No pose detected in any frame.")
+        return
+
+    print("Computing gait summary metrics...")
+    summary = compute_gait_summary(angles_right, angles_left, fps=fps)
+
+    print("\n--- Gait Summary ---")
+    for key, val in sorted(summary.items()):
+        print(f"  {key}: {val:.2f}")
+    print()
+
+    dashboard = RealTimeDashboard(history_length=150, panel_width=560)
+
+    writer = None
+    if output_path:
+        sample = create_dashboard_frame(
+            frames[0], {}, summary, dashboard, "—", 0, "Video Analysis"
+        )
+        h, w = sample.shape[:2]
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        writer = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
+        print(f"Writing output to {output_path} ({w}x{h})")
+
+    dashboard = RealTimeDashboard(history_length=150, panel_width=560)
+
+    print("Running real-time analysis...")
+    frame_time = 1.0 / fps
+
+    for i, frame in enumerate(frames):
+        t_start = time.perf_counter()
+
+        display_angles = {}
+        for side, angles_dict in [("right", angles_right), ("left", angles_left)]:
+            for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]:
+                if joint in angles_dict:
+                    display_angles[f"{side}_{joint}"] = float(angles_dict[joint][i])
+            if "elbow_flexion" in angles_dict:
+                display_angles[f"{side}_elbow_flexion"] = float(angles_dict["elbow_flexion"][i])
+
+        if "pelvis_tilt" in angles_right:
+            display_angles["pelvis_tilt"] = float(angles_right["pelvis_tilt"][i])
+
+        cycle_phase = angles_right.get("cycle_phase", np.zeros(len(frames)))
+        cp = cycle_phase[i] if i < len(cycle_phase) else 0
+        gait_phase = "Stance" if cp < 0.6 else "Swing"
+        cycle_pct = cp * 100
+
+        composite = create_dashboard_frame(
+            frame, display_angles, summary, dashboard, gait_phase, cycle_pct,
+            "Video Analysis"
+        )
+
+        if writer:
+            writer.write(composite)
+
+        if display:
+            cv2.imshow("Movement Analytics — Video Analysis", composite)
             elapsed = time.perf_counter() - t_start
             wait_ms = max(1, int((frame_time - elapsed) * 1000))
             key = cv2.waitKey(wait_ms) & 0xFF
@@ -262,11 +353,23 @@ def main():
         "--compare", action="store_true",
         help="Generate MQS comparison report across all profiles"
     )
+    parser.add_argument(
+        "--video", "-v", default=None,
+        help="Input video file for pose estimation analysis"
+    )
     args = parser.parse_args()
 
     if args.compare:
         out = args.output or "output/mqs_comparison.png"
         generate_comparison_report(out, fps=args.fps, n_cycles=args.cycles)
+        return
+
+    if args.video:
+        run_video_analysis(
+            args.video, args.output,
+            display=not args.no_display,
+            target_fps=args.fps if args.fps != 30 else None,
+        )
         return
 
     if args.all_profiles:
