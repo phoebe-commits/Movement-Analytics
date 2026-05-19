@@ -345,6 +345,37 @@ class TestEdgeCases:
                     "coordination", "variability", "temporal"}
         assert set(_DOMAIN_WEIGHTS.keys()) == expected
 
+    def test_sparc_zero_below_threshold(self):
+        vel = np.ones(100) * 1e-10
+        s = sparc(vel, 30)
+        assert s == 0.0
+
+    def test_symmetry_ratio_identical(self):
+        from movement_analytics.kinematics.gait_metrics import symmetry_ratio
+        a = np.ones(100) * 10
+        assert symmetry_ratio(a, a) == pytest.approx(1.0)
+
+    def test_symmetry_ratio_near_zero(self):
+        from movement_analytics.kinematics.gait_metrics import symmetry_ratio
+        a = np.ones(100) * 1e-8
+        assert symmetry_ratio(a, a) == 1.0
+
+    def test_mqs_with_nan_metrics(self):
+        from movement_analytics.kinematics.gait_metrics import movement_quality_score
+        metrics = {
+            "R_hip_flexion_ROM": 40, "L_hip_flexion_ROM": 40,
+            "R_knee_flexion_ROM": 60, "L_knee_flexion_ROM": 60,
+            "R_ankle_dorsiflexion_ROM": 30, "L_ankle_dorsiflexion_ROM": 30,
+            "R_hip_flexion_SPARC": -1.5, "L_hip_flexion_SPARC": -1.5,
+            "hip_flexion_SI": 5, "knee_flexion_SI": 5,
+            "ankle_dorsiflexion_SI": 5,
+            "stride_time_CV": float("nan"),
+            "cadence": float("nan"),
+            "stride_time_mean": float("nan"),
+        }
+        mqs = movement_quality_score(metrics)
+        assert 0 <= mqs <= 100
+
 
 class TestMQSRanking:
     """Verify that MQS correctly ranks profiles in clinically expected order."""
