@@ -1,6 +1,6 @@
 # Movement Quality Score (MQS): Technical Specification
 
-**Version:** 1.4.0
+**Version:** 1.5.0
 **Date:** 2026-05-19
 
 ---
@@ -64,7 +64,7 @@ Sagittal-plane signals (hip, knee, ankle ROM) computed bilaterally (6 signals). 
 | SPARC (hip velocity) | −2.0 to −1.3 | −6.0 to −0.5 | Balasubramanian et al., 2012/2015 |
 | SPARC (knee velocity) | −16.0 to −12.0 | −25.0 to −8.0 | Derived from synthetic profiles; normal knee SPARC ≈ −14.7 |
 
-Computed bilaterally (4 signals: R/L hip + R/L knee SPARC), averaged. Hip velocity SPARC uses the Balasubramanian et al. reference range. Knee SPARC uses a separate range calibrated from the synthetic gait model because the knee velocity profile has higher spectral complexity (stance flexion wave + swing peak) than the hip. The knee SPARC range [-16, -12] captures normal variation while penalizing stiff-knee gait (SPARC ≈ −21) and parkinsonian shuffling (SPARC ≈ −22). Ankle SPARC is excluded due to foot-contact transients that inflate spectral complexity.
+Computed bilaterally (4 signals: R/L hip + R/L knee SPARC). The domain score = `min(overall_mean, hip_sparc_floor)`, where `overall_mean` is the mean of all 4 signal scores and `hip_sparc_floor` is the mean of the 2 hip SPARC scores. This prevents knee SPARC (which may score well even when hip movement is severely degraded) from diluting the hip SPARC penalty — matching the symmetry domain's `min(SI_mean, waveform_sym)` pattern. Hip velocity SPARC uses the Balasubramanian et al. reference range. Knee SPARC uses a separate range calibrated from the synthetic gait model because the knee velocity profile has higher spectral complexity (stance flexion wave + swing peak) than the hip. The knee SPARC range [-16, -12] captures normal variation while penalizing stiff-knee gait (SPARC ≈ −21) and parkinsonian shuffling (SPARC ≈ −22). Ankle SPARC is excluded due to foot-contact transients that inflate spectral complexity.
 
 **Symmetry Domain (18%):**
 
@@ -145,35 +145,35 @@ The MQS is bounded [0, 100] by construction (all components are bounded [0, 100]
 
 ### 3.1 Construct Validity
 
-The MQS correctly differentiates across the 9 implemented gait profiles (v1.4, 6-domain model with frontal-plane symmetry and bilateral SPARC):
+The MQS correctly differentiates across the 9 implemented gait profiles (v1.5, 6-domain model with frontal-plane symmetry, bilateral SPARC, and hip SPARC floor):
 
 | Profile | MQS | Kinematics | Smoothness | Symmetry | Coordination | Variability | Temporal |
 |---|---|---|---|---|---|---|---|
 | Normal | 98.3 | 93.4 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 |
 | Model Runway | 96.1 | 84.6 | 100.0 | 99.9 | 100.0 | 100.0 | 100.0 |
-| Fast | 90.1 | 93.4 | 96.5 | 100.0 | 100.0 | 100.0 | 36.7 |
+| Fast | 89.5 | 93.4 | 93.0 | 100.0 | 100.0 | 100.0 | 36.7 |
 | Limp | 88.8 | 90.9 | 91.5 | 84.8 | 100.0 | 100.0 | 61.2 |
 | Trendelenburg | 87.3 | 60.0 | 99.3 | 100.0 | 100.0 | 100.0 | 78.5 |
 | Slow | 83.8 | 84.9 | 82.6 | 100.0 | 100.0 | 100.0 | 22.7 |
 | Stiff Knee | 79.9 | 74.1 | 70.5 | 100.0 | 78.7 | 100.0 | 55.8 |
-| Noisy | 67.7 | 52.1 | 50.0 | 92.9 | 98.7 | 23.7 | 100.0 |
-| Parkinsonian | 63.4 | 63.0 | 19.8 | 95.7 | 90.3 | 78.9 | 33.4 |
+| Noisy | 58.7 | 52.1 | 0.0 | 92.9 | 98.7 | 23.7 | 100.0 |
+| Parkinsonian | 59.9 | 63.0 | 0.0 | 95.7 | 90.3 | 78.9 | 33.4 |
 
 **Expected patterns confirmed:**
 - Normal scores highest with near-perfect kinematics
 - Trendelenburg is strongly penalized in kinematics (pelvic obliquity 24° vs. 7° normal, trunk lean 16° vs. 5°)
 - Stiff knee is penalized in kinematics (knee ROM 25° vs. 50–70° normal), smoothness (knee SPARC −21 vs. −16 to −12 normal), and coordination (hip-knee CRP MAD 43° vs. 28° normal)
 - Limp is penalized in symmetry (84.8) via both sagittal SI (hip SI 19.4%) and frontal-plane pelvis obliquity SI (21%) — the asymmetric pelvic drop is now detected (v1.3)
-- Noisy is penalized in smoothness (hip SPARC degraded) and variability (stride CV 33%)
+- Noisy is penalized in smoothness (hip SPARC floor = 0, preventing knee SPARC from diluting the penalty) and variability (stride CV 33%)
 - Slow and fast are penalized in temporal (cadence outside 90–130 spm range)
 - Stiff-knee and parkinsonian are heavily penalized in smoothness via knee SPARC (v1.4): stiff_knee knee SPARC ≈ −21 (reduced swing velocity), parkinsonian ≈ −22 (shuffling rhythm)
-- Parkinsonian scores lowest overall (MQS 64.8), with smoothness = 19.8 (both hip and knee SPARC degraded). Noisy scores 67.3, penalized in variability (stride CV 16.2%) while parkinsonian shows moderate variability (CV 7.4%) — consistent with the shuffling-but-regular pattern of Parkinson's gait
+- Parkinsonian scores lowest overall (MQS 59.9), with smoothness = 0.0 (hip SPARC severely degraded, floor applied) and coordination = 90.3 (disrupted hip-knee coupling). Noisy scores 58.7, penalized in both smoothness (hip SPARC floor = 0) and variability (stride CV 16.2%) while parkinsonian shows moderate variability (CV 7.4%) — consistent with the shuffling-but-regular pattern of Parkinson's gait
 - Noisy gait shows reduced symmetry (92.9) thanks to waveform symmetry detecting shape-based asymmetry that mean-based SI misses; parkinsonian similarly at 95.7
 - Bilateral noise is generated with independent random seeds per side (v1.1.1)
 
 ### 3.2 Discriminative Power
 
-The MQS spread across profiles (58.3–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal-plane ROM detection added in v1.1, and the limp profile (symmetry = 84.8, pelvis obliquity SI = 21%) demonstrates frontal-plane asymmetry detection added in v1.3.
+The MQS spread across profiles (58.7–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal-plane ROM detection added in v1.1, and the limp profile (symmetry = 84.8, pelvis obliquity SI = 21%) demonstrates frontal-plane asymmetry detection added in v1.3.
 
 ### 3.3 Limitations and Known Gaps
 
@@ -185,7 +185,7 @@ The MQS spread across profiles (58.3–98.3) provides meaningful differentiation
 
 4. **Symmetry composite (v1.2):** The symmetry domain now uses `min(SI_mean, hip_waveform_sym)` where SI is the traditional mean-based Symmetry Index and hip waveform symmetry is the absolute normalized cross-correlation of bilateral hip flexion curves. The `min` operator ensures that either amplitude asymmetry (caught by SI) or shape asymmetry (caught by waveform NCC) will penalize the score. This addresses the prior limitation where mean-based SI alone missed phase-specific asymmetries. However, the waveform metric uses hip flexion only; extending to knee/ankle waveform correlation could improve sensitivity to distal asymmetries.
 
-5. **Coordination domain uses global CRP:** The CRP consistency metric captures bilateral phase coupling but does not account for within-limb coordination (e.g., thigh-shank CRP). Adding intra-limb CRP would improve detection of segmental coordination deficits.
+5. **Coordination domain uses inter-limb + intra-limb CRP (v1.4):** Three signals: bilateral hip CRP (inter-limb) + bilateral hip-knee CRP MAD (intra-limb). Stiff-knee gait is now detected via disrupted hip-knee coupling (CRP MAD ≈ 43° vs. 28° normal). The hip-knee CRP reference range [15°, 35°] is synthetic-derived and needs clinical validation.
 
 6. **Video MQS confidence degradation (v1.2):** When MQS is computed from video-derived poses, the raw score is scaled by a confidence factor: `CF = observed_fraction × mean_pose_confidence`. This ensures that poor detection rates or low landmark visibility produce a lower (more conservative) MQS rather than a misleadingly high score. The raw unscaled MQS is preserved as `mqs_raw` for debugging. Synthetic data (no pose metadata) always receives CF = 1.0.
 

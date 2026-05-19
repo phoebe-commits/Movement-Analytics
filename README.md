@@ -257,7 +257,7 @@ The research document identifies **16 signals** across 6 domains that form the b
 | Stick-figure renderer | Implemented |
 | Joint angle computation | Implemented, 100% coverage |
 | Gait metrics engine | Implemented, 98% coverage (synthetic path) |
-| Movement Quality Score | 6-domain composite with frontal-plane symmetry, bilateral SPARC, and intra-limb CRP, validated on 9 profiles (63.4–98.3 range) |
+| Movement Quality Score | 6-domain composite with frontal-plane symmetry, bilateral SPARC, and intra-limb CRP, validated on 9 profiles (58.7–98.3 range) |
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown) |
 | Video pose estimation | Experimental — MediaPipe sagittal plane, 61% coverage, confidence-weighted MQS |
 | CI/CD | GitHub Actions, 122 tests, ruff lint, 70% coverage gate (74% actual) |

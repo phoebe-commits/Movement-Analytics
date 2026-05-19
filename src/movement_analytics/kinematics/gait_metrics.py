@@ -476,6 +476,7 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
                 kin_scores.append(_signal_score(val, lo, hi, wlo, whi))
     domains["kinematics"] = float(np.mean(kin_scores)) if kin_scores else 50.0
 
+    hip_sparc_scores = []
     sm_scores = []
     for side in ["R", "L"]:
         for joint, range_key in [("hip_flexion", "sparc_hip"),
@@ -483,8 +484,16 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
             val = metrics.get(f"{side}_{joint}_SPARC")
             if val is not None:
                 lo, hi, wlo, whi = _SIGNAL_RANGES[range_key]
-                sm_scores.append(_signal_score(val, lo, hi, wlo, whi))
-    domains["smoothness"] = float(np.mean(sm_scores)) if sm_scores else 50.0
+                score = _signal_score(val, lo, hi, wlo, whi)
+                sm_scores.append(score)
+                if joint == "hip_flexion":
+                    hip_sparc_scores.append(score)
+    if sm_scores:
+        overall = float(np.mean(sm_scores))
+        hip_floor = float(np.mean(hip_sparc_scores)) if hip_sparc_scores else overall
+        domains["smoothness"] = min(overall, hip_floor)
+    else:
+        domains["smoothness"] = 50.0
 
     si_scores = []
     for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion",

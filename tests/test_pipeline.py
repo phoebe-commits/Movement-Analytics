@@ -1023,7 +1023,7 @@ class TestBenchmarkOutput:
             assert os.path.exists(path)
             with open(path) as f:
                 data = json.load(f)
-            assert data["version"] == "1.4.0"
+            assert data["version"] == "1.5.0"
             assert data["n_domains"] == 6
             assert "normal" in data["profiles"]
             normal = data["profiles"]["normal"]
@@ -1048,13 +1048,13 @@ class TestBenchmarkRegression:
     EXPECTED_MQS = {
         "normal": 98.3,
         "model_runway": 96.1,
-        "fast": 90.1,
+        "fast": 89.5,
         "limp": 88.8,
         "trendelenburg": 87.3,
         "slow": 83.8,
         "stiff_knee": 79.9,
-        "noisy": 67.7,
-        "parkinsonian": 63.4,
+        "noisy": 58.7,
+        "parkinsonian": 59.9,
     }
 
     MQS_TOLERANCE = 2.0
