@@ -1,6 +1,6 @@
 # Movement Quality Score (MQS): Technical Specification
 
-**Version:** 1.1
+**Version:** 1.1.1
 **Date:** 2026-05-19
 
 ---
@@ -139,14 +139,14 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.1, 6
 | Profile | MQS | Kinematics | Smoothness | Symmetry | Coordination | Variability | Temporal |
 |---|---|---|---|---|---|---|---|
 | Normal | 98.3 | 93.4 | 100 | 100 | 100 | 100 | 100 |
-| Model Runway | 96.0 | 84.2 | 100 | 100 | 100 | 100 | 100 |
+| Model Runway | 96.2 | 84.6 | 100 | 100 | 100 | 100 | 100 |
 | Limp | 91.1 | 90.9 | 100 | 88.9 | 100 | 100 | 61.2 |
-| Fast | 89.9 | 93.4 | 95.2 | 100 | 100 | 100 | 36.7 |
+| Fast | 89.5 | 93.4 | 93.0 | 100 | 100 | 100 | 36.7 |
 | Stiff Knee | 88.2 | 74.1 | 100 | 100 | 100 | 100 | 55.8 |
 | Trendelenburg | 87.4 | 60.0 | 100 | 100 | 100 | 100 | 78.5 |
 | Slow | 86.9 | 84.9 | 100 | 100 | 100 | 100 | 22.7 |
-| Noisy | 55.2 | 60.0 | 0 | 100 | 100 | 0 | 68.1 |
-| Parkinsonian | 50.7 | 60.8 | 0 | 100 | 100 | 0 | 28.7 |
+| Noisy | 52.1 | 52.1 | 0 | 100 | 96.1 | 0 | 63.7 |
+| Parkinsonian | 52.3 | 63.0 | 0 | 100 | 100 | 0 | 38.0 |
 
 **Expected patterns confirmed:**
 - Normal scores highest with near-perfect kinematics
@@ -156,11 +156,11 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.1, 6
 - Noisy is penalized in smoothness and variability (SPARC degraded, stride CV 25.6%)
 - Slow and fast are penalized in temporal (cadence outside 90–130 spm range)
 - Parkinsonian scores lowest overall (MQS 50.7) with deficits in smoothness (SPARC degraded by noise), variability (stride CV elevated), and temporal (reduced cadence/stride time)
-- Parkinsonian and noisy are the only profiles scoring below 60, both exhibiting motor noise that degrades SPARC and stride time CV
+- Parkinsonian and noisy are the only profiles scoring below 55, both exhibiting motor noise that degrades SPARC and stride time CV. Bilateral noise is generated with independent random seeds per side (v1.1.1), though SI remains 100% because the mean-based formula is insensitive to zero-mean noise
 
 ### 3.2 Discriminative Power
 
-The MQS spread across profiles (50.7–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal plane detection capability added in v1.1.
+The MQS spread across profiles (52.1–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal plane detection capability added in v1.1.
 
 ### 3.3 Limitations and Known Gaps
 
@@ -168,7 +168,7 @@ The MQS spread across profiles (50.7–98.3) provides meaningful differentiation
 
 2. **Smoothness domain uses only hip SPARC:** This is by design (knee/ankle SPARC is confounded by phase transitions) but misses smoothness deficits in isolated distal joints.
 
-3. **Variability requires multiple strides:** With fewer than 3 detected strides, stride CV reliability degrades. The current implementation defaults to 0 when no strides are detected, which inflates the variability score.
+3. **Variability requires multiple strides:** With fewer than 3 detected strides, stride CV reliability degrades. The current implementation returns NaN for stride CV when fewer than 3 strides are detected, and the MQS scores missing variability as 50.0 (neutral). Missing kinematics, smoothness, and symmetry signals are excluded from their domain averages rather than defaulted to optimal values (v1.1.1).
 
 4. **Symmetry uses mean-based SI:** The SI formula uses absolute mean values, which can miss phase-specific asymmetries (e.g., asymmetric push-off timing with symmetric ROM). Waveform-based symmetry metrics (e.g., comparing full gait cycle curves) would improve sensitivity.
 

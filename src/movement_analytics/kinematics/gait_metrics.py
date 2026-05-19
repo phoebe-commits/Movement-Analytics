@@ -317,9 +317,10 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
     for side in ["R", "L"]:
         for joint, key in [("hip_flexion", "hip_rom"), ("knee_flexion", "knee_rom"),
                            ("ankle_dorsiflexion", "ankle_rom")]:
-            val = metrics.get(f"{side}_{joint}_ROM", 0)
-            lo, hi, wlo, whi = _SIGNAL_RANGES[key]
-            kin_scores.append(_signal_score(val, lo, hi, wlo, whi))
+            val = metrics.get(f"{side}_{joint}_ROM")
+            if val is not None:
+                lo, hi, wlo, whi = _SIGNAL_RANGES[key]
+                kin_scores.append(_signal_score(val, lo, hi, wlo, whi))
         for metric_suffix, range_key in [("pelvis_obliquity_ROM", "pelvic_obliquity"),
                                          ("trunk_lean_ROM", "trunk_lean")]:
             val = metrics.get(f"{side}_{metric_suffix}")
@@ -330,16 +331,18 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
 
     sm_scores = []
     for side in ["R", "L"]:
-        val = metrics.get(f"{side}_hip_flexion_SPARC", -3.0)
-        lo, hi, wlo, whi = _SIGNAL_RANGES["sparc"]
-        sm_scores.append(_signal_score(val, lo, hi, wlo, whi))
+        val = metrics.get(f"{side}_hip_flexion_SPARC")
+        if val is not None:
+            lo, hi, wlo, whi = _SIGNAL_RANGES["sparc"]
+            sm_scores.append(_signal_score(val, lo, hi, wlo, whi))
     domains["smoothness"] = float(np.mean(sm_scores)) if sm_scores else 50.0
 
     sy_scores = []
     for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]:
-        val = metrics.get(f"{joint}_SI", 0)
-        lo, hi, wlo, whi = _SIGNAL_RANGES["symmetry"]
-        sy_scores.append(_signal_score(val, lo, hi, wlo, whi))
+        val = metrics.get(f"{joint}_SI")
+        if val is not None:
+            lo, hi, wlo, whi = _SIGNAL_RANGES["symmetry"]
+            sy_scores.append(_signal_score(val, lo, hi, wlo, whi))
     domains["symmetry"] = float(np.mean(sy_scores)) if sy_scores else 50.0
 
     hip_crp = metrics.get("hip_CRP_MAD")
@@ -357,7 +360,7 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
         domains["variability"] = _signal_score(cv_val, lo, hi, wlo, whi)
 
     t_scores = []
-    cad = metrics.get("cadence", 0)
+    cad = metrics.get("cadence", float("nan"))
     if not np.isnan(cad):
         lo, hi, wlo, whi = _SIGNAL_RANGES["cadence"]
         t_scores.append(_signal_score(cad, lo, hi, wlo, whi))

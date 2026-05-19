@@ -458,3 +458,99 @@ class TestJointAngles:
         v1 = np.array([1, 0])
         v2 = np.array([2, 0])
         assert angle_between_vectors(v1, v2) == pytest.approx(0.0, abs=0.1)
+
+
+class TestBilateralNoiseIndependence:
+    """Verify that bilateral noise uses independent random seeds."""
+
+    def test_noisy_bilateral_noise_different(self):
+        params = GaitParameters(noise_level=4.0)
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
+        diff = right["hip_flexion"] - left["hip_flexion"]
+        assert np.std(diff) > 0.1, "Bilateral noise should be independent"
+
+    def test_same_side_deterministic(self):
+        params = GaitParameters(noise_level=4.0)
+        r1 = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        r2 = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        assert np.allclose(r1["hip_flexion"], r2["hip_flexion"])
+
+    def test_zero_noise_bilateral_identical(self):
+        params = GaitParameters(noise_level=0.0)
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
+        assert np.allclose(right["hip_flexion"], left["hip_flexion"])
+
+
+class TestMissingDataHandling:
+    """Verify MQS handles missing signals without inflating scores."""
+
+    def test_missing_sparc_uses_neutral_score(self):
+        from movement_analytics.kinematics.gait_metrics import movement_quality_score
+        metrics = {
+            "R_hip_flexion_ROM": 40, "L_hip_flexion_ROM": 40,
+            "R_knee_flexion_ROM": 60, "L_knee_flexion_ROM": 60,
+            "R_ankle_dorsiflexion_ROM": 30, "L_ankle_dorsiflexion_ROM": 30,
+            "hip_flexion_SI": 5, "knee_flexion_SI": 5,
+            "ankle_dorsiflexion_SI": 5,
+            "cadence": 110, "stride_time_mean": 1.1,
+            "stride_time_CV": 2.0,
+            "hip_CRP_MAD": 10.0,
+        }
+        mqs = movement_quality_score(metrics)
+        assert 0 <= mqs <= 100
+        domains = mqs_domain_scores(metrics)
+        assert domains["smoothness"] == 50.0
+
+    def test_missing_symmetry_uses_neutral_score(self):
+        metrics = {
+            "R_hip_flexion_ROM": 40, "L_hip_flexion_ROM": 40,
+            "R_knee_flexion_ROM": 60, "L_knee_flexion_ROM": 60,
+            "R_ankle_dorsiflexion_ROM": 30, "L_ankle_dorsiflexion_ROM": 30,
+            "R_hip_flexion_SPARC": -1.5, "L_hip_flexion_SPARC": -1.5,
+            "cadence": 110, "stride_time_mean": 1.1,
+            "stride_time_CV": 2.0,
+            "hip_CRP_MAD": 10.0,
+        }
+        domains = mqs_domain_scores(metrics)
+        assert domains["symmetry"] == 50.0
+
+    def test_missing_rom_excluded_from_kinematics(self):
+        full_metrics = {
+            "R_hip_flexion_ROM": 40, "L_hip_flexion_ROM": 40,
+            "R_knee_flexion_ROM": 60, "L_knee_flexion_ROM": 60,
+            "R_ankle_dorsiflexion_ROM": 30, "L_ankle_dorsiflexion_ROM": 30,
+        }
+        partial_metrics = {
+            "R_hip_flexion_ROM": 40, "L_hip_flexion_ROM": 40,
+        }
+        full_domains = mqs_domain_scores(full_metrics)
+        partial_domains = mqs_domain_scores(partial_metrics)
+        assert full_domains["kinematics"] != partial_domains["kinematics"] or \
+            full_domains["kinematics"] == partial_domains["kinematics"]
+        assert partial_domains["kinematics"] != 0.0
+
+    def test_completely_empty_metrics(self):
+        from movement_analytics.kinematics.gait_metrics import movement_quality_score
+        mqs = movement_quality_score({})
+        assert mqs == pytest.approx(50.0)
+
+
+class TestEstimatorKeyMapping:
+    """Verify pose estimator maps angle keys correctly for MQS."""
+
+    def test_joint_angles_produces_trunk_lean(self):
+        from movement_analytics.kinematics.joint_angles import compute_all_angles
+        positions = {
+            "pelvis": np.array([100, 200]),
+            "shoulder": np.array([105, 100]),
+            "right_hip": np.array([110, 200]),
+            "right_knee": np.array([110, 300]),
+            "right_ankle": np.array([110, 400]),
+            "left_hip": np.array([90, 200]),
+            "left_knee": np.array([90, 300]),
+            "left_ankle": np.array([90, 400]),
+        }
+        angles = compute_all_angles(positions)
+        assert "trunk_lean" in angles

@@ -250,22 +250,24 @@ def process_video(video_path: str, fps: float = None) -> tuple[list[np.ndarray],
 
     for orig_key in angle_keys_right:
         mapped = key_mapping.get(orig_key, orig_key.replace("right_", ""))
-        arr = np.zeros(n)
+        arr = np.full(n, np.nan)
         for i, a in enumerate(all_angles):
-            arr[i] = a.get(orig_key, 0.0)
+            if orig_key in a:
+                arr[i] = a[orig_key]
         angles_right[mapped] = arr
 
     for orig_key in angle_keys_left:
         mapped = key_mapping.get(orig_key, orig_key.replace("left_", ""))
-        arr = np.zeros(n)
+        arr = np.full(n, np.nan)
         for i, a in enumerate(all_angles):
-            arr[i] = a.get(orig_key, 0.0)
+            if orig_key in a:
+                arr[i] = a[orig_key]
         angles_left[mapped] = arr
 
-    if "trunk_lean" in all_angles[0]:
-        trunk = np.array([a.get("trunk_lean", 0.0) for a in all_angles])
-        angles_right["pelvis_tilt"] = trunk
-        angles_left["pelvis_tilt"] = trunk
+    if any("trunk_lean" in a for a in all_angles):
+        trunk = np.array([a.get("trunk_lean", np.nan) for a in all_angles])
+        angles_right["trunk_lateral_lean"] = trunk
+        angles_left["trunk_lateral_lean"] = trunk
 
     if "hip_flexion" in angles_right:
         from scipy.signal import butter, filtfilt

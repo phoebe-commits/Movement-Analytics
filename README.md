@@ -45,7 +45,7 @@ visualization/  Real-time dashboard with time-series plots and gauges
 pose/           Pose estimation integration (MediaPipe)
 ```
 
-### 8 Gait Profiles
+### 9 Gait Profiles
 
 | Profile | Description | Key Feature |
 |---|---|---|
@@ -68,7 +68,7 @@ A composite **0–100 score** computed from 6 weighted biomechanical domains:
 | **Kinematics** | 25% | Hip/knee/ankle ROM (bilateral) vs. clinical norms |
 | **Smoothness** | 18% | SPARC of hip velocity (spectral arc length) |
 | **Symmetry** | 18% | Hip/knee/ankle Symmetry Index (left vs. right) |
-| **Coordination** | 14% | Continuous Relative Phase consistency (bilateral hip/knee) |
+| **Coordination** | 14% | Continuous Relative Phase consistency (bilateral hip) |
 | **Variability** | 13% | Stride time coefficient of variation |
 | **Temporal** | 12% | Cadence and stride time vs. normal ranges |
 
@@ -238,7 +238,7 @@ The research document identifies **15 signals** across 6 domains that form the b
 | Gait metrics engine | Complete (98% test coverage) |
 | Movement Quality Score | Complete (6-domain composite with CRP coordination) |
 | Real-time dashboard | Complete (bilateral overlays, MQS gauge, 6-domain breakdown) |
-| Pose estimation on external video | Complete (MediaPipe PoseLandmarker) |
+| Pose estimation on external video | Functional (MediaPipe PoseLandmarker, sagittal plane) |
 | CI/CD | Complete (GitHub Actions, 57 tests, ruff lint, coverage) |
 | Reproducible benchmark | Complete (JSON output for regression testing) |
 | Movement Quality Score model | Planned (learned weights from expert raters) |

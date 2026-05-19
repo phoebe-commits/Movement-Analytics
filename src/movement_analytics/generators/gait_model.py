@@ -185,7 +185,8 @@ def generate_gait_cycle(params: GaitParameters, n_frames: int = 120,
     trunk_lateral = params.trunk_sway * np.sin(phase)
 
     if params.noise_level > 0:
-        rng = np.random.default_rng(42)
+        seed = 42 if side == "right" else 137
+        rng = np.random.default_rng(seed)
         for arr in [hip, knee, ankle, pelvis_tilt, pelvis_obliq, shoulder, elbow, trunk_lateral]:
             arr += rng.normal(0, params.noise_level, total_frames)
 
