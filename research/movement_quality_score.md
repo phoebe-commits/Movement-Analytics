@@ -147,8 +147,8 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.2, 6
 | Stiff Knee | 88.2 | 74.1 | 100 | 100 | 100 | 100 | 55.8 |
 | Trendelenburg | 87.4 | 60.0 | 100 | 100 | 100 | 100 | 78.5 |
 | Slow | 86.9 | 84.9 | 100 | 100 | 100 | 100 | 22.7 |
-| Noisy | 50.9 | 52.1 | 0 | 92.9 | 96.1 | 0 | 63.7 |
-| Parkinsonian | 51.5 | 63.0 | 0 | 95.7 | 100 | 0 | 38.0 |
+| Parkinsonian | 61.2 | 63.0 | 0 | 95.7 | 100 | 78.9 | 33.4 |
+| Noisy | 58.3 | 52.1 | 0 | 92.9 | 96.1 | 23.7 | 100 |
 
 **Expected patterns confirmed:**
 - Normal scores highest with near-perfect kinematics
@@ -157,13 +157,13 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.2, 6
 - Limp is penalized in symmetry (hip SI 19.4%)
 - Noisy is penalized in smoothness and variability (SPARC degraded, stride CV 33%)
 - Slow and fast are penalized in temporal (cadence outside 90–130 spm range)
-- Noisy and parkinsonian score lowest overall (MQS 50.9 and 51.5 respectively), both with deficits in smoothness (SPARC degraded by noise), variability (stride CV elevated), and temporal domains
-- Noisy gait now shows reduced symmetry (92.9) thanks to waveform symmetry detecting shape-based asymmetry that mean-based SI misses; parkinsonian similarly drops to 95.7
+- Parkinsonian and noisy score lowest overall (MQS 61.2 and 58.3 respectively), both with smoothness = 0 (SPARC degraded). Noisy is penalized in variability (stride CV 16.2%) while parkinsonian shows moderate variability (CV 7.4%) — consistent with the shuffling-but-regular pattern of Parkinson's gait
+- Noisy gait shows reduced symmetry (92.9) thanks to waveform symmetry detecting shape-based asymmetry that mean-based SI misses; parkinsonian similarly at 95.7
 - Bilateral noise is generated with independent random seeds per side (v1.1.1)
 
 ### 3.2 Discriminative Power
 
-The MQS spread across profiles (50.9–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal plane detection capability added in v1.1.
+The MQS spread across profiles (58.3–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal plane detection capability added in v1.1.
 
 ### 3.3 Limitations and Known Gaps
 

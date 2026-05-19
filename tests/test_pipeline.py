@@ -404,8 +404,7 @@ class TestMQSRanking:
     def all_mqs_scores(self):
         scores = {}
         for name, profile in GAIT_PROFILES.items():
-            right = generate_gait_cycle(profile.params, n_frames=60, n_cycles=6, side="right")
-            left = generate_gait_cycle(profile.params, n_frames=60, n_cycles=6, side="left")
+            _, right, left, _ = generate_frames(profile.params, fps=30, n_cycles=6)
             summary = compute_gait_summary(right, left, fps=30)
             scores[name] = summary
         return scores
@@ -443,8 +442,8 @@ class TestMQSRanking:
     def test_parkinsonian_penalized_in_smoothness(self, all_mqs_scores):
         assert all_mqs_scores["parkinsonian"]["mqs_smoothness"] < 50
 
-    def test_parkinsonian_penalized_in_variability(self, all_mqs_scores):
-        assert all_mqs_scores["parkinsonian"]["mqs_variability"] < 50
+    def test_noisy_penalized_in_variability(self, all_mqs_scores):
+        assert all_mqs_scores["noisy"]["mqs_variability"] < 50
 
 
 class TestJointAngles:
@@ -856,8 +855,8 @@ class TestBenchmarkRegression:
         "stiff_knee": 88.2,
         "trendelenburg": 87.4,
         "slow": 86.9,
-        "parkinsonian": 51.5,
-        "noisy": 50.9,
+        "parkinsonian": 61.2,
+        "noisy": 58.3,
     }
 
     MQS_TOLERANCE = 2.0

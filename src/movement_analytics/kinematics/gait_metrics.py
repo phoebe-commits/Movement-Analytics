@@ -190,8 +190,14 @@ def detect_gait_events(hip_flexion: np.ndarray, knee_flexion: np.ndarray,
         b, a = butter(4, 6.0 / nyq, btype="low")
         hip_filt = filtfilt(b, a, hip_flexion)
 
-    hs_indices, _ = find_peaks(hip_filt, distance=int(fps * 0.3))
-    to_indices, _ = find_peaks(-hip_filt, distance=int(fps * 0.3))
+    hip_range = np.ptp(hip_filt)
+    min_prominence = max(hip_range * 0.15, 1.0)
+    hs_indices, _ = find_peaks(
+        hip_filt, distance=int(fps * 0.3), prominence=min_prominence,
+    )
+    to_indices, _ = find_peaks(
+        -hip_filt, distance=int(fps * 0.3), prominence=min_prominence,
+    )
 
     if ankle_dorsiflexion is not None and len(hs_indices) > 0:
         window = max(1, int(fps * 0.1))
