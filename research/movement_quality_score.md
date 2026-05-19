@@ -62,7 +62,7 @@ Sagittal-plane signals (hip, knee, ankle ROM) computed bilaterally (6 signals). 
 | Signal | Optimal Range | Worst-Case Bounds | Source |
 |---|---|---|---|
 | SPARC (hip velocity) | −2.0 to −1.3 | −6.0 to −0.5 | Balasubramanian et al., 2012/2015 |
-| SPARC (knee velocity) | −16.0 to −12.0 | −25.0 to −8.0 | Derived from synthetic profiles; normal knee SPARC ≈ −14.7 |
+| SPARC (knee velocity) | −16.0 to −12.0 | −25.0 to −8.0 | **Synthetic-calibrated** — derived from 9 synthetic profiles; normal knee SPARC ≈ −14.7. Needs clinical validation. |
 
 Computed bilaterally (4 signals: R/L hip + R/L knee SPARC). The domain score = `min(overall_mean, hip_sparc_floor)`, where `overall_mean` is the mean of all 4 signal scores and `hip_sparc_floor` is the mean of the 2 hip SPARC scores. This prevents knee SPARC (which may score well even when hip movement is severely degraded) from diluting the hip SPARC penalty — matching the symmetry domain's `min(SI_mean, waveform_sym)` pattern. Hip velocity SPARC uses the Balasubramanian et al. reference range. Knee SPARC uses a separate range calibrated from the synthetic gait model because the knee velocity profile has higher spectral complexity (stance flexion wave + swing peak) than the hip. The knee SPARC range [-16, -12] captures normal variation while penalizing stiff-knee gait (SPARC ≈ −21) and parkinsonian shuffling (SPARC ≈ −22). Ankle SPARC is excluded due to foot-contact transients that inflate spectral complexity.
 
@@ -98,7 +98,7 @@ Single signal. Healthy adults: 1–3% CV; fallers show >6%.
 | Signal | Optimal Range | Worst-Case Bounds | Source |
 |---|---|---|---|
 | Hip CRP CSD (inter-limb) | 0–15° | 0–60° | Hamill et al., 1999; Plotnik et al., 2005 |
-| Hip-Knee CRP MAD (intra-limb) | 15–35° | 0–60° | Derived from synthetic profiles; normal ≈ 28° |
+| Hip-Knee CRP MAD (intra-limb) | 15–35° | 0–60° | **Synthetic-calibrated** — derived from 9 synthetic profiles; normal ≈ 28°. Needs clinical validation. |
 
 Three signals (1 inter-limb + 2 bilateral intra-limb), averaged. Inter-limb CRP: Continuous Relative Phase via Hilbert transform of bilateral hip flexion signals, CSD measures coordination consistency. Intra-limb CRP (v1.4): hip-knee coupling via Hilbert transform of ipsilateral hip flexion and knee flexion, computed bilaterally. Stiff-knee gait shows hip-knee CRP MAD ≈ 43° (disrupted proximal-distal coupling), compared to 28° for normal gait. Knee bilateral CRP is reported but excluded due to non-sinusoidal stance/swing transitions.
 
@@ -177,6 +177,8 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.5, 6
 The MQS spread across profiles (58.7–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal-plane ROM detection added in v1.1, and the limp profile (symmetry = 84.8, pelvis obliquity SI = 21%) demonstrates frontal-plane asymmetry detection added in v1.3.
 
 ### 3.3 Limitations and Known Gaps
+
+**Provenance note:** This scoring model is a prototype validated on 9 synthetic gait profiles. Two reference ranges (knee SPARC, hip-knee CRP MAD) are synthetic-calibrated and marked as such in the signal tables above. All other ranges are sourced from peer-reviewed literature (Perry & Burnfield 2010, Winter 2009, Balasubramanian et al. 2012, Hausdorff et al. 2001, Robinson 1987, Hamill et al. 1999). Clinical validation against labeled gait data (e.g., OpenCap, clinical motion capture) is required before any claims of clinical validity.
 
 1. **Frontal plane coverage improving:** Pelvic obliquity and trunk lateral lean are scored in the kinematics domain (ROM) and symmetry domain (pelvis obliquity SI, v1.3). Trendelenburg gait is detected via kinematics (score drops to ~60), and asymmetric limping is detected via frontal-plane symmetry (pelvis obliquity SI = 21%). Frontal-plane signals from real video require either multi-camera setup or 3D pose lifting for reliable measurement.
 
