@@ -74,7 +74,7 @@ A composite **0–100 score** computed from 6 weighted biomechanical domains:
 
 MQS differentiates across profiles: normal gait scores highest across all domains, stiff-knee gait is penalized in kinematics (reduced knee ROM), noisy gait is penalized in smoothness and variability. Reference ranges sourced from Perry & Burnfield 2010, Winter 2009, Balasubramanian et al. 2012, Hausdorff et al. 2001, and Hamill et al. 1999.
 
-**Synthetic vs. Video MQS:** Scores from the synthetic benchmark (above) use clean, noise-free angle trajectories and represent the scoring model's theoretical response. Video-derived MQS is scaled by a confidence factor (observed_fraction × mean_pose_confidence) to account for detection gaps and interpolation. Video scores should be interpreted alongside `pose_observed_fraction`, `pose_interpolation_fraction`, and `mqs_confidence_factor` reported in the summary.
+**Synthetic vs. Video MQS:** Scores from the synthetic benchmark (above) use clean, noise-free angle trajectories and represent the scoring model's theoretical response. Video-derived MQS is scaled by a confidence factor (observed_fraction × mean_pose_confidence) to account for detection gaps and interpolation. When signal completeness drops below 50%, MQS returns NaN (insufficient evidence) instead of a misleading score. Video scores should be interpreted alongside `pose_observed_fraction`, `pose_interpolation_fraction`, and `mqs_confidence_factor` reported in the summary.
 
 ### Computed Metrics
 
@@ -269,9 +269,9 @@ The research document identifies **16 signals** across 6 domains that form the b
 | Stick-figure renderer | Implemented |
 | Joint angle computation | Implemented, 100% coverage |
 | Gait metrics engine | Implemented, 98% coverage (synthetic path) |
-| Movement Quality Score | 6-domain composite with frontal-plane symmetry, bilateral SPARC, and intra-limb CRP, validated on 9 profiles (58.7–98.3 range) |
-| Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown) |
-| Video pose estimation | MediaPipe VIDEO mode with temporal smoothing, heel contact detection, confidence-weighted MQS, 96% unit test coverage |
+| Movement Quality Score | 6-domain composite (MQS v1.7) with evidence gating, frontal-plane dedup, bilateral SPARC, intra-limb CRP, validated on 9 profiles (58.7–98.3 range) |
+| Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown, NaN-safe) |
+| Video pose estimation | MediaPipe VIDEO mode with temporal smoothing, heel contact detection, confidence-weighted MQS, frontal dedup, 96% unit test coverage |
 | Gait Deviation Index | Simplified GDI (Schwartz & Rozumalski 2008), 100 = normal, validated on 9 profiles (78.1–100.0 range) |
 | CI/CD | GitHub Actions, 175 tests, ruff lint, 70% coverage gate (93% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
