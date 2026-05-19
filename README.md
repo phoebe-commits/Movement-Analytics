@@ -124,6 +124,7 @@ python -m movement_analytics --video path/to/walking.mp4 --output output/analysi
 --all-profiles    Generate all profiles
 --compare         Generate MQS comparison report across all profiles
 --video, -v       Input video file for pose estimation analysis
+--benchmark       Output MQS benchmark JSON across all profiles
 ```
 
 ### Profile Comparison
@@ -132,6 +133,17 @@ python -m movement_analytics --video path/to/walking.mp4 --output output/analysi
 # Generate MQS comparison chart
 python -m movement_analytics --compare --output output/mqs_comparison.png
 ```
+
+### Reproducible Benchmark
+
+```bash
+# Output MQS benchmark as JSON (suitable for CI regression testing)
+python -m movement_analytics --benchmark --output output/benchmark.json
+```
+
+The benchmark computes MQS and all domain/metric scores across all 8 profiles in a deterministic, reproducible format. Use `--cycles` to control the number of gait cycles evaluated.
+
+### Profile Comparison
 
 The comparison report shows Movement Quality Score breakdowns across all 8 gait profiles, revealing how each domain (kinematics, smoothness, symmetry, coordination, variability, temporal) contributes to the overall score. Reference ranges from the biomechanics literature are displayed for context.
 
