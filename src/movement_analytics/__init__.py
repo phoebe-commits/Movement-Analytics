@@ -8,6 +8,7 @@ from .kinematics.gait_metrics import (
     compute_gait_summary,
     continuous_relative_phase,
     crp_consistency,
+    dfa_scaling_exponent,
     gait_deviation_index,
     movement_quality_score,
     mqs_confidence_factor,
@@ -39,4 +40,5 @@ __all__ = [
     "mqs_sufficient_evidence",
     "stride_pelvic_asymmetry",
     "gait_deviation_index",
+    "dfa_scaling_exponent",
 ]

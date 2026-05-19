@@ -26,6 +26,7 @@ from movement_analytics.kinematics.gait_metrics import (
     compute_gait_summary,
     continuous_relative_phase,
     crp_consistency,
+    dfa_scaling_exponent,
     mqs_domain_scores,
     normalized_jerk,
     rom,
@@ -1433,6 +1434,40 @@ class TestVideoProcessingPipeline:
             assert "pelvis_obliquity" in ar
             assert "pelvis_obliquity" in al
             assert "trunk_lateral_lean" in ar
+            assert ar["pelvis_obliquity"] is al["pelvis_obliquity"]
+            assert ar["trunk_lateral_lean"] is al["trunk_lateral_lean"]
+
+    def test_video_frontal_si_skipped_for_shared_signals(self):
+        """Frontal-plane SI should be omitted when L/R share the same array."""
+        from movement_analytics.pose.estimator import process_video
+
+        n_frames = 120
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "test.mp4")
+            self._make_test_video(vid_path, n_frames=n_frames)
+
+            call_count = [0]
+
+            def mock_process_frame(frame, min_visibility=0.5):
+                idx = call_count[0]
+                call_count[0] += 1
+                return self._fake_positions(idx, n_frames), 0.9
+
+            with patch(
+                "movement_analytics.pose.estimator.PoseEstimator"
+            ) as MockEst:
+                instance = MagicMock()
+                instance.process_frame = mock_process_frame
+                instance.__enter__ = lambda s: s
+                instance.__exit__ = lambda s, *a: None
+                MockEst.return_value = instance
+
+                _, ar, al, fps, _ = process_video(vid_path)
+
+            summary = compute_gait_summary(ar, al, fps=fps)
+            assert "pelvis_obliquity_SI" not in summary
+            assert "trunk_lateral_lean_SI" not in summary
+            assert "hip_flexion_SI" in summary
 
     def test_signed_obliquity_in_video_pipeline(self):
         from movement_analytics.pose.estimator import process_video
@@ -1533,6 +1568,47 @@ class TestVideoProcessingPipeline:
         assert ar == {}
         assert al == {}
         assert meta["observed_fraction"] == 0.0
+
+
+class TestDFA:
+    """Tests for Detrended Fluctuation Analysis scaling exponent."""
+
+    def test_dfa_white_noise(self):
+        rng = np.random.default_rng(42)
+        white = rng.normal(1.0, 0.05, 200)
+        alpha = dfa_scaling_exponent(white)
+        assert 0.3 < alpha < 0.7, f"White noise alpha should be ~0.5, got {alpha}"
+
+    def test_dfa_correlated_signal(self):
+        rng = np.random.default_rng(42)
+        correlated = np.cumsum(rng.normal(0, 0.01, 200)) + 1.0
+        alpha = dfa_scaling_exponent(correlated)
+        assert alpha > 1.0, f"Integrated noise alpha should be >1.0, got {alpha}"
+
+    def test_dfa_too_few_strides(self):
+        short = np.array([1.0, 1.1, 1.0, 1.1, 1.0])
+        alpha = dfa_scaling_exponent(short)
+        assert np.isnan(alpha), "Should return NaN for < 16 strides"
+
+    def test_dfa_constant_returns_nan(self):
+        constant = np.ones(50)
+        alpha = dfa_scaling_exponent(constant)
+        assert np.isnan(alpha) or alpha == pytest.approx(0.0, abs=0.5)
+
+    def test_dfa_not_in_short_summary(self):
+        """DFA should not appear in summary with default 6 cycles (too few strides)."""
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, n_cycles=6)
+        summary = compute_gait_summary(ar, al, fps=30)
+        assert "stride_dfa_alpha" not in summary
+
+    def test_dfa_appears_with_many_noisy_cycles(self):
+        """DFA should appear when enough variable strides are present."""
+        params = GAIT_PROFILES["noisy"].params
+        _, ar, al, _ = generate_frames(params, n_cycles=30)
+        summary = compute_gait_summary(ar, al, fps=30)
+        if summary.get("n_strides", 0) >= 16:
+            assert "stride_dfa_alpha" in summary
 
 
 class TestPoseEstimatorUnit:
@@ -1678,12 +1754,16 @@ class TestPoseEstimatorUnit:
         est.landmarker = mock_landmarker
         est._video_mode = True
         est._frame_count = 0
+        est._ms_per_frame = 1000.0 / 30.0
 
         frame = np.zeros((480, 640, 3), dtype=np.uint8)
         est.process_frame(frame)
         assert est._frame_count == 1
         est.process_frame(frame)
         assert est._frame_count == 2
+        call_args = mock_landmarker.detect_for_video.call_args_list
+        assert call_args[0][0][1] == 33  # ~33ms at 30fps
+        assert call_args[1][0][1] == 66  # ~66ms at 30fps
         assert mock_landmarker.detect_for_video.call_count == 2
 
     def test_draw_landmarks_produces_annotated_frame(self):

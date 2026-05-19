@@ -129,6 +129,51 @@ def coefficient_of_variation(values: np.ndarray) -> float:
     return float(np.std(values) / abs(m) * 100)
 
 
+def dfa_scaling_exponent(stride_intervals: np.ndarray) -> float:
+    """Detrended Fluctuation Analysis scaling exponent (alpha).
+
+    Measures long-range correlations in stride-to-stride fluctuations.
+    Healthy gait: alpha ~ 0.75 (fractal dynamics).
+    Pathological: alpha ~ 0.5 (random, e.g. Parkinson's) or ~1.0 (over-correlated).
+    Hausdorff et al., J Appl Physiol, 2001.
+    """
+    N = len(stride_intervals)
+    if N < 16:
+        return float("nan")
+    y = np.cumsum(stride_intervals - np.mean(stride_intervals))
+    scales = np.unique(np.logspace(np.log10(4), np.log10(N // 4), 10).astype(int))
+    scales = scales[scales >= 4]
+    if len(scales) < 3:
+        return float("nan")
+    fluctuations = []
+    for s in scales:
+        n_segments = N // s
+        if n_segments < 1:
+            continue
+        rms_vals = []
+        for seg in range(n_segments):
+            start = seg * s
+            segment = y[start:start + s]
+            x = np.arange(s)
+            coeffs = np.polyfit(x, segment, 1)
+            trend = np.polyval(coeffs, x)
+            rms_vals.append(np.sqrt(np.mean((segment - trend) ** 2)))
+        if rms_vals:
+            fluctuations.append((s, np.mean(rms_vals)))
+    if len(fluctuations) < 3:
+        return float("nan")
+    log_s = np.log(np.array([f[0] for f in fluctuations]))
+    f_vals = np.array([f[1] for f in fluctuations])
+    if np.all(f_vals < 1e-15):
+        return float("nan")
+    log_f = np.log(np.maximum(f_vals, 1e-15))
+    valid = np.isfinite(log_s) & np.isfinite(log_f)
+    if np.sum(valid) < 3:
+        return float("nan")
+    alpha = float(np.polyfit(log_s[valid], log_f[valid], 1)[0])
+    return alpha
+
+
 def continuous_relative_phase(signal_a: np.ndarray, signal_b: np.ndarray,
                               fps: float) -> np.ndarray:
     """Compute Continuous Relative Phase between two oscillating signals.
@@ -390,14 +435,14 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
     for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion",
                    "pelvis_obliquity", "trunk_lateral_lean"]:
         if joint in angles_right and joint in angles_left:
-            metrics[f"{joint}_SI"] = symmetry_index(
-                angles_left[joint], angles_right[joint]
-            )
-            metrics[f"{joint}_SR"] = symmetry_ratio(
-                angles_left[joint], angles_right[joint]
-            )
+            l_arr = angles_left[joint]
+            r_arr = angles_right[joint]
+            if l_arr is r_arr:
+                continue
+            metrics[f"{joint}_SI"] = symmetry_index(l_arr, r_arr)
+            metrics[f"{joint}_SR"] = symmetry_ratio(l_arr, r_arr)
             metrics[f"{joint}_waveform_sym"] = waveform_symmetry(
-                angles_left[joint], angles_right[joint]
+                l_arr, r_arr
             )
 
     if "hip_flexion" in angles_right and "knee_flexion" in angles_right:
@@ -410,6 +455,8 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
         metrics["stride_time_mean"] = events["stride_time_mean"]
         metrics["stride_time_CV"] = events["stride_time_cv"]
         metrics["n_strides"] = len(events["stride_times"])
+        if len(events["stride_times"]) >= 16:
+            metrics["stride_dfa_alpha"] = dfa_scaling_exponent(events["stride_times"])
 
         hs = events["heel_strikes"]
         to = events["toe_offs"]

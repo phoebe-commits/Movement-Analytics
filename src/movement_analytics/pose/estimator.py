@@ -63,7 +63,7 @@ class PoseEstimator:
     """MediaPipe PoseLandmarker wrapper for gait analysis."""
 
     def __init__(self, model_path: str | None = None, num_poses: int = 1,
-                 video_mode: bool = False):
+                 video_mode: bool = False, fps: float = 30.0):
         path = model_path or _DEFAULT_MODEL
         _download_model(path)
 
@@ -76,6 +76,7 @@ class PoseEstimator:
         self.landmarker = _PoseLandmarker.create_from_options(options)
         self._video_mode = video_mode
         self._frame_count = 0
+        self._ms_per_frame = 1000.0 / fps
 
     def process_frame(self, frame: np.ndarray,
                       min_visibility: float = 0.5) -> tuple[dict | None, float]:
@@ -93,8 +94,9 @@ class PoseEstimator:
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
         if self._video_mode:
             self._frame_count += 1
+            timestamp_ms = int(self._frame_count * self._ms_per_frame)
             result = self.landmarker.detect_for_video(
-                mp_image, self._frame_count
+                mp_image, timestamp_ms
             )
         else:
             result = self.landmarker.detect(mp_image)
@@ -218,7 +220,7 @@ def process_video(
 
     confidences = []
 
-    with PoseEstimator(video_mode=True) as estimator:
+    with PoseEstimator(video_mode=True, fps=actual_fps) as estimator:
         while True:
             ret, frame = cap.read()
             if not ret:
