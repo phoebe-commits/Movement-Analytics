@@ -22,7 +22,30 @@ from .kinematics.gait_metrics import (
     waveform_symmetry,
 )
 
+def analyze_video(video_path: str, fps: float = None) -> dict:
+    """Analyze a walking video and return movement quality metrics.
+
+    High-level API: video in → MQS result out. Runs the full pipeline:
+    MediaPipe pose estimation → joint angles → gait metrics → MQS scoring.
+
+    Returns a dict containing movement_quality_score, domain scores,
+    per-joint metrics, confidence factor, and pose quality metadata.
+    """
+    from .pose.estimator import process_video
+
+    frames, angles_right, angles_left, actual_fps, meta = process_video(
+        video_path, fps=fps,
+    )
+    summary = compute_gait_summary(
+        angles_right, angles_left, fps=actual_fps, pose_metadata=meta,
+    )
+    summary["n_frames"] = len(frames)
+    summary["fps"] = actual_fps
+    return summary
+
+
 __all__ = [
+    "analyze_video",
     "compute_gait_summary",
     "movement_quality_score",
     "mqs_domain_scores",

@@ -1625,6 +1625,40 @@ class TestVideoProcessingPipeline:
         assert al == {}
         assert meta["observed_fraction"] == 0.0
 
+    def test_analyze_video_api(self):
+        """High-level analyze_video API should return MQS and metadata."""
+        from movement_analytics import analyze_video
+
+        n_frames = 120
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "test.mp4")
+            self._make_test_video(vid_path, n_frames=n_frames, fps=30)
+
+            call_count = [0]
+
+            def mock_process_frame(frame, min_visibility=0.5):
+                idx = call_count[0]
+                call_count[0] += 1
+                return self._fake_positions(idx, n_frames), 0.9
+
+            with patch(
+                "movement_analytics.pose.estimator.PoseEstimator"
+            ) as MockEst:
+                instance = MagicMock()
+                instance.process_frame = mock_process_frame
+                instance.__enter__ = lambda s: s
+                instance.__exit__ = lambda s, *a: None
+                MockEst.return_value = instance
+
+                result = analyze_video(vid_path)
+
+            assert "movement_quality_score" in result
+            assert "movement_quality_score_weighted" in result
+            assert "mqs_confidence_factor" in result
+            assert "n_frames" in result
+            assert result["n_frames"] == n_frames
+            assert 0 <= result["movement_quality_score"] <= 100
+
 
 class TestDFA:
     """Tests for Detrended Fluctuation Analysis scaling exponent."""

@@ -194,6 +194,13 @@ custom = GaitParameters(hip_rom=25, knee_rom=35, cadence=85)
 _, ar, al, _ = generate_frames(custom, n_cycles=6)
 custom_summary = compute_gait_summary(ar, al, fps=30)
 print(f"Custom MQS: {custom_summary['movement_quality_score']:.1f}")
+
+# Analyze real video (one-liner API)
+from movement_analytics import analyze_video
+
+result = analyze_video("path/to/walking.mp4")
+print(f"Video MQS: {result['movement_quality_score_weighted']:.1f}")
+print(f"Confidence: {result['mqs_confidence_factor']:.0%}")
 ```
 
 ---
@@ -266,7 +273,7 @@ The research document identifies **16 signals** across 6 domains that form the b
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown) |
 | Video pose estimation | MediaPipe VIDEO mode with temporal smoothing, heel contact detection, confidence-weighted MQS, 96% unit test coverage |
 | Gait Deviation Index | Simplified GDI (Schwartz & Rozumalski 2008), 100 = normal, validated on 9 profiles (78.1–100.0 range) |
-| CI/CD | GitHub Actions, 155 tests, ruff lint, 70% coverage gate (81% actual) |
+| CI/CD | GitHub Actions, 156 tests, ruff lint, 70% coverage gate (81% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 
