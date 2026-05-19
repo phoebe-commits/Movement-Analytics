@@ -200,6 +200,7 @@ The MQS spread across profiles (58.3–98.3) provides meaningful differentiation
 | Trunk lateral lean SI | Symmetry | **Implemented** (v1.3) — diagnostic only, not in MQS composite |
 | Stride-phase pelvic asymmetry | Symmetry | **Implemented** (v1.3) — video-compatible, diagnostic only |
 | Stride-phase trunk asymmetry | Symmetry | **Implemented** (v1.3) — video-compatible, diagnostic only |
+| Double support time | Temporal | **Implemented** (v1.4) — computed as diagnostic; not scored in MQS (sinusoidal model → 50% stance → 0% DS; needs realistic toe-off detection) |
 | Intra-limb CRP (hip-knee) | Coordination | **Implemented** (v1.2) — reported as diagnostic, not in MQS |
 | DFA scaling exponent | Variability | Requires >50 strides for reliability |
 | Head stabilization index | New: Global | Requires head tracking with sufficient resolution |

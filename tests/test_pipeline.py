@@ -614,6 +614,46 @@ class TestStridePelvicAsymmetry:
         assert "trunk_lean_asymmetry" in summary
 
 
+class TestDoubleSupportTime:
+    """Verify double support time estimation from gait events."""
+
+    def test_metric_present_in_summary(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(ar, al, fps=30)
+        assert "double_support_pct" in summary
+
+    def test_value_non_negative(self):
+        for name in ["normal", "slow", "parkinsonian"]:
+            p = GAIT_PROFILES[name]
+            _, ar, al, _ = generate_frames(p.params, fps=30, n_cycles=6)
+            s = compute_gait_summary(ar, al, fps=30)
+            ds = s["double_support_pct"]
+            if not np.isnan(ds):
+                assert ds >= 0.0, f"{name}: double_support_pct should be >= 0, got {ds}"
+
+    def test_value_below_100(self):
+        for name in ["normal", "fast", "limp"]:
+            p = GAIT_PROFILES[name]
+            _, ar, al, _ = generate_frames(p.params, fps=30, n_cycles=6)
+            s = compute_gait_summary(ar, al, fps=30)
+            ds = s["double_support_pct"]
+            if not np.isnan(ds):
+                assert ds < 100.0, f"{name}: double_support_pct should be < 100, got {ds}"
+
+    def test_not_scored_in_mqs(self):
+        """DS is computed but not integrated into MQS (synthetic model limitation)."""
+        from movement_analytics.kinematics.gait_metrics import mqs_domain_scores
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(ar, al, fps=30)
+        assert "double_support_pct" in summary
+        domains_with = mqs_domain_scores(summary)
+        summary_without = {k: v for k, v in summary.items() if k != "double_support_pct"}
+        domains_without = mqs_domain_scores(summary_without)
+        assert domains_with["temporal"] == domains_without["temporal"]
+
+
 class TestBilateralNoiseIndependence:
     """Verify that bilateral noise uses independent random seeds."""
 

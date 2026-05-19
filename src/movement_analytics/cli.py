@@ -369,12 +369,14 @@ def run_benchmark(output_path: str | None = None, fps: int = 30, n_cycles: int =
                   and k not in ("mqs_overall_completeness",
                                 "mqs_sufficient_evidence")):
                 entry["domains"][k.replace("mqs_", "")] = round(v, 1)
-            elif k in ("cadence", "stride_time_mean", "stride_time_CV", "n_strides"):
+            elif k in ("cadence", "stride_time_mean", "stride_time_CV",
+                       "n_strides", "double_support_pct"):
                 is_nan = isinstance(v, float) and np.isnan(v)
                 entry["key_metrics"][k] = None if is_nan else round(v, 2)
             elif (k.endswith("_ROM") or k.endswith("_SI")
                   or k.endswith("_SPARC") or k.endswith("_CRP_MAD")
-                  or k.endswith("_waveform_sym")):
+                  or k.endswith("_waveform_sym")
+                  or k.endswith("_asymmetry")):
                 entry["key_metrics"][k] = round(v, 2)
         results[name] = entry
 

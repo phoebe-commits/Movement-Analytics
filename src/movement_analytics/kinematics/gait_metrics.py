@@ -315,6 +315,26 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
         metrics["n_strides"] = len(events["stride_times"])
 
         hs = events["heel_strikes"]
+        to = events["toe_offs"]
+
+        ds_pcts = []
+        for i in range(len(hs) - 1):
+            stride_start = hs[i]
+            stride_end = hs[i + 1]
+            stride_dur = stride_end - stride_start
+            if stride_dur < 3:
+                continue
+            tos_in_stride = to[(to > stride_start) & (to < stride_end)]
+            if len(tos_in_stride) == 0:
+                continue
+            stance_dur = tos_in_stride[0] - stride_start
+            stance_pct = stance_dur / stride_dur
+            ds_pct = max(0.0, 2 * stance_pct - 1) * 100
+            ds_pcts.append(ds_pct)
+        if ds_pcts:
+            metrics["double_support_pct"] = float(np.mean(ds_pcts))
+        else:
+            metrics["double_support_pct"] = float("nan")
         if len(hs) >= 3:
             for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]:
                 for side_l, ang in [("R", angles_right), ("L", angles_left)]:
@@ -419,6 +439,7 @@ _SIGNAL_RANGES = {
     "stride_cv": (0.0, 4.0, 0.0, 20.0),
     "cadence": (90.0, 130.0, 40.0, 180.0),
     "stride_time": (0.8, 1.3, 0.3, 2.5),
+    "double_support": (15.0, 25.0, 0.0, 50.0),
     "crp_mad": (0.0, 15.0, 0.0, 60.0),
 }
 
