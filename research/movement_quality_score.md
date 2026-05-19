@@ -147,17 +147,17 @@ The MQS is bounded [0, 100] by construction (all components are bounded [0, 100]
 
 The MQS correctly differentiates across the 9 implemented gait profiles (v1.5, 6-domain model with frontal-plane symmetry, bilateral SPARC, and hip SPARC floor):
 
-| Profile | MQS | Kinematics | Smoothness | Symmetry | Coordination | Variability | Temporal |
-|---|---|---|---|---|---|---|---|
-| Normal | 98.3 | 93.4 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 |
-| Model Runway | 96.1 | 84.6 | 100.0 | 99.9 | 100.0 | 100.0 | 100.0 |
-| Fast | 89.5 | 93.4 | 93.0 | 100.0 | 100.0 | 100.0 | 36.7 |
-| Limp | 88.8 | 90.9 | 91.5 | 84.8 | 100.0 | 100.0 | 61.2 |
-| Trendelenburg | 87.3 | 60.0 | 99.3 | 100.0 | 100.0 | 100.0 | 78.5 |
-| Slow | 83.8 | 84.9 | 82.6 | 100.0 | 100.0 | 100.0 | 22.7 |
-| Stiff Knee | 79.9 | 74.1 | 70.5 | 100.0 | 78.7 | 100.0 | 55.8 |
-| Noisy | 58.7 | 52.1 | 0.0 | 92.9 | 98.7 | 23.7 | 100.0 |
-| Parkinsonian | 59.9 | 63.0 | 0.0 | 95.7 | 90.3 | 78.9 | 33.4 |
+| Profile | MQS | GDI | Kinematics | Smoothness | Symmetry | Coordination | Variability | Temporal |
+|---|---|---|---|---|---|---|---|---|
+| Normal | 98.3 | 100.0 | 93.4 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 |
+| Model Runway | 96.1 | 92.5 | 84.6 | 100.0 | 99.9 | 100.0 | 100.0 | 100.0 |
+| Fast | 89.5 | 88.5 | 93.4 | 93.0 | 100.0 | 100.0 | 100.0 | 36.7 |
+| Limp | 88.8 | 86.9 | 90.9 | 91.5 | 84.8 | 100.0 | 100.0 | 61.2 |
+| Trendelenburg | 87.3 | 91.6 | 60.0 | 99.3 | 100.0 | 100.0 | 100.0 | 78.5 |
+| Slow | 83.8 | 84.6 | 84.9 | 82.6 | 100.0 | 100.0 | 100.0 | 22.7 |
+| Stiff Knee | 79.9 | 82.4 | 74.1 | 70.5 | 100.0 | 78.7 | 100.0 | 55.8 |
+| Noisy | 58.7 | 83.4 | 52.1 | 0.0 | 92.9 | 98.7 | 23.7 | 100.0 |
+| Parkinsonian | 59.9 | 78.1 | 63.0 | 0.0 | 95.7 | 90.3 | 78.9 | 33.4 |
 
 **Expected patterns confirmed:**
 - Normal scores highest with near-perfect kinematics
@@ -170,6 +170,7 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.5, 6
 - Parkinsonian scores lowest overall (MQS 59.9), with smoothness = 0.0 (hip SPARC severely degraded, floor applied) and coordination = 90.3 (disrupted hip-knee coupling). Noisy scores 58.7, penalized in both smoothness (hip SPARC floor = 0) and variability (stride CV 16.2%) while parkinsonian shows moderate variability (CV 7.4%) — consistent with the shuffling-but-regular pattern of Parkinson's gait
 - Noisy gait shows reduced symmetry (92.9) thanks to waveform symmetry detecting shape-based asymmetry that mean-based SI misses; parkinsonian similarly at 95.7
 - Bilateral noise is generated with independent random seeds per side (v1.1.1)
+- GDI and MQS provide complementary perspectives: GDI measures sagittal-plane waveform shape deviation from normal (100 = identical, lower = more deviant), while MQS measures multi-domain quality. Trendelenburg GDI = 91.6 (sagittal waveforms nearly normal) vs. MQS = 87.3 (penalized in kinematics for frontal-plane pathology). Parkinsonian GDI = 78.1 (most deviant waveform shape) vs. MQS = 59.9 (penalized across smoothness, coordination, variability, temporal)
 
 ### 3.2 Discriminative Power
 
