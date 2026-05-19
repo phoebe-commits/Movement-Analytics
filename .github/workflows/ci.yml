@@ -35,7 +35,7 @@ jobs:
             --cov=movement_analytics \
             --cov-report=term-missing \
             --cov-report=xml \
-            --cov-fail-under=65
+            --cov-fail-under=70
 
       - name: Upload coverage
         if: matrix.python-version == '3.12'
