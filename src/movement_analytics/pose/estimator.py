@@ -48,7 +48,10 @@ _PHYSIO_RANGES = {
     "knee_flexion": (-20.0, 160.0),
     "ankle_dorsiflexion": (-90.0, 60.0),
     "elbow_flexion": (-20.0, 170.0),
+    "pelvis_obliquity": (-40.0, 40.0),
     "pelvic_obliquity": (-40.0, 40.0),
+    "trunk_lean": (-45.0, 45.0),
+    "trunk_lateral_lean": (-45.0, 45.0),
 }
 
 
