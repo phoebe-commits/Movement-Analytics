@@ -107,7 +107,7 @@ MQS differentiates across profiles: normal gait scores highest across all domain
 
 ### Computed Metrics
 
-For each gait profile, the pipeline computes **50+ metrics** in real time:
+For each gait profile, the pipeline computes **100+ metrics** in real time:
 
 - **Movement Quality Score** — composite 0–100 with 6-domain breakdown
 - **Joint ROM** — hip, knee, ankle (bilateral)
@@ -265,7 +265,7 @@ Output: Video file and/or live display
 
 ## Movement Quality Signal Framework
 
-The research document identifies **16 signals** across 6 domains that form the basis for the Movement Quality Score:
+The research document identifies **20 signals** across 6 domains that form the basis for the Movement Quality Score:
 
 | # | Signal | Domain | Clinical Reference |
 |---|---|---|---|
