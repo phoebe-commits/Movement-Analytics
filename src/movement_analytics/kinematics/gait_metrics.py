@@ -492,6 +492,9 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
     for side_label, angles in [("R", angles_right), ("L", angles_left)]:
         if "pelvis_obliquity" in angles:
             metrics[f"{side_label}_pelvis_obliquity_ROM"] = rom(angles["pelvis_obliquity"])
+        if "pelvis_obliquity_signed" in angles:
+            signed = angles["pelvis_obliquity_signed"]
+            metrics[f"{side_label}_pelvis_obliquity_mean_signed"] = float(np.nanmean(signed))
         if "trunk_lateral_lean" in angles:
             metrics[f"{side_label}_trunk_lean_ROM"] = rom(angles["trunk_lateral_lean"])
 
