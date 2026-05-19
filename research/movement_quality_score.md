@@ -90,8 +90,9 @@ Waveform symmetry (|NCC| × 100, where NCC = normalized cross-correlation of cen
 | Signal | Optimal Range | Worst-Case Bounds | Source |
 |---|---|---|---|
 | Stride time CV | 0–4% | 0–20% | Hausdorff et al., 2001 |
+| Kinematic CV (composite) | 0–5% | 0–30% | **Synthetic-calibrated** — mean of per-joint stride-to-stride ROM CVs; normal ≈ 0%, noisy ≈ 20%. Needs clinical validation. |
 
-Single signal. Healthy adults: 1–3% CV; fallers show >6%.
+Two signals, averaged. Stride time CV captures temporal variability (healthy adults: 1–3% CV; fallers show >6%). Kinematic CV captures spatial variability — the composite mean of per-joint (hip, knee, ankle) ROM coefficient of variation across strides. Noisy gait (4° random noise) scores kinematic CV ≈ 20%, confirming sensitivity to motor variability. The 0–5% optimal range is conservative; clinical data on stride-to-stride ROM CV is sparse but consistent with Hausdorff et al.'s observation that healthy gait is highly stereotyped.
 
 **Coordination Domain (14%):**
 
@@ -156,25 +157,25 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.5, 6
 | Trendelenburg | 87.3 | 91.6 | 60.0 | 99.3 | 100.0 | 100.0 | 100.0 | 78.5 |
 | Slow | 83.8 | 84.6 | 84.9 | 82.6 | 100.0 | 100.0 | 100.0 | 22.7 |
 | Stiff Knee | 79.9 | 82.4 | 74.1 | 70.5 | 100.0 | 78.7 | 100.0 | 55.8 |
-| Noisy | 58.7 | 83.4 | 52.1 | 0.0 | 92.9 | 98.7 | 23.7 | 100.0 |
-| Parkinsonian | 59.9 | 78.1 | 63.0 | 0.0 | 95.7 | 90.3 | 78.9 | 33.4 |
+| Noisy | 61.7 | 83.4 | 52.1 | 0.0 | 92.9 | 98.7 | 47.1 | 100.0 |
+| Parkinsonian | 61.1 | 78.1 | 63.0 | 0.0 | 95.7 | 90.3 | 88.4 | 33.4 |
 
 **Expected patterns confirmed:**
 - Normal scores highest with near-perfect kinematics
 - Trendelenburg is strongly penalized in kinematics (pelvic obliquity 24° vs. 7° normal, trunk lean 16° vs. 5°)
 - Stiff knee is penalized in kinematics (knee ROM 25° vs. 50–70° normal), smoothness (knee SPARC −21 vs. −16 to −12 normal), and coordination (hip-knee CRP MAD 43° vs. 28° normal)
 - Limp is penalized in symmetry (84.8) via both sagittal SI (hip SI 19.4%) and frontal-plane pelvis obliquity SI (21%) — the asymmetric pelvic drop is now detected (v1.3)
-- Noisy is penalized in smoothness (hip SPARC floor = 0, preventing knee SPARC from diluting the penalty) and variability (stride CV 33%)
+- Noisy is penalized in smoothness (hip SPARC floor = 0, preventing knee SPARC from diluting the penalty) and variability (47.1: stride CV 16.2% + kinematic CV 12.4%)
 - Slow and fast are penalized in temporal (cadence outside 90–130 spm range)
 - Stiff-knee and parkinsonian are heavily penalized in smoothness via knee SPARC (v1.4): stiff_knee knee SPARC ≈ −21 (reduced swing velocity), parkinsonian ≈ −22 (shuffling rhythm)
-- Parkinsonian scores lowest overall (MQS 59.9), with smoothness = 0.0 (hip SPARC severely degraded, floor applied) and coordination = 90.3 (disrupted hip-knee coupling). Noisy scores 58.7, penalized in both smoothness (hip SPARC floor = 0) and variability (stride CV 16.2%) while parkinsonian shows moderate variability (CV 7.4%) — consistent with the shuffling-but-regular pattern of Parkinson's gait
+- Parkinsonian scores lowest overall (MQS 61.1), with smoothness = 0.0 (hip SPARC severely degraded, floor applied) and coordination = 90.3 (disrupted hip-knee coupling). Noisy scores 61.7, penalized in both smoothness (hip SPARC floor = 0) and variability (47.1: stride CV 16.2% + kinematic CV 12.4%) while parkinsonian shows moderate variability (88.4: stride CV 7.4% + kinematic CV 5.5%) — consistent with the shuffling-but-regular pattern of Parkinson's gait
 - Noisy gait shows reduced symmetry (92.9) thanks to waveform symmetry detecting shape-based asymmetry that mean-based SI misses; parkinsonian similarly at 95.7
 - Bilateral noise is generated with independent random seeds per side (v1.1.1)
 - GDI and MQS provide complementary perspectives: GDI measures sagittal-plane waveform shape deviation from normal (100 = identical, lower = more deviant), while MQS measures multi-domain quality. Trendelenburg GDI = 91.6 (sagittal waveforms nearly normal) vs. MQS = 87.3 (penalized in kinematics for frontal-plane pathology). Parkinsonian GDI = 78.1 (most deviant waveform shape) vs. MQS = 59.9 (penalized across smoothness, coordination, variability, temporal)
 
 ### 3.2 Discriminative Power
 
-The MQS spread across profiles (58.7–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal-plane ROM detection added in v1.1, and the limp profile (symmetry = 84.8, pelvis obliquity SI = 21%) demonstrates frontal-plane asymmetry detection added in v1.3.
+The MQS spread across profiles (61.1–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal-plane ROM detection added in v1.1, and the limp profile (symmetry = 84.8, pelvis obliquity SI = 21%) demonstrates frontal-plane asymmetry detection added in v1.3.
 
 ### 3.3 Limitations and Known Gaps
 
@@ -184,7 +185,7 @@ The MQS spread across profiles (58.7–98.3) provides meaningful differentiation
 
 2. **Smoothness domain uses hip and knee SPARC:** Hip SPARC uses the Balasubramanian et al. reference range; knee SPARC uses a synthetic-derived range (v1.4). Ankle SPARC is excluded due to foot-contact transients. The knee SPARC range is not yet validated against clinical data.
 
-3. **Variability requires multiple strides:** With fewer than 3 detected strides, stride CV reliability degrades. The current implementation returns NaN for stride CV when fewer than 3 strides are detected, and the MQS scores missing variability as 50.0 (neutral). Missing kinematics, smoothness, and symmetry signals are excluded from their domain averages rather than defaulted to optimal values (v1.1.1).
+3. **Variability requires multiple strides:** With fewer than 3 detected strides, stride CV and kinematic CV reliability degrades. The current implementation returns NaN for both metrics when fewer than 3 strides are detected, and the MQS scores missing variability as 50.0 (neutral). The kinematic CV signal range (0–5% optimal, 0–30% worst) is synthetic-calibrated and needs clinical validation. Missing kinematics, smoothness, and symmetry signals are excluded from their domain averages rather than defaulted to optimal values (v1.1.1).
 
 4. **Symmetry composite (v1.2):** The symmetry domain now uses `min(SI_mean, hip_waveform_sym)` where SI is the traditional mean-based Symmetry Index and hip waveform symmetry is the absolute normalized cross-correlation of bilateral hip flexion curves. The `min` operator ensures that either amplitude asymmetry (caught by SI) or shape asymmetry (caught by waveform NCC) will penalize the score. This addresses the prior limitation where mean-based SI alone missed phase-specific asymmetries. However, the waveform metric uses hip flexion only; extending to knee/ankle waveform correlation could improve sensitivity to distal asymmetries.
 
@@ -216,6 +217,7 @@ The MQS spread across profiles (58.7–98.3) provides meaningful differentiation
 | Insufficient evidence guard | Reliability | **Implemented** (v1.7) — MQS returns NaN when overall signal completeness < 50%; prevents misleading scores from sparse/failed pose |
 | Frontal-plane dedup | Reliability | **Implemented** (v1.7) — L-side pelvis/trunk ROM skipped when video copies R signal to both sides, preventing completeness inflation |
 | Arm swing ROM | Upper body | **Implemented** (v1.7) — bilateral shoulder/elbow ROM, arm swing SI, ratio vs. normal (25°). Parkinsonian gait: ratio ≈ 0.63 (37% reduced). Diagnostic only, not in MQS composite. |
+| Kinematic CV (composite) | Variability | **Implemented** (v1.7) — composite mean of per-joint stride-to-stride ROM CVs; scored alongside stride_time_CV in variability domain. Range: 0–5% optimal, 0–30% worst. |
 | Head stabilization index | New: Global | Requires head tracking with sufficient resolution |
 
 ### 4.2 Humanoid Robotics Extension
