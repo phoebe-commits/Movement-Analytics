@@ -151,22 +151,10 @@ def run_video_analysis(video_path: str, output_path: str | None = None,
         return
 
     print("Computing gait summary metrics...")
-    summary = compute_gait_summary(angles_right, angles_left, fps=fps)
-    if meta:
-        summary["pose_observed_fraction"] = meta.get("observed_fraction", 0.0)
-        summary["pose_mean_confidence"] = meta.get("mean_confidence", 0.0)
-        interp = meta.get("interpolation_fractions", {})
-        if interp:
-            summary["pose_interpolation_fraction"] = float(
-                np.mean(list(interp.values()))
-            )
-        from .kinematics.gait_metrics import mqs_confidence_factor
-        cf = mqs_confidence_factor(summary)
-        summary["mqs_confidence_factor"] = cf
-        if cf < 1.0:
-            raw = summary["movement_quality_score"]
-            summary["mqs_raw"] = raw
-            summary["movement_quality_score"] = round(raw * cf, 1)
+    summary = compute_gait_summary(
+        angles_right, angles_left, fps=fps,
+        pose_metadata=meta if meta else None,
+    )
 
     print("\n--- Gait Summary ---")
     for key, val in sorted(summary.items()):

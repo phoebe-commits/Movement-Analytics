@@ -355,8 +355,14 @@ def detect_gait_events(hip_flexion: np.ndarray, knee_flexion: np.ndarray,
 
 
 def compute_gait_summary(angles_right: dict, angles_left: dict,
-                         fps: float = 30.0) -> dict:
+                         fps: float = 30.0,
+                         pose_metadata: dict | None = None) -> dict:
     """Compute comprehensive gait quality metrics from bilateral angle data.
+
+    When *pose_metadata* is provided (from ``process_video``), also writes
+    ``pose_observed_fraction``, ``pose_mean_confidence``,
+    ``pose_interpolation_fraction``, ``mqs_confidence_factor``, and
+    ``movement_quality_score_weighted`` to the returned dict.
 
     Returns a flat dict of named metrics suitable for display and logging.
     """
@@ -500,6 +506,22 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
     metrics["mqs_sufficient_evidence"] = float(
         mqs_sufficient_evidence(metrics)
     )
+
+    if pose_metadata is not None:
+        obs = pose_metadata.get("observed_fraction", 1.0)
+        conf = pose_metadata.get("mean_confidence", 1.0)
+        metrics["pose_observed_fraction"] = obs
+        metrics["pose_mean_confidence"] = conf
+        interp = pose_metadata.get("interpolation_fractions", {})
+        if interp:
+            metrics["pose_interpolation_fraction"] = float(
+                np.mean(list(interp.values()))
+            )
+        cf = mqs_confidence_factor(metrics)
+        metrics["mqs_confidence_factor"] = cf
+        metrics["movement_quality_score_weighted"] = (
+            metrics["movement_quality_score"] * cf
+        )
 
     return metrics
 

@@ -1442,6 +1442,32 @@ class TestVideoProcessingPipeline:
         cf = mqs_confidence_factor(metrics)
         assert cf == 1.0
 
+    def test_pose_metadata_produces_weighted_mqs(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        meta = {
+            "observed_fraction": 0.8,
+            "mean_confidence": 0.9,
+            "interpolation_fractions": {"hip_flexion": 0.2},
+        }
+        summary = compute_gait_summary(ar, al, fps=30, pose_metadata=meta)
+        assert "movement_quality_score_weighted" in summary
+        assert "mqs_confidence_factor" in summary
+        assert "pose_observed_fraction" in summary
+        raw = summary["movement_quality_score"]
+        cf = summary["mqs_confidence_factor"]
+        assert cf == pytest.approx(0.8 * 0.9, abs=0.01)
+        assert summary["movement_quality_score_weighted"] == pytest.approx(
+            raw * cf, abs=0.1
+        )
+
+    def test_no_pose_metadata_no_weighted_mqs(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(ar, al, fps=30)
+        assert "movement_quality_score_weighted" not in summary
+        assert "mqs_confidence_factor" not in summary
+
     def test_process_video_bad_path_raises(self):
         from movement_analytics.pose.estimator import process_video
         with pytest.raises(FileNotFoundError):
