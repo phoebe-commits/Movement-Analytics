@@ -2280,6 +2280,102 @@ class TestPoseEstimatorUnit:
         assert "pelvis" in positions
 
 
+class TestMultiViewAnalysis:
+    """Validate multi-view video analysis merging."""
+
+    def test_single_view_matches_analyze_video(self):
+        from movement_analytics import analyze_multi_view
+
+        n_frames = 60
+        t = np.linspace(0, 4 * np.pi, n_frames)
+        ar = {"hip_flexion": np.sin(t) * 20 + 25,
+              "knee_flexion": np.sin(t + 0.5) * 30 + 35}
+        al = dict(ar)
+        meta = {"observed_fraction": 0.9, "mean_confidence": 0.8,
+                "mean_detected_confidence": 0.85,
+                "interpolation_fractions": {}, "n_frames": n_frames}
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid = os.path.join(tmpdir, "test.mp4")
+            h, w = 480, 640
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            writer = cv2.VideoWriter(vid, fourcc, 30, (w, h))
+            for _ in range(n_frames):
+                writer.write(np.zeros((h, w, 3), dtype=np.uint8))
+            writer.release()
+
+            with patch(
+                "movement_analytics.pose.estimator.process_video"
+            ) as mock_pv:
+                mock_pv.return_value = ([], ar, al, 30.0, meta)
+                result = analyze_multi_view([vid])
+
+            assert result["n_views"] == 1
+            assert "movement_quality_score" in result
+
+    def test_two_views_merges_frontal(self):
+        from movement_analytics import analyze_multi_view
+
+        n = 60
+        t = np.linspace(0, 4 * np.pi, n)
+        sag_ar = {"hip_flexion": np.sin(t) * 20 + 25,
+                  "knee_flexion": np.sin(t + 0.5) * 30 + 35}
+        sag_al = dict(sag_ar)
+        sag_meta = {"observed_fraction": 0.9, "mean_confidence": 0.8,
+                    "mean_detected_confidence": 0.85,
+                    "interpolation_fractions": {}, "n_frames": n}
+
+        front_ar = {"hip_flexion": np.sin(t) * 10,
+                    "pelvis_obliquity": np.sin(t) * 5}
+        front_al = dict(front_ar)
+        front_meta = {"observed_fraction": 0.95, "mean_confidence": 0.9,
+                      "mean_detected_confidence": 0.92,
+                      "interpolation_fractions": {}, "n_frames": n}
+
+        call_count = [0]
+
+        def mock_process(path, fps=None, store_frames=True):
+            idx = call_count[0]
+            call_count[0] += 1
+            if idx == 0:
+                return [], sag_ar, sag_al, 30.0, sag_meta
+            return [], front_ar, front_al, 30.0, front_meta
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_s = os.path.join(tmpdir, "sagittal.mp4")
+            vid_f = os.path.join(tmpdir, "frontal.mp4")
+            for p in [vid_s, vid_f]:
+                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                w = cv2.VideoWriter(p, fourcc, 30, (640, 480))
+                for _ in range(n):
+                    w.write(np.zeros((480, 640, 3), dtype=np.uint8))
+                w.release()
+
+            with patch(
+                "movement_analytics.pose.estimator.process_video",
+                side_effect=mock_process,
+            ):
+                result = analyze_multi_view(
+                    [vid_s, vid_f],
+                    view_labels=["sagittal", "frontal"],
+                )
+
+            assert result["n_views"] == 2
+            assert result["sagittal_view"] == "sagittal"
+            assert result["frontal_view"] == "frontal"
+            assert "R_pelvis_obliquity_ROM" in result
+
+    def test_empty_paths_raises(self):
+        from movement_analytics import analyze_multi_view
+        with pytest.raises(ValueError, match="At least one"):
+            analyze_multi_view([])
+
+    def test_mismatched_labels_raises(self):
+        from movement_analytics import analyze_multi_view
+        with pytest.raises(ValueError, match="view_labels must match"):
+            analyze_multi_view(["a.mp4"], view_labels=["sag", "front"])
+
+
 class TestCLIRunAnalysis:
     """Tests for CLI run_analysis function (synthetic profile pipeline)."""
 
