@@ -173,6 +173,45 @@ def rom(angles: np.ndarray) -> float:
     return float(np.ptp(angles))
 
 
+def stride_pelvic_asymmetry(
+    pelvis_obliquity: np.ndarray, heel_strikes: np.ndarray,
+) -> float:
+    """Pelvic drop asymmetry from stride-segmented obliquity.
+
+    Splits each gait cycle (between consecutive ipsilateral heel strikes)
+    into first-half (ipsilateral stance) and second-half (contralateral
+    stance), then compares pelvic excursion. Works from a single global
+    pelvis signal — no bilateral sensors needed.
+
+    Returns SI-like percentage: 0 = symmetric, >10 = asymmetric.
+    NaN if fewer than 2 complete strides.
+    """
+    if len(heel_strikes) < 3:
+        return float("nan")
+
+    first_half_exc = []
+    second_half_exc = []
+    for i in range(len(heel_strikes) - 1):
+        start = heel_strikes[i]
+        end = heel_strikes[i + 1]
+        mid = (start + end) // 2
+        seg_a = pelvis_obliquity[start:mid]
+        seg_b = pelvis_obliquity[mid:end]
+        if len(seg_a) > 2 and len(seg_b) > 2:
+            first_half_exc.append(float(np.ptp(seg_a)))
+            second_half_exc.append(float(np.ptp(seg_b)))
+
+    if len(first_half_exc) < 2:
+        return float("nan")
+
+    mean_a = float(np.mean(first_half_exc))
+    mean_b = float(np.mean(second_half_exc))
+    denom = mean_a + mean_b
+    if denom < 1e-6:
+        return 0.0
+    return float(2 * abs(mean_a - mean_b) / denom * 100)
+
+
 def detect_gait_events(hip_flexion: np.ndarray, knee_flexion: np.ndarray,
                        fps: float,
                        ankle_dorsiflexion: np.ndarray | None = None) -> dict:
@@ -292,6 +331,17 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
                             "_dorsiflexion", ""
                         )
                         metrics[f"{side_l}_{short}_ROM_CV"] = cv
+
+        pelvis = angles_right.get("pelvis_obliquity")
+        if pelvis is not None and len(hs) >= 3:
+            metrics["pelvic_drop_asymmetry"] = stride_pelvic_asymmetry(
+                pelvis, hs,
+            )
+        trunk = angles_right.get("trunk_lateral_lean")
+        if trunk is not None and len(hs) >= 3:
+            metrics["trunk_lean_asymmetry"] = stride_pelvic_asymmetry(
+                trunk, hs,
+            )
 
     if "hip_flexion" in angles_right:
         metrics["R_hip_CV"] = coefficient_of_variation(

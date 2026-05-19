@@ -76,7 +76,9 @@ Computed bilaterally (2 signals), averaged. Hip velocity SPARC is used because h
 
 SI = 2 × |mean(L) − mean(R)| / (mean(L) + mean(R)) × 100. Four signals, averaged. Pelvis obliquity SI (v1.3) enables frontal-plane asymmetry detection: limping gait shows SI ≈ 21% due to asymmetric pelvic drop, while normal gait shows SI ≈ 0%. The 0–10% optimal range is an initial heuristic derived from analogous sagittal SI ranges (Robinson 1987) and Baker et al.'s frontal-plane kinematic norms; clinical calibration with real gait data is needed. Trunk lateral lean SI is computed and reported as a diagnostic but excluded from the composite to avoid double-penalizing compensatory trunk patterns already captured by kinematics domain scoring.
 
-**Limitation:** Pelvis obliquity SI is currently validated on synthetic data only. The video pipeline computes a single global pelvis tilt per frame (not bilateral stance-phase pelvic drop), so video-derived pelvis obliquity SI will be zero. Event-locked stance-phase frontal-plane metrics require gait cycle segmentation and are planned for a future release.
+**Limitation:** Pelvis obliquity SI is currently validated on synthetic data only. The video pipeline computes a single global pelvis tilt per frame (not bilateral stance-phase pelvic drop), so video-derived pelvis obliquity SI will be zero.
+
+**Stride-phase pelvic asymmetry (v1.3):** To address the video limitation, `stride_pelvic_asymmetry()` splits each gait cycle (between consecutive ipsilateral heel strikes) into first-half and second-half segments, then compares pelvic excursion (peak-to-peak). In pathological gait, the pelvis drops more during one stance phase than the other, creating measurable half-cycle excursion asymmetry. This metric works from a single global pelvis signal — no bilateral sensors needed — making it applicable to both synthetic and video-derived data. Reported as `pelvic_drop_asymmetry` and `trunk_lean_asymmetry` diagnostics (not in MQS composite pending validation).
 
 Waveform symmetry (|NCC| × 100, where NCC = normalized cross-correlation of centered bilateral signals) is integrated into the symmetry domain composite as of v1.2. The symmetry domain score = `min(SI_mean, hip_waveform_sym)`, ensuring that either amplitude asymmetry (caught by SI) or shape/timing asymmetry (caught by waveform NCC) will penalize the score. NCC is amplitude-insensitive by construction (centered, normalized); amplitude differences between sides are captured by SI, not waveform symmetry. Anti-phase bilateral coupling (healthy gait) scores 100% because absolute NCC is used. Waveform symmetry captures shape and timing differences that mean-based SI misses (e.g., noisy gait: SI=0.1%, waveform=92.9%).
 
@@ -196,6 +198,8 @@ The MQS spread across profiles (58.3–98.3) provides meaningful differentiation
 | Trunk lateral lean | Kinematics | **Implemented** (v1.1) |
 | Pelvis obliquity SI | Symmetry | **Implemented** (v1.3) — frontal-plane asymmetry detection |
 | Trunk lateral lean SI | Symmetry | **Implemented** (v1.3) — diagnostic only, not in MQS composite |
+| Stride-phase pelvic asymmetry | Symmetry | **Implemented** (v1.3) — video-compatible, diagnostic only |
+| Stride-phase trunk asymmetry | Symmetry | **Implemented** (v1.3) — video-compatible, diagnostic only |
 | Intra-limb CRP (hip-knee) | Coordination | **Implemented** (v1.2) — reported as diagnostic, not in MQS |
 | DFA scaling exponent | Variability | Requires >50 strides for reliability |
 | Head stabilization index | New: Global | Requires head tracking with sufficient resolution |

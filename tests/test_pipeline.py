@@ -572,6 +572,48 @@ class TestFrontalPlaneSymmetry:
         assert summary["mqs_symmetry"] < normal_summary["mqs_symmetry"]
 
 
+class TestStridePelvicAsymmetry:
+    """Verify stride-phase pelvic drop asymmetry metric."""
+
+    def test_symmetric_signal_near_zero(self):
+        from movement_analytics.kinematics.gait_metrics import stride_pelvic_asymmetry
+        t = np.linspace(0, 6 * np.pi, 180)
+        signal = 5.0 * np.sin(t)
+        hs = np.array([0, 30, 60, 90, 120, 150])
+        asym = stride_pelvic_asymmetry(signal, hs)
+        assert abs(asym) < 2.0
+
+    def test_asymmetric_signal_detected(self):
+        from movement_analytics.kinematics.gait_metrics import stride_pelvic_asymmetry
+        n = 180
+        hs = np.array([0, 30, 60, 90, 120, 150])
+        signal = np.zeros(n)
+        for i in range(len(hs) - 1):
+            start, end = hs[i], hs[i + 1]
+            mid = (start + end) // 2
+            signal[start:mid] = 3.0 * np.sin(
+                np.pi * np.linspace(0, 1, mid - start)
+            )
+            signal[mid:end] = 8.0 * np.sin(
+                np.pi * np.linspace(0, 1, end - mid)
+            )
+        asym = stride_pelvic_asymmetry(signal, hs)
+        assert asym > 20, f"Should detect half-cycle asymmetry, got {asym:.1f}"
+
+    def test_too_few_strides_returns_nan(self):
+        from movement_analytics.kinematics.gait_metrics import stride_pelvic_asymmetry
+        signal = np.sin(np.linspace(0, 2 * np.pi, 60))
+        hs = np.array([0, 30])
+        assert np.isnan(stride_pelvic_asymmetry(signal, hs))
+
+    def test_metric_present_in_summary(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(ar, al, fps=30)
+        assert "pelvic_drop_asymmetry" in summary
+        assert "trunk_lean_asymmetry" in summary
+
+
 class TestBilateralNoiseIndependence:
     """Verify that bilateral noise uses independent random seeds."""
 

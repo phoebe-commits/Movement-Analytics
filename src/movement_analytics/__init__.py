@@ -15,6 +15,7 @@ from .kinematics.gait_metrics import (
     mqs_sufficient_evidence,
     rom,
     sparc,
+    stride_pelvic_asymmetry,
     symmetry_index,
     waveform_symmetry,
 )
@@ -35,4 +36,5 @@ __all__ = [
     "waveform_symmetry",
     "mqs_confidence_factor",
     "mqs_sufficient_evidence",
+    "stride_pelvic_asymmetry",
 ]
