@@ -235,10 +235,12 @@ The research document identifies **15 signals** across 6 domains that form the b
 | Gait model (9 profiles) | Complete |
 | Stick-figure renderer | Complete |
 | Joint angle computation | Complete |
-| Gait metrics engine | Complete |
+| Gait metrics engine | Complete (98% test coverage) |
 | Movement Quality Score | Complete (6-domain composite with CRP coordination) |
 | Real-time dashboard | Complete (bilateral overlays, MQS gauge, 6-domain breakdown) |
 | Pose estimation on external video | Complete (MediaPipe PoseLandmarker) |
+| CI/CD | Complete (GitHub Actions, 57 tests, ruff lint, coverage) |
+| Reproducible benchmark | Complete (JSON output for regression testing) |
 | Movement Quality Score model | Planned (learned weights from expert raters) |
 
 ---
