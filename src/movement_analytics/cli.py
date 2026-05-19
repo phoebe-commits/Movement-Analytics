@@ -125,6 +125,110 @@ def run_analysis(profile_name: str = "normal", output_path: str | None = None,
     print("Done.")
 
 
+def generate_comparison_report(output_path: str, fps: int = 30, n_cycles: int = 4):
+    """Generate a visual comparison report of MQS across all gait profiles."""
+
+    print("Generating profile comparison report...")
+    results = []
+    for name, profile in GAIT_PROFILES.items():
+        _, ar, al, _ = generate_frames(profile.params, fps=fps, n_cycles=n_cycles)
+        summary = compute_gait_summary(ar, al, fps=fps)
+        results.append((name, profile, summary))
+
+    results.sort(key=lambda x: x[2]["movement_quality_score"], reverse=True)
+
+    w, h = 1200, 800
+    img = np.full((h, w, 3), (20, 20, 25), dtype=np.uint8)
+
+    cv2.putText(img, "MOVEMENT QUALITY SCORE — PROFILE COMPARISON", (30, 45),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.85, (0, 180, 255), 2, cv2.LINE_AA)
+    cv2.line(img, (30, 55), (w - 30, 55), (55, 55, 60), 2)
+
+    domain_colors = {
+        "kinematics": (80, 200, 220),
+        "smoothness": (200, 160, 80),
+        "symmetry": (180, 100, 255),
+        "variability": (100, 255, 180),
+        "temporal": (220, 120, 160),
+    }
+
+    headers = ["Profile", "MQS", "Kin", "Smo", "Sym", "Var", "Tmp"]
+    header_x = [30, 220, 340, 480, 620, 760, 900]
+    for hx, ht in zip(header_x, headers):
+        cv2.putText(img, ht, (hx, 85), cv2.FONT_HERSHEY_SIMPLEX, 0.50,
+                    (150, 160, 170), 1, cv2.LINE_AA)
+
+    y = 105
+    bar_max_w = 100
+
+    for name, profile, summary in results:
+        mqs = summary["movement_quality_score"]
+        domains = {
+            "kinematics": summary.get("mqs_kinematics", 0),
+            "smoothness": summary.get("mqs_smoothness", 0),
+            "symmetry": summary.get("mqs_symmetry", 0),
+            "variability": summary.get("mqs_variability", 0),
+            "temporal": summary.get("mqs_temporal", 0),
+        }
+
+        if mqs >= 95:
+            score_color = (80, 200, 80)
+        elif mqs >= 80:
+            score_color = (50, 200, 255)
+        else:
+            score_color = (60, 60, 255)
+
+        cv2.putText(img, name, (30, y + 18), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.50, (200, 210, 220), 1, cv2.LINE_AA)
+
+        cv2.putText(img, f"{mqs:.0f}", (220, y + 18), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.55, score_color, 2, cv2.LINE_AA)
+
+        mqs_bar_w = int(mqs / 100 * bar_max_w)
+        cv2.rectangle(img, (260, y + 5), (260 + bar_max_w, y + 20), (45, 45, 50), -1)
+        cv2.rectangle(img, (260, y + 5), (260 + mqs_bar_w, y + 20), score_color, -1)
+
+        domain_keys = ["kinematics", "smoothness", "symmetry", "variability", "temporal"]
+        domain_x_offsets = [340, 480, 620, 760, 900]
+
+        for dk, dx in zip(domain_keys, domain_x_offsets):
+            val = domains[dk]
+            dc = domain_colors[dk]
+            cv2.putText(img, f"{val:.0f}", (dx, y + 18), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.42, dc, 1, cv2.LINE_AA)
+            bw = int(val / 100 * 80)
+            cv2.rectangle(img, (dx + 35, y + 7), (dx + 35 + 80, y + 17), (45, 45, 50), -1)
+            cv2.rectangle(img, (dx + 35, y + 7), (dx + 35 + bw, y + 17), dc, -1)
+
+        y += 35
+        cv2.line(img, (30, y - 10), (w - 30, y - 10), (40, 40, 45), 1)
+
+    # Legend
+    y += 15
+    cv2.putText(img, "Domains:", (30, y + 14), cv2.FONT_HERSHEY_SIMPLEX,
+                0.40, (120, 130, 140), 1, cv2.LINE_AA)
+    legend_items = [("Kin=Kinematics 30%", "kinematics"), ("Smo=Smoothness 20%", "smoothness"),
+                    ("Sym=Symmetry 20%", "symmetry"), ("Var=Variability 15%", "variability"),
+                    ("Tmp=Temporal 15%", "temporal")]
+    lx = 110
+    for label, dk in legend_items:
+        cv2.circle(img, (lx, y + 10), 4, domain_colors[dk], -1)
+        cv2.putText(img, label, (lx + 10, y + 14), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.32, (120, 130, 140), 1, cv2.LINE_AA)
+        lx += 180
+
+    # Key findings
+    y += 35
+    cv2.putText(img, "Key: Normal ROM 35-50 deg hip, 50-70 deg knee | SPARC -2.0 to -1.3 (smooth) | SI <10% (symmetric)",
+                (30, y + 14), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (100, 110, 120), 1, cv2.LINE_AA)
+    y += 20
+    cv2.putText(img, "Cadence 90-130 spm | Stride CV <4% | Stride time 0.8-1.3s",
+                (30, y + 14), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (100, 110, 120), 1, cv2.LINE_AA)
+
+    cv2.imwrite(output_path, img)
+    print(f"Comparison report saved to {output_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Movement Analytics — synthetic gait analysis dashboard"
@@ -154,7 +258,16 @@ def main():
         "--all-profiles", action="store_true",
         help="Generate output for all gait profiles"
     )
+    parser.add_argument(
+        "--compare", action="store_true",
+        help="Generate MQS comparison report across all profiles"
+    )
     args = parser.parse_args()
+
+    if args.compare:
+        out = args.output or "output/mqs_comparison.png"
+        generate_comparison_report(out, fps=args.fps, n_cycles=args.cycles)
+        return
 
     if args.all_profiles:
         for name in GAIT_PROFILES:
