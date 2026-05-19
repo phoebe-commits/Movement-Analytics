@@ -371,9 +371,9 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
 def movement_quality_score(metrics: dict) -> float:
     """Compute composite Movement Quality Score (0-100).
 
-    Weighted combination across 5 biomechanical domains:
-    kinematics (30%), smoothness (20%), symmetry (20%),
-    variability (15%), temporal (15%).
+    Weighted combination across 6 biomechanical domains:
+    kinematics (25%), smoothness (18%), symmetry (18%),
+    coordination (14%), variability (13%), temporal (12%).
     """
     domains = mqs_domain_scores(metrics)
     mqs = sum(domains[d] * _DOMAIN_WEIGHTS[d] for d in _DOMAIN_WEIGHTS)
