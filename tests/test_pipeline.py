@@ -792,6 +792,39 @@ class TestSensitivityReport:
             assert os.path.getsize(path) > 1000
 
 
+class TestBenchmarkOutput:
+    """Test the benchmark JSON generation."""
+
+    def test_benchmark_creates_valid_json(self):
+        import json
+
+        from movement_analytics.cli import run_benchmark
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "benchmark.json")
+            run_benchmark(output_path=path, fps=30, n_cycles=2)
+            assert os.path.exists(path)
+            with open(path) as f:
+                data = json.load(f)
+            assert data["version"] == "1.2.0"
+            assert data["n_domains"] == 6
+            assert "normal" in data["profiles"]
+            normal = data["profiles"]["normal"]
+            assert "mqs" in normal
+            assert "domains" in normal
+            assert "completeness" in normal
+            assert len(normal["domains"]) == 6
+
+    def test_comparison_report_creates_image(self):
+        from movement_analytics.cli import generate_comparison_report
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "compare.png")
+            generate_comparison_report(path, fps=30, n_cycles=2)
+            assert os.path.exists(path)
+            assert os.path.getsize(path) > 1000
+
+
 class TestBenchmarkRegression:
     """Lock MQS scores to detect unintended regressions."""
 
