@@ -1,6 +1,6 @@
 # Movement Quality Score (MQS): Technical Specification
 
-**Version:** 1.1.1
+**Version:** 1.2.0
 **Date:** 2026-05-19
 
 ---
@@ -136,19 +136,19 @@ The MQS is bounded [0, 100] by construction (all components are bounded [0, 100]
 
 ### 3.1 Construct Validity
 
-The MQS correctly differentiates across the 9 implemented gait profiles (v1.1, 6-domain model with frontal plane kinematics):
+The MQS correctly differentiates across the 9 implemented gait profiles (v1.2, 6-domain model with frontal plane kinematics and waveform symmetry):
 
 | Profile | MQS | Kinematics | Smoothness | Symmetry | Coordination | Variability | Temporal |
 |---|---|---|---|---|---|---|---|
 | Normal | 98.3 | 93.4 | 100 | 100 | 100 | 100 | 100 |
-| Model Runway | 96.2 | 84.6 | 100 | 100 | 100 | 100 | 100 |
+| Model Runway | 96.1 | 84.6 | 100 | 99.9 | 100 | 100 | 100 |
 | Limp | 91.1 | 90.9 | 100 | 88.9 | 100 | 100 | 61.2 |
 | Fast | 89.5 | 93.4 | 93.0 | 100 | 100 | 100 | 36.7 |
 | Stiff Knee | 88.2 | 74.1 | 100 | 100 | 100 | 100 | 55.8 |
 | Trendelenburg | 87.4 | 60.0 | 100 | 100 | 100 | 100 | 78.5 |
 | Slow | 86.9 | 84.9 | 100 | 100 | 100 | 100 | 22.7 |
-| Noisy | 52.1 | 52.1 | 0 | 100 | 96.1 | 0 | 63.7 |
-| Parkinsonian | 52.3 | 63.0 | 0 | 100 | 100 | 0 | 38.0 |
+| Noisy | 50.9 | 52.1 | 0 | 92.9 | 96.1 | 0 | 63.7 |
+| Parkinsonian | 51.5 | 63.0 | 0 | 95.7 | 100 | 0 | 38.0 |
 
 **Expected patterns confirmed:**
 - Normal scores highest with near-perfect kinematics
@@ -157,12 +157,13 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.1, 6
 - Limp is penalized in symmetry (hip SI 19.4%)
 - Noisy is penalized in smoothness and variability (SPARC degraded, stride CV 33%)
 - Slow and fast are penalized in temporal (cadence outside 90–130 spm range)
-- Noisy and parkinsonian score lowest overall (MQS 52.1 and 52.3 respectively), both with deficits in smoothness (SPARC degraded by noise), variability (stride CV elevated), and temporal domains
-- Bilateral noise is generated with independent random seeds per side (v1.1.1), though SI remains 100% because the mean-based formula is insensitive to zero-mean noise — a known limitation (see §3.3.4)
+- Noisy and parkinsonian score lowest overall (MQS 50.9 and 51.5 respectively), both with deficits in smoothness (SPARC degraded by noise), variability (stride CV elevated), and temporal domains
+- Noisy gait now shows reduced symmetry (92.9) thanks to waveform symmetry detecting shape-based asymmetry that mean-based SI misses; parkinsonian similarly drops to 95.7
+- Bilateral noise is generated with independent random seeds per side (v1.1.1)
 
 ### 3.2 Discriminative Power
 
-The MQS spread across profiles (52.1–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal plane detection capability added in v1.1.
+The MQS spread across profiles (50.9–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal plane detection capability added in v1.1.
 
 ### 3.3 Limitations and Known Gaps
 
@@ -172,7 +173,7 @@ The MQS spread across profiles (52.1–98.3) provides meaningful differentiation
 
 3. **Variability requires multiple strides:** With fewer than 3 detected strides, stride CV reliability degrades. The current implementation returns NaN for stride CV when fewer than 3 strides are detected, and the MQS scores missing variability as 50.0 (neutral). Missing kinematics, smoothness, and symmetry signals are excluded from their domain averages rather than defaulted to optimal values (v1.1.1).
 
-4. **Symmetry uses mean-based SI:** The SI formula uses absolute mean values, which can miss phase-specific asymmetries (e.g., asymmetric push-off timing with symmetric ROM). Waveform-based symmetry metrics (e.g., comparing full gait cycle curves) would improve sensitivity.
+4. **Symmetry composite (v1.2):** The symmetry domain now uses `min(SI_mean, hip_waveform_sym)` where SI is the traditional mean-based Symmetry Index and hip waveform symmetry is the absolute normalized cross-correlation of bilateral hip flexion curves. The `min` operator ensures that either amplitude asymmetry (caught by SI) or shape asymmetry (caught by waveform NCC) will penalize the score. This addresses the prior limitation where mean-based SI alone missed phase-specific asymmetries. However, the waveform metric uses hip flexion only; extending to knee/ankle waveform correlation could improve sensitivity to distal asymmetries.
 
 5. **Coordination domain uses global CRP:** The CRP consistency metric captures bilateral phase coupling but does not account for within-limb coordination (e.g., thigh-shank CRP). Adding intra-limb CRP would improve detection of segmental coordination deficits.
 

@@ -362,13 +362,21 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
             sm_scores.append(_signal_score(val, lo, hi, wlo, whi))
     domains["smoothness"] = float(np.mean(sm_scores)) if sm_scores else 50.0
 
-    sy_scores = []
+    si_scores = []
     for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]:
         val = metrics.get(f"{joint}_SI")
         if val is not None:
             lo, hi, wlo, whi = _SIGNAL_RANGES["symmetry"]
-            sy_scores.append(_signal_score(val, lo, hi, wlo, whi))
-    domains["symmetry"] = float(np.mean(sy_scores)) if sy_scores else 50.0
+            si_scores.append(_signal_score(val, lo, hi, wlo, whi))
+    si_mean = float(np.mean(si_scores)) if si_scores else 50.0
+
+    hip_ws = metrics.get("hip_flexion_waveform_sym")
+    if si_scores and hip_ws is not None:
+        domains["symmetry"] = min(si_mean, hip_ws)
+    elif si_scores:
+        domains["symmetry"] = si_mean
+    else:
+        domains["symmetry"] = 50.0
 
     hip_crp = metrics.get("hip_CRP_MAD")
     if hip_crp is not None:

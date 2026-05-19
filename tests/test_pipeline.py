@@ -732,14 +732,14 @@ class TestBenchmarkRegression:
 
     EXPECTED_MQS = {
         "normal": 98.3,
-        "model_runway": 96.2,
+        "model_runway": 96.1,
         "limp": 91.1,
         "fast": 89.5,
         "stiff_knee": 88.2,
         "trendelenburg": 87.4,
         "slow": 86.9,
-        "parkinsonian": 52.3,
-        "noisy": 52.1,
+        "parkinsonian": 51.5,
+        "noisy": 50.9,
     }
 
     MQS_TOLERANCE = 2.0
