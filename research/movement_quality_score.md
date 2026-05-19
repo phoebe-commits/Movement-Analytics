@@ -146,6 +146,7 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.1, 6
 | Trendelenburg | 87.4 | 60.0 | 100 | 100 | 100 | 100 | 78.5 |
 | Slow | 86.9 | 84.9 | 100 | 100 | 100 | 100 | 22.7 |
 | Noisy | 55.2 | 60.0 | 0 | 100 | 100 | 0 | 68.1 |
+| Parkinsonian | 50.7 | 60.8 | 0 | 100 | 100 | 0 | 28.7 |
 
 **Expected patterns confirmed:**
 - Normal scores highest with near-perfect kinematics
