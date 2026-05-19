@@ -1385,7 +1385,6 @@ class TestVideoSignalProcessing:
             call_count = [0]
 
             def mock_process_frame(frame, min_visibility=0.5):
-                idx = call_count[0]
                 call_count[0] += 1
                 pos = {
                     "pelvis": np.array([320.0, 200.0]),
@@ -1418,6 +1417,32 @@ class TestVideoSignalProcessing:
             assert len(rates) > 0
             for key, rate in rates.items():
                 assert 0.0 <= rate <= 1.0
+
+    def test_median_prefilter_removes_spikes(self):
+        from movement_analytics.pose.estimator import _median_prefilter
+        t = np.linspace(0, 4 * np.pi, 200)
+        clean = np.sin(t) * 30
+        spiked = clean.copy()
+        spiked[50] = 200.0
+        spiked[100] = -150.0
+        spiked[150] = 180.0
+        result = _median_prefilter(spiked, kernel_size=5)
+        assert abs(result[50] - clean[50]) < 5.0
+        assert abs(result[100] - clean[100]) < 5.0
+        assert abs(result[150] - clean[150]) < 5.0
+
+    def test_median_prefilter_preserves_nan_gaps(self):
+        from movement_analytics.pose.estimator import _median_prefilter
+        arr = np.array([1.0, 2.0, np.nan, np.nan, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
+        result = _median_prefilter(arr, kernel_size=3)
+        assert np.isnan(result[2])
+        assert np.isnan(result[3])
+
+    def test_median_prefilter_short_signal(self):
+        from movement_analytics.pose.estimator import _median_prefilter
+        arr = np.array([1.0, 100.0, 3.0])
+        result = _median_prefilter(arr, kernel_size=5)
+        np.testing.assert_array_equal(result, arr)
 
     def test_adaptive_smooth_reduces_noise_in_low_conf_regions(self):
         from movement_analytics.pose.estimator import _adaptive_smooth

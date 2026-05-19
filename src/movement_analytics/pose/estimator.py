@@ -11,6 +11,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 from scipy.interpolate import PchipInterpolator
+from scipy.ndimage import median_filter
 from scipy.signal import butter, filtfilt
 
 _BaseOptions = mp.tasks.BaseOptions
@@ -67,6 +68,29 @@ def _reject_outliers(arr: np.ndarray, key: str) -> np.ndarray:
         out[mask] = np.nan
         return out
     return arr
+
+
+def _median_prefilter(arr: np.ndarray, kernel_size: int = 5) -> np.ndarray:
+    """Remove impulsive noise (single-frame spikes) with a median filter.
+
+    Operates only on non-NaN segments. NaN gaps are preserved.
+    Kernel size of 5 removes spikes up to 2 frames wide without distorting
+    genuine movement dynamics at typical video frame rates (24-30 fps).
+    """
+    if len(arr) < kernel_size:
+        return arr
+    nan_mask = np.isnan(arr)
+    if np.all(nan_mask):
+        return arr
+    out = arr.copy()
+    if not np.any(nan_mask):
+        return median_filter(out, size=kernel_size, mode="nearest")
+    valid_indices = np.where(~nan_mask)[0]
+    runs = np.split(valid_indices, np.where(np.diff(valid_indices) > 1)[0] + 1)
+    for run in runs:
+        if len(run) >= kernel_size:
+            out[run] = median_filter(out[run], size=kernel_size, mode="nearest")
+    return out
 
 
 def _lowpass_smooth(arr: np.ndarray, fps: float, cutoff: float = 6.0) -> np.ndarray:
@@ -448,6 +472,7 @@ def process_video(
                 )
                 continue
             arr = _reject_outliers(d[key], key)
+            arr = _median_prefilter(arr)
             nan_mask = np.isnan(arr)
             frac_key = f"{side}_{key}"
             if np.any(nan_mask):
