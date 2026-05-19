@@ -258,22 +258,47 @@ print(f"Multi-view MQS: {result['movement_quality_score_weighted']:.1f}")
 ## Architecture
 
 ```
-Input: Gait Parameters OR Video File
+Input: Gait Parameters OR Video File(s)
   ↓
-Gait Model / MediaPipe Pose Estimation → Joint angle trajectories
-  ↓
-Stick Figure Renderer → Sagittal-plane animation with color-coded joints
+┌─ Synthetic Path ─────────────────────────────────┐
+│ Gait Model → Procedural joint angle trajectories │
+└──────────────────────────────────────────────────┘
+┌─ Video Path ─────────────────────────────────────────────────────────┐
+│ MediaPipe Pose (VIDEO mode, multi-person)                            │
+│   → Pelvis-based person tracking                                     │
+│   → Physiological outlier rejection (pre-interpolation)              │
+│   → PCHIP interpolation (cubic, linear fallback for sparse data)     │
+│   → Physiological outlier rejection (post-interpolation)             │
+│   → Confidence-adaptive two-pass Butterworth smoothing               │
+│   → Multi-view merging (sagittal + frontal cameras)                  │
+└──────────────────────────────────────────────────────────────────────┘
   ↓
 Joint Angle Computation → Per-frame bilateral angle extraction
   ↓
 Gait Metrics Engine → SPARC, NJ, SI, CRP, ROM, CV, cadence, phase detection
   ↓
-Movement Quality Score → 6-domain composite (0–100)
+Movement Quality Score → 6-domain composite (0–100) with confidence weighting
   ↓
 Real-Time Dashboard → MQS gauge + bilateral plots + metric panels
   ↓
-Output: Video file and/or live display
+Output: Video file, JSON summary, and/or live display
 ```
+
+### Video Pipeline: Signal Processing
+
+The video analysis path applies a 5-stage signal processing pipeline to extract clinically meaningful kinematics from noisy 2D pose estimation:
+
+1. **Pose estimation** — MediaPipe Pose (VIDEO mode) with `num_poses=3` for multi-person scenes. The closest subject is tracked across frames using pelvis centroid continuity.
+
+2. **Physiological outlier rejection** — Per-joint angles outside clinically plausible ranges (e.g., knee flexion 0–150°, hip flexion -30–90°) are replaced with NaN before interpolation.
+
+3. **Gap filling** — PCHIP (Piecewise Cubic Hermite Interpolating Polynomial) interpolation for gaps with <50% missing data, preserving waveform shape without Runge oscillation. Sparse signals (>50% missing) fall back to linear interpolation.
+
+4. **Adaptive smoothing** — Two-pass Butterworth filter: aggressive 3 Hz cutoff on low-confidence frames (MediaPipe confidence < 0.7), standard 6 Hz on high-confidence frames. Preserves genuine movement dynamics while suppressing pose estimation jitter.
+
+5. **Confidence-weighted scoring** — MQS is scaled by `observed_fraction × mean_pose_confidence`. When signal completeness drops below 50%, MQS returns NaN (insufficient evidence) rather than a misleading score.
+
+Per-joint detection rates are reported in metadata, enabling downstream quality assessment.
 
 ---
 
@@ -322,9 +347,9 @@ The research document identifies **20 signals** across 6 domains that form the b
 | Stick-figure renderer | Implemented |
 | Joint angle computation | Implemented, 100% coverage |
 | Gait metrics engine | Implemented, 98% coverage (synthetic path) |
-| Movement Quality Score | 6-domain composite (MQS v1.7) with evidence gating, frontal-plane dedup, bilateral SPARC, intra-limb CRP, validated on 9 profiles (61.1–98.3 range) |
+| Movement Quality Score | 6-domain composite (MQS v1.8) with evidence gating, frontal-plane dedup, bilateral SPARC, intra-limb CRP, validated on 9 profiles (61.1–98.3 range) |
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown, NaN-safe) |
-| Video pose estimation | MediaPipe VIDEO mode with PCHIP interpolation, adaptive confidence-weighted smoothing, physiological outlier rejection, heel contact detection, confidence-weighted MQS (detected-only confidence), frontal dedup, memory-efficient headless mode, 96% unit test coverage |
+| Video pose estimation | MediaPipe VIDEO mode with pelvis-based person tracking, PCHIP interpolation, adaptive confidence-weighted smoothing, physiological outlier rejection, heel contact detection, confidence-weighted MQS, per-joint detection rates, memory-efficient headless mode, 96% unit test coverage |
 | Multi-view analysis | Sagittal + frontal camera merging into unified MQS, auto-detects best view per signal domain |
 | Gait Deviation Index | Simplified GDI (Schwartz & Rozumalski 2008), 100 = normal, validated on 9 profiles (78.1–100.0 range) |
 | CI/CD | GitHub Actions, 224 tests, ruff lint, 70% coverage gate (95% actual) |
