@@ -1543,6 +1543,9 @@ class TestVideoProcessingPipeline:
             assert "pelvis_obliquity_SI" not in summary
             assert "trunk_lateral_lean_SI" not in summary
             assert "hip_flexion_SI" in summary
+            assert "L_pelvis_obliquity_ROM" not in summary
+            assert "L_trunk_lean_ROM" not in summary
+            assert "R_pelvis_obliquity_ROM" in summary
 
     def test_signed_obliquity_in_video_pipeline(self):
         from movement_analytics.pose.estimator import process_video

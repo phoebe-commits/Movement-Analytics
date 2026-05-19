@@ -555,14 +555,28 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
             np.abs(angles_left["hip_flexion"])
         )
 
+    def _is_shared(key):
+        return (key in angles_right and key in angles_left
+                and angles_right[key] is angles_left[key])
+
     for side_label, angles in [("R", angles_right), ("L", angles_left)]:
+        skip_frontal = side_label == "L"
         if "pelvis_obliquity" in angles:
-            metrics[f"{side_label}_pelvis_obliquity_ROM"] = rom(angles["pelvis_obliquity"])
+            if not (skip_frontal and _is_shared("pelvis_obliquity")):
+                metrics[f"{side_label}_pelvis_obliquity_ROM"] = rom(
+                    angles["pelvis_obliquity"]
+                )
         if "pelvis_obliquity_signed" in angles:
-            signed = angles["pelvis_obliquity_signed"]
-            metrics[f"{side_label}_pelvis_obliquity_mean_signed"] = float(np.nanmean(signed))
+            if not (skip_frontal and _is_shared("pelvis_obliquity_signed")):
+                signed = angles["pelvis_obliquity_signed"]
+                metrics[f"{side_label}_pelvis_obliquity_mean_signed"] = float(
+                    np.nanmean(signed)
+                )
         if "trunk_lateral_lean" in angles:
-            metrics[f"{side_label}_trunk_lean_ROM"] = rom(angles["trunk_lateral_lean"])
+            if not (skip_frontal and _is_shared("trunk_lateral_lean")):
+                metrics[f"{side_label}_trunk_lean_ROM"] = rom(
+                    angles["trunk_lateral_lean"]
+                )
 
     if "hip_flexion" in angles_right and "hip_flexion" in angles_left:
         crp_mad = crp_consistency(
