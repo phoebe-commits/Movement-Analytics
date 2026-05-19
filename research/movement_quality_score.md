@@ -1,6 +1,6 @@
 # Movement Quality Score (MQS): Technical Specification
 
-**Version:** 1.2.0
+**Version:** 1.3.0
 **Date:** 2026-05-19
 
 ---
@@ -72,8 +72,9 @@ Computed bilaterally (2 signals), averaged. Hip velocity SPARC is used because h
 | Hip flexion SI | 0–10% | 0–50% | Robinson et al., 1987; Knapik et al., 1991 |
 | Knee flexion SI | 0–10% | 0–50% | Shorter et al., 2020 |
 | Ankle dorsiflexion SI | 0–10% | 0–50% | Robinson et al., 1987 |
+| Pelvis obliquity SI | 0–10% | 0–50% | Baker et al., 2009 |
 
-SI = 2 × |mean(L) − mean(R)| / (mean(L) + mean(R)) × 100. Three signals, averaged.
+SI = 2 × |mean(L) − mean(R)| / (mean(L) + mean(R)) × 100. Four signals, averaged. Pelvis obliquity SI (v1.3) enables frontal-plane asymmetry detection: limping gait shows SI ≈ 21% due to asymmetric pelvic drop, while normal gait shows SI ≈ 0%. Trunk lateral lean SI is computed and reported as a diagnostic but excluded from the composite to avoid double-penalizing compensatory trunk patterns already captured by kinematics domain scoring.
 
 Waveform symmetry (|NCC| × 100, where NCC = normalized cross-correlation of centered bilateral signals) is integrated into the symmetry domain composite as of v1.2. The symmetry domain score = `min(SI_mean, hip_waveform_sym)`, ensuring that either amplitude asymmetry (caught by SI) or shape asymmetry (caught by waveform NCC) will penalize the score. Anti-phase bilateral coupling (healthy gait) scores 100% because absolute NCC is used. Waveform symmetry captures shape and timing differences that mean-based SI misses (e.g., noisy gait: SI=0.1%, waveform=92.9%).
 
@@ -138,25 +139,25 @@ The MQS is bounded [0, 100] by construction (all components are bounded [0, 100]
 
 ### 3.1 Construct Validity
 
-The MQS correctly differentiates across the 9 implemented gait profiles (v1.2, 6-domain model with frontal plane kinematics and waveform symmetry):
+The MQS correctly differentiates across the 9 implemented gait profiles (v1.3, 6-domain model with frontal-plane symmetry):
 
 | Profile | MQS | Kinematics | Smoothness | Symmetry | Coordination | Variability | Temporal |
 |---|---|---|---|---|---|---|---|
 | Normal | 98.3 | 93.4 | 100 | 100 | 100 | 100 | 100 |
 | Model Runway | 96.1 | 84.6 | 100 | 99.9 | 100 | 100 | 100 |
-| Limp | 91.1 | 90.9 | 100 | 88.9 | 100 | 100 | 61.2 |
-| Fast | 89.5 | 93.4 | 93.0 | 100 | 100 | 100 | 36.7 |
+| Limp | 90.3 | 90.9 | 100 | 84.8 | 100 | 100 | 61.2 |
+| Fast | 89.5 | 93.4 | 93 | 100 | 100 | 100 | 36.7 |
 | Stiff Knee | 88.2 | 74.1 | 100 | 100 | 100 | 100 | 55.8 |
 | Trendelenburg | 87.4 | 60.0 | 100 | 100 | 100 | 100 | 78.5 |
 | Slow | 86.9 | 84.9 | 100 | 100 | 100 | 100 | 22.7 |
 | Parkinsonian | 61.2 | 63.0 | 0 | 95.7 | 100 | 78.9 | 33.4 |
-| Noisy | 58.3 | 52.1 | 0 | 92.9 | 96.1 | 23.7 | 100 |
+| Noisy | 58.3 | 52.1 | 0 | 92.9 | 96 | 23.7 | 100 |
 
 **Expected patterns confirmed:**
 - Normal scores highest with near-perfect kinematics
 - Trendelenburg is strongly penalized in kinematics (pelvic obliquity 24° vs. 7° normal, trunk lean 16° vs. 5°)
 - Stiff knee is penalized in kinematics (knee ROM 25° vs. 50–70° normal)
-- Limp is penalized in symmetry (hip SI 19.4%)
+- Limp is penalized in symmetry (84.8) via both sagittal SI (hip SI 19.4%) and frontal-plane pelvis obliquity SI (21%) — the asymmetric pelvic drop is now detected (v1.3)
 - Noisy is penalized in smoothness and variability (SPARC degraded, stride CV 33%)
 - Slow and fast are penalized in temporal (cadence outside 90–130 spm range)
 - Parkinsonian and noisy score lowest overall (MQS 61.2 and 58.3 respectively), both with smoothness = 0 (SPARC degraded). Noisy is penalized in variability (stride CV 16.2%) while parkinsonian shows moderate variability (CV 7.4%) — consistent with the shuffling-but-regular pattern of Parkinson's gait
@@ -165,11 +166,11 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.2, 6
 
 ### 3.2 Discriminative Power
 
-The MQS spread across profiles (58.3–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal plane detection capability added in v1.1.
+The MQS spread across profiles (58.3–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal-plane ROM detection added in v1.1, and the limp profile (symmetry = 84.8, pelvis obliquity SI = 21%) demonstrates frontal-plane asymmetry detection added in v1.3.
 
 ### 3.3 Limitations and Known Gaps
 
-1. **Frontal plane coverage improving:** Pelvic obliquity and trunk lateral lean are now scored in the kinematics domain. Trendelenburg gait is detected (kinematics score drops to ~60). However, frontal-plane signals from real video require either multi-camera setup or 3D pose lifting for reliable measurement.
+1. **Frontal plane coverage improving:** Pelvic obliquity and trunk lateral lean are scored in the kinematics domain (ROM) and symmetry domain (pelvis obliquity SI, v1.3). Trendelenburg gait is detected via kinematics (score drops to ~60), and asymmetric limping is detected via frontal-plane symmetry (pelvis obliquity SI = 21%). Frontal-plane signals from real video require either multi-camera setup or 3D pose lifting for reliable measurement.
 
 2. **Smoothness domain uses only hip SPARC:** This is by design (knee/ankle SPARC is confounded by phase transitions) but misses smoothness deficits in isolated distal joints.
 

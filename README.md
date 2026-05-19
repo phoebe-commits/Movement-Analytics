@@ -85,9 +85,10 @@ For each gait profile, the pipeline computes **50+ metrics** in real time:
 - **Peak angular velocity** — per joint
 - **SPARC smoothness** — spectral arc length per joint velocity
 - **Normalized Jerk** — per joint
-- **Symmetry Index** — hip, knee, ankle (left vs. right)
-- **Waveform Symmetry** — shape-based bilateral comparison (NCC)
-- **Symmetry Ratio** — bilateral comparison
+- **Symmetry Index** — hip, knee, ankle, pelvis obliquity (left vs. right)
+- **Waveform Symmetry** — shape-based bilateral comparison (NCC), sagittal + frontal
+- **Symmetry Ratio** — bilateral comparison (sagittal + frontal)
+- **Frontal Plane Asymmetry** — pelvis obliquity and trunk lean bilateral SI for pathology detection
 - **Signal Completeness** — per-domain fraction of present signals
 - **Confidence Factor** — pose quality degradation for video-derived MQS
 - **CRP Coordination** — inter-limb (bilateral hip) and intra-limb (hip-knee) phase coupling
@@ -253,10 +254,10 @@ The research document identifies **15 signals** across 6 domains that form the b
 | Stick-figure renderer | Implemented |
 | Joint angle computation | Implemented, 100% coverage |
 | Gait metrics engine | Implemented, 98% coverage (synthetic path) |
-| Movement Quality Score | 6-domain composite, validated on 9 profiles (58.3–98.3 range) |
+| Movement Quality Score | 6-domain composite with frontal-plane symmetry, validated on 9 profiles (58.3–98.3 range) |
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown) |
 | Video pose estimation | Experimental — MediaPipe sagittal plane, 61% coverage, confidence-weighted MQS |
-| CI/CD | GitHub Actions, 101 tests, ruff lint, 70% coverage gate (74% actual) |
+| CI/CD | GitHub Actions, 105 tests, ruff lint, 70% coverage gate (74% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 

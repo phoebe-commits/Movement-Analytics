@@ -380,7 +380,7 @@ def run_benchmark(output_path: str | None = None, fps: int = 30, n_cycles: int =
 
     output = {
         "benchmark": "movement_quality_score",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "n_domains": 6,
         "fps": fps,
         "n_cycles": n_cycles,

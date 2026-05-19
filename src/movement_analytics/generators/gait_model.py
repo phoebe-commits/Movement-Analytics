@@ -179,10 +179,10 @@ def generate_gait_cycle(params: GaitParameters, n_frames: int = 120,
             ankle[i] = -params.ankle_rom * 0.3 + 10 * np.sin(np.pi * swing_progress)
 
     pelvis_tilt = params.pelvic_tilt * np.sin(2 * phase)
-    pelvis_obliq = params.pelvic_obliquity * np.sin(phase)
+    pelvis_obliq = params.pelvic_obliquity * np.sin(phase) * (1 + asym * 0.3)
     shoulder = -params.arm_swing / 2 * np.sin(phase - 0.1)
     elbow = 10 + 15 * np.abs(np.sin(phase))
-    trunk_lateral = params.trunk_sway * np.sin(phase)
+    trunk_lateral = params.trunk_sway * np.sin(phase) * (1 + asym * 0.3)
 
     if params.noise_level > 0:
         seed = 42 if side == "right" else 137

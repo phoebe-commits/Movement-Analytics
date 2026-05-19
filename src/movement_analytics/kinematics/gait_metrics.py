@@ -251,7 +251,8 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
             metrics[f"{prefix}_NJ"] = normalized_jerk(signal, fps)
             metrics[f"{prefix}_SPARC"] = sparc(vel, fps)
 
-    for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]:
+    for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion",
+                   "pelvis_obliquity", "trunk_lateral_lean"]:
         if joint in angles_right and joint in angles_left:
             metrics[f"{joint}_SI"] = symmetry_index(
                 angles_left[joint], angles_right[joint]
@@ -411,7 +412,8 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
     domains["smoothness"] = float(np.mean(sm_scores)) if sm_scores else 50.0
 
     si_scores = []
-    for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]:
+    for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion",
+                   "pelvis_obliquity"]:
         val = metrics.get(f"{joint}_SI")
         if val is not None:
             lo, hi, wlo, whi = _SIGNAL_RANGES["symmetry"]
@@ -479,10 +481,11 @@ def mqs_signal_completeness(metrics: dict) -> dict[str, float]:
     completeness["smoothness"] = sm_present / 2.0
 
     sy_present = sum(
-        1 for j in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]
+        1 for j in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion",
+                     "pelvis_obliquity"]
         if metrics.get(f"{j}_SI") is not None
     )
-    completeness["symmetry"] = sy_present / 3.0
+    completeness["symmetry"] = sy_present / 4.0
 
     completeness["coordination"] = 1.0 if metrics.get("hip_CRP_MAD") is not None else 0.0
 

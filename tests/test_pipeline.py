@@ -128,6 +128,7 @@ class TestMetrics:
             "mqs_kinematics", "mqs_smoothness", "mqs_symmetry",
             "mqs_coordination", "mqs_variability", "mqs_temporal",
             "R_pelvis_obliquity_ROM", "R_trunk_lean_ROM",
+            "pelvis_obliquity_SI", "trunk_lateral_lean_SI",
             "hip_CRP_MAD", "knee_CRP_MAD",
         ]
         for key in required_keys:
@@ -532,6 +533,45 @@ class TestStrideROMVariability:
         assert hip_cv > 5.0
 
 
+class TestFrontalPlaneSymmetry:
+    """Verify frontal-plane bilateral symmetry detects asymmetric gait."""
+
+    def test_limp_has_pelvis_obliquity_asymmetry(self):
+        params = GAIT_PROFILES["limp"].params
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(ar, al, fps=30)
+        assert summary["pelvis_obliquity_SI"] > 10, (
+            f"Limp should show frontal asymmetry, got SI={summary['pelvis_obliquity_SI']:.1f}"
+        )
+
+    def test_normal_has_symmetric_pelvis(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(ar, al, fps=30)
+        assert summary["pelvis_obliquity_SI"] < 5
+
+    def test_asymmetry_increases_pelvis_si(self):
+        si_values = []
+        for asym in [0.0, 0.15, 0.35]:
+            params = GaitParameters(asymmetry=asym)
+            _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+            s = compute_gait_summary(ar, al, fps=30)
+            si_values.append(s["pelvis_obliquity_SI"])
+        for i in range(len(si_values) - 1):
+            assert si_values[i] < si_values[i + 1], (
+                f"Pelvis SI should increase with asymmetry: {si_values}"
+            )
+
+    def test_frontal_symmetry_in_mqs_domain(self):
+        params = GAIT_PROFILES["limp"].params
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(ar, al, fps=30)
+        normal_params = GaitParameters()
+        _, nr, nl, _ = generate_frames(normal_params, fps=30, n_cycles=6)
+        normal_summary = compute_gait_summary(nr, nl, fps=30)
+        assert summary["mqs_symmetry"] < normal_summary["mqs_symmetry"]
+
+
 class TestBilateralNoiseIndependence:
     """Verify that bilateral noise uses independent random seeds."""
 
@@ -866,7 +906,7 @@ class TestBenchmarkOutput:
             assert os.path.exists(path)
             with open(path) as f:
                 data = json.load(f)
-            assert data["version"] == "1.2.0"
+            assert data["version"] == "1.3.0"
             assert data["n_domains"] == 6
             assert "normal" in data["profiles"]
             normal = data["profiles"]["normal"]
@@ -891,7 +931,7 @@ class TestBenchmarkRegression:
     EXPECTED_MQS = {
         "normal": 98.3,
         "model_runway": 96.1,
-        "limp": 91.1,
+        "limp": 90.3,
         "fast": 89.5,
         "stiff_knee": 88.2,
         "trendelenburg": 87.4,

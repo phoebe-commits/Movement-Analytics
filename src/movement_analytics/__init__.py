@@ -1,6 +1,6 @@
 """Movement Analytics — gait synthesis, pose estimation, and movement quality scoring."""
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 from .generators.gait_model import GAIT_PROFILES, GaitParameters
 from .generators.stick_figure import generate_frames
