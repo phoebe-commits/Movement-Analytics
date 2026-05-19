@@ -278,6 +278,25 @@ class TestBenchmark:
         finally:
             os.unlink(path)
 
+    def test_benchmark_includes_kinematic_cv(self):
+        import json
+        import os
+        import tempfile
+
+        from movement_analytics.cli import run_benchmark
+
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
+            path = f.name
+
+        try:
+            run_benchmark(path, fps=30, n_cycles=6)
+            with open(path) as f:
+                data = json.load(f)
+            normal = data["profiles"]["normal"]
+            assert "kinematic_CV_mean" in normal["key_metrics"]
+        finally:
+            os.unlink(path)
+
 
 class TestFrameGeneration:
     def test_generate_frames_returns_correct_types(self):
@@ -1305,6 +1324,9 @@ class TestBenchmarkOutput:
             assert "domains" in normal
             assert "completeness" in normal
             assert len(normal["domains"]) == 6
+            km = normal["key_metrics"]
+            assert "arm_swing_ROM_mean" in km
+            assert "arm_swing_ratio" in km
 
     def test_comparison_report_creates_image(self):
         from movement_analytics.cli import generate_comparison_report
