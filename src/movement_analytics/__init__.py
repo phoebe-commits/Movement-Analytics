@@ -22,6 +22,7 @@ from .kinematics.gait_metrics import (
     waveform_symmetry,
 )
 
+
 def analyze_video(video_path: str, fps: float = None) -> dict:
     """Analyze a walking video and return movement quality metrics.
 
