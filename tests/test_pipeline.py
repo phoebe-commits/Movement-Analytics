@@ -4,6 +4,11 @@ Validates gait model generation, metric computation, MQS scoring,
 and dashboard rendering across all 9 gait profiles.
 """
 
+import os
+import tempfile
+from unittest.mock import MagicMock, patch
+
+import cv2
 import numpy as np
 import pytest
 
@@ -774,3 +779,175 @@ class TestBenchmarkRegression:
         assert sorted_actual == sorted_expected, (
             f"Ranking changed: expected {sorted_expected}, got {sorted_actual}"
         )
+
+
+class TestVideoProcessingPipeline:
+    """Test process_video data flow: angle mapping, NaN interpolation, metadata."""
+
+    @staticmethod
+    def _make_test_video(path, n_frames=60, fps=30):
+        h, w = 480, 640
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        writer = cv2.VideoWriter(path, fourcc, fps, (w, h))
+        for _ in range(n_frames):
+            writer.write(np.zeros((h, w, 3), dtype=np.uint8))
+        writer.release()
+
+    @staticmethod
+    def _fake_positions(frame_idx, n_frames):
+        """Generate oscillating joint positions to simulate walking."""
+        t = frame_idx / n_frames * 4 * np.pi
+        hip_y = 200.0
+        knee_y = 320.0
+        ankle_y = 430.0
+        shoulder_y = 120.0
+        hip_offset = 30 * np.sin(t)
+        return {
+            "pelvis": np.array([320.0, hip_y]),
+            "shoulder": np.array([320.0, shoulder_y]),
+            "neck": np.array([320.0, shoulder_y - 10]),
+            "head": np.array([320.0, 80.0]),
+            "left_hip": np.array([300.0, hip_y]),
+            "right_hip": np.array([340.0, hip_y]),
+            "left_knee": np.array([300.0 - hip_offset, knee_y]),
+            "right_knee": np.array([340.0 + hip_offset, knee_y]),
+            "left_ankle": np.array([300.0 - hip_offset * 0.5, ankle_y]),
+            "right_ankle": np.array([340.0 + hip_offset * 0.5, ankle_y]),
+            "left_shoulder": np.array([280.0, shoulder_y]),
+            "right_shoulder": np.array([360.0, shoulder_y]),
+            "left_elbow": np.array([260.0, 180.0]),
+            "right_elbow": np.array([380.0, 180.0]),
+            "left_wrist": np.array([250.0, 230.0]),
+            "right_wrist": np.array([390.0, 230.0]),
+            "left_toe": np.array([290.0, 460.0]),
+            "right_toe": np.array([350.0, 460.0]),
+        }
+
+    def test_process_video_returns_metadata(self):
+        from movement_analytics.pose.estimator import process_video
+
+        n_frames = 60
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "test.mp4")
+            self._make_test_video(vid_path, n_frames=n_frames)
+
+            call_count = [0]
+
+            def mock_process_frame(frame, min_visibility=0.5):
+                idx = call_count[0]
+                call_count[0] += 1
+                if idx % 10 == 5:
+                    return None, 0.0
+                return self._fake_positions(idx, n_frames), 0.85
+
+            with patch(
+                "movement_analytics.pose.estimator.PoseEstimator"
+            ) as MockEst:
+                instance = MagicMock()
+                instance.process_frame = mock_process_frame
+                instance.__enter__ = lambda s: s
+                instance.__exit__ = lambda s, *a: None
+                MockEst.return_value = instance
+
+                frames, ar, al, fps, meta = process_video(vid_path)
+
+            assert len(frames) == n_frames
+            assert "hip_flexion" in ar
+            assert "hip_flexion" in al
+            assert meta["observed_fraction"] < 1.0
+            assert meta["mean_confidence"] > 0
+            assert isinstance(meta["interpolation_fractions"], dict)
+            assert meta["observed_fraction"] == pytest.approx(
+                (n_frames - 6) / n_frames, abs=0.02
+            )
+
+    def test_process_video_nan_interpolation(self):
+        from movement_analytics.pose.estimator import process_video
+
+        n_frames = 30
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "test.mp4")
+            self._make_test_video(vid_path, n_frames=n_frames)
+
+            call_count = [0]
+
+            def mock_process_frame(frame, min_visibility=0.5):
+                idx = call_count[0]
+                call_count[0] += 1
+                if idx in (10, 11, 12):
+                    return None, 0.0
+                return self._fake_positions(idx, n_frames), 0.9
+
+            with patch(
+                "movement_analytics.pose.estimator.PoseEstimator"
+            ) as MockEst:
+                instance = MagicMock()
+                instance.process_frame = mock_process_frame
+                instance.__enter__ = lambda s: s
+                instance.__exit__ = lambda s, *a: None
+                MockEst.return_value = instance
+
+                _, ar, al, _, meta = process_video(vid_path)
+
+            for key in ar:
+                assert not np.any(np.isnan(ar[key])), f"NaN in right {key}"
+            for key in al:
+                assert not np.any(np.isnan(al[key])), f"NaN in left {key}"
+            hip_interp = meta["interpolation_fractions"].get("hip_flexion", 0)
+            assert hip_interp > 0, "Should have interpolated missing frames"
+
+    def test_process_video_produces_valid_mqs(self):
+        from movement_analytics.pose.estimator import process_video
+
+        n_frames = 120
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "test.mp4")
+            self._make_test_video(vid_path, n_frames=n_frames, fps=30)
+
+            call_count = [0]
+
+            def mock_process_frame(frame, min_visibility=0.5):
+                idx = call_count[0]
+                call_count[0] += 1
+                return self._fake_positions(idx, n_frames), 0.95
+
+            with patch(
+                "movement_analytics.pose.estimator.PoseEstimator"
+            ) as MockEst:
+                instance = MagicMock()
+                instance.process_frame = mock_process_frame
+                instance.__enter__ = lambda s: s
+                instance.__exit__ = lambda s, *a: None
+                MockEst.return_value = instance
+
+                _, ar, al, fps, _ = process_video(vid_path)
+
+            summary = compute_gait_summary(ar, al, fps=fps)
+            mqs = summary["movement_quality_score"]
+            assert 0 <= mqs <= 100, f"MQS out of range: {mqs}"
+            assert not np.isnan(mqs)
+
+    def test_process_video_empty_video(self):
+        from movement_analytics.pose.estimator import process_video
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "empty.mp4")
+            self._make_test_video(vid_path, n_frames=5)
+
+            def mock_process_frame(frame, min_visibility=0.5):
+                return None, 0.0
+
+            with patch(
+                "movement_analytics.pose.estimator.PoseEstimator"
+            ) as MockEst:
+                instance = MagicMock()
+                instance.process_frame = mock_process_frame
+                instance.__enter__ = lambda s: s
+                instance.__exit__ = lambda s, *a: None
+                MockEst.return_value = instance
+
+                frames, ar, al, _, meta = process_video(vid_path)
+
+            assert ar == {}
+            assert al == {}
+            assert meta["observed_fraction"] == 0.0

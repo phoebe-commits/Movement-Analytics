@@ -183,11 +183,14 @@ class PoseEstimator:
         self.close()
 
 
-def process_video(video_path: str, fps: float = None) -> tuple[list[np.ndarray], dict, dict, float]:
+def process_video(
+    video_path: str, fps: float = None,
+) -> tuple[list[np.ndarray], dict, dict, float, dict]:
     """Process a video file and extract bilateral joint angle time series.
 
-    Returns (frames, angles_right, angles_left, actual_fps) in the same format
-    as generators.stick_figure.generate_frames() for pipeline compatibility.
+    Returns (frames, angles_right, angles_left, actual_fps, metadata) where
+    metadata contains pose quality stats: mean_confidence, observed_fraction,
+    interpolation_fractions (per-key dict), and per-frame confidences.
     """
     from ..kinematics.joint_angles import compute_all_angles
 
@@ -222,7 +225,10 @@ def process_video(video_path: str, fps: float = None) -> tuple[list[np.ndarray],
     cap.release()
 
     if not all_angles:
-        return frames, {}, {}, actual_fps
+        return frames, {}, {}, actual_fps, {
+            "mean_confidence": 0.0, "observed_fraction": 0.0,
+            "interpolation_fractions": {}, "confidences": [],
+        }
 
     angle_keys_right = set()
     angle_keys_left = set()
@@ -274,17 +280,22 @@ def process_video(video_path: str, fps: float = None) -> tuple[list[np.ndarray],
         angles_right["pelvis_obliquity"] = obliq
         angles_left["pelvis_obliquity"] = obliq
 
+    interpolation_fractions = {}
     for d in (angles_right, angles_left):
         for key in d:
             arr = d[key]
-            if np.any(np.isnan(arr)):
-                valid = ~np.isnan(arr)
+            nan_mask = np.isnan(arr)
+            if np.any(nan_mask):
+                interpolation_fractions[key] = float(np.mean(nan_mask))
+                valid = ~nan_mask
                 if np.any(valid):
                     indices = np.arange(len(arr))
                     arr[~valid] = np.interp(
                         indices[~valid], indices[valid], arr[valid]
                     )
                     d[key] = arr
+            else:
+                interpolation_fractions[key] = 0.0
 
     if "hip_flexion" in angles_right:
         from ..kinematics.gait_metrics import detect_gait_events
@@ -305,4 +316,12 @@ def process_video(video_path: str, fps: float = None) -> tuple[list[np.ndarray],
         angles_right["cycle_phase"] = phase
         angles_left["cycle_phase"] = phase
 
-    return frames, angles_right, angles_left, actual_fps
+    detected_frames = sum(1 for a in all_angles if a)
+    metadata = {
+        "mean_confidence": float(np.mean(confidences)) if confidences else 0.0,
+        "observed_fraction": detected_frames / len(all_angles) if all_angles else 0.0,
+        "interpolation_fractions": interpolation_fractions,
+        "confidences": confidences,
+    }
+
+    return frames, angles_right, angles_left, actual_fps, metadata

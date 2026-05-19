@@ -134,13 +134,17 @@ def run_video_analysis(video_path: str, output_path: str | None = None,
     print(f"Processing video: {video_path}")
     print("Running pose estimation (MediaPipe BlazePose)...")
 
-    frames, angles_right, angles_left, fps = process_video(video_path, fps=target_fps)
+    frames, angles_right, angles_left, fps, meta = process_video(video_path, fps=target_fps)
 
     if not frames:
         print("Error: No frames extracted from video.")
         sys.exit(1)
 
     print(f"  Extracted {len(frames)} frames at {fps:.1f} fps")
+    if meta:
+        obs = meta.get("observed_fraction", 0)
+        conf = meta.get("mean_confidence", 0)
+        print(f"  Pose detected: {obs:.1%} of frames, mean confidence: {conf:.2f}")
 
     if not angles_right:
         print("Warning: No pose detected in any frame.")
@@ -148,6 +152,14 @@ def run_video_analysis(video_path: str, output_path: str | None = None,
 
     print("Computing gait summary metrics...")
     summary = compute_gait_summary(angles_right, angles_left, fps=fps)
+    if meta:
+        summary["pose_observed_fraction"] = meta.get("observed_fraction", 0.0)
+        summary["pose_mean_confidence"] = meta.get("mean_confidence", 0.0)
+        interp = meta.get("interpolation_fractions", {})
+        if interp:
+            summary["pose_interpolation_fraction"] = float(
+                np.mean(list(interp.values()))
+            )
 
     print("\n--- Gait Summary ---")
     for key, val in sorted(summary.items()):
