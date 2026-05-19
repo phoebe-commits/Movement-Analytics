@@ -188,7 +188,7 @@ The MQS spread across profiles (58.7–98.3) provides meaningful differentiation
 
 5. **Coordination domain uses inter-limb + intra-limb CRP (v1.4):** Three signals: bilateral hip CRP (inter-limb) + bilateral hip-knee CRP MAD (intra-limb). Stiff-knee gait is now detected via disrupted hip-knee coupling (CRP MAD ≈ 43° vs. 28° normal). The hip-knee CRP reference range [15°, 35°] is synthetic-derived and needs clinical validation.
 
-6. **Video MQS confidence degradation (v1.2):** When MQS is computed from video-derived poses, the raw score is scaled by a confidence factor: `CF = observed_fraction × mean_pose_confidence`. This ensures that poor detection rates or low landmark visibility produce a lower (more conservative) MQS rather than a misleadingly high score. The raw unscaled MQS is preserved as `mqs_raw` for debugging. Synthetic data (no pose metadata) always receives CF = 1.0.
+6. **Video MQS confidence degradation (v1.2, v1.5):** When MQS is computed from video-derived poses and `pose_metadata` is provided to `compute_gait_summary`, the summary includes `mqs_confidence_factor` (= observed_fraction × mean_pose_confidence) and `movement_quality_score_weighted` (= raw × CF). The unscaled `movement_quality_score` is always preserved; the weighted variant provides a more conservative score accounting for detection quality. Synthetic data (no pose metadata) receives CF = 1.0 and no weighted key is emitted.
 
 ---
 

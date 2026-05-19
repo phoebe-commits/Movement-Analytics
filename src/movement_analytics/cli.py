@@ -251,14 +251,13 @@ def generate_comparison_report(output_path: str, fps: int = 30, n_cycles: int = 
         "temporal": (220, 120, 160),
     }
 
-    headers = ["Profile", "MQS", "Kin", "Smo", "Sym", "Crd", "Var", "Tmp"]
-    header_x = [30, 200, 310, 420, 530, 640, 750, 860]
+    headers = ["Profile", "MQS", "GDI", "Kin", "Smo", "Sym", "Crd", "Var", "Tmp"]
+    header_x = [30, 170, 260, 350, 460, 570, 680, 790, 900]
     for hx, ht in zip(header_x, headers):
         cv2.putText(img, ht, (hx, 85), cv2.FONT_HERSHEY_SIMPLEX, 0.50,
                     (150, 160, 170), 1, cv2.LINE_AA)
 
     y = 105
-    bar_max_w = 100
 
     for name, profile, summary in results:
         mqs = summary["movement_quality_score"]
@@ -281,18 +280,24 @@ def generate_comparison_report(output_path: str, fps: int = 30, n_cycles: int = 
         cv2.putText(img, name, (30, y + 18), cv2.FONT_HERSHEY_SIMPLEX,
                     0.50, (200, 210, 220), 1, cv2.LINE_AA)
 
-        cv2.putText(img, f"{mqs:.0f}", (200, y + 18), cv2.FONT_HERSHEY_SIMPLEX,
+        cv2.putText(img, f"{mqs:.0f}", (170, y + 18), cv2.FONT_HERSHEY_SIMPLEX,
                     0.55, score_color, 2, cv2.LINE_AA)
 
-        mqs_bar_w = int(mqs / 100 * bar_max_w)
-        cv2.rectangle(img, (240, y + 5), (240 + bar_max_w, y + 20), (45, 45, 50), -1)
-        cv2.rectangle(img, (240, y + 5), (240 + mqs_bar_w, y + 20), score_color, -1)
+        mqs_bar_w = int(mqs / 100 * 70)
+        cv2.rectangle(img, (205, y + 5), (205 + 70, y + 20), (45, 45, 50), -1)
+        cv2.rectangle(img, (205, y + 5), (205 + mqs_bar_w, y + 20), score_color, -1)
+
+        gdi = summary.get("GDI", float("nan"))
+        if not np.isnan(gdi):
+            gdi_color = (180, 200, 220)
+            cv2.putText(img, f"{gdi:.0f}", (260, y + 18), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.42, gdi_color, 1, cv2.LINE_AA)
 
         domain_keys = [
             "kinematics", "smoothness", "symmetry",
             "coordination", "variability", "temporal",
         ]
-        domain_x_offsets = [310, 420, 530, 640, 750, 860]
+        domain_x_offsets = [350, 460, 570, 680, 790, 900]
 
         for dk, dx in zip(domain_keys, domain_x_offsets):
             val = domains[dk]

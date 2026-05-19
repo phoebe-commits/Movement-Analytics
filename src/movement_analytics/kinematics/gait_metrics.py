@@ -460,9 +460,25 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
                 trunk, hs,
             )
 
-        gdi = gait_deviation_index(angles_right, hs)
-        if not np.isnan(gdi):
-            metrics["GDI"] = gdi
+        gdi_r = gait_deviation_index(angles_right, hs)
+        if not np.isnan(gdi_r):
+            metrics["R_GDI"] = gdi_r
+
+        if "hip_flexion" in angles_left and "knee_flexion" in angles_left:
+            l_ankle = angles_left.get("ankle_dorsiflexion")
+            l_events = detect_gait_events(
+                angles_left["hip_flexion"], angles_left["knee_flexion"],
+                fps, ankle_dorsiflexion=l_ankle,
+            )
+            l_hs = l_events["heel_strikes"]
+            gdi_l = gait_deviation_index(angles_left, l_hs)
+            if not np.isnan(gdi_l):
+                metrics["L_GDI"] = gdi_l
+
+        gdi_vals = [metrics.get("R_GDI"), metrics.get("L_GDI")]
+        gdi_vals = [v for v in gdi_vals if v is not None]
+        if gdi_vals:
+            metrics["GDI"] = float(np.mean(gdi_vals))
 
     if "hip_flexion" in angles_right:
         metrics["R_hip_CV"] = coefficient_of_variation(

@@ -98,7 +98,7 @@ For each gait profile, the pipeline computes **50+ metrics** in real time:
 - **Cadence** — steps per minute
 - **Stride time** — mean and coefficient of variation
 - **Double support time** — percentage of gait cycle with both feet on ground (diagnostic, from stance/swing ratio)
-- **Gait Deviation Index** — simplified GDI (Schwartz & Rozumalski 2008), stride-normalized waveform comparison vs. normal reference
+- **Gait Deviation Index (simplified)** — sagittal-plane waveform deviation from normal reference (inspired by Schwartz & Rozumalski 2008; uses synthetic reference, not clinical PCA)
 - **Gait phase** — stance/swing detection with prominence-based heel strikes
 
 ---
@@ -239,7 +239,7 @@ The research document identifies **16 signals** across 6 domains that form the b
 | 13 | Double support time | Temporal | ~20% of cycle |
 | 14 | Trunk lateral lean | Kinematics | <5° normal |
 | 15 | Inter-limb coordination (CRP) | Coordination | — |
-| 16 | Gait Deviation Index (GDI) | Composite | ≥100 normal |
+| 16 | Gait Deviation Index (simplified) | Composite | 100 = normal |
 
 ---
 

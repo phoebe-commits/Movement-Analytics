@@ -677,6 +677,29 @@ class TestGDI:
                 assert 0 <= gdi <= 100, f"{name}: GDI {gdi:.1f} out of range"
 
 
+    def test_bilateral_gdi_present(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        s = compute_gait_summary(ar, al, fps=30)
+        assert "R_GDI" in s
+        assert "L_GDI" in s
+        assert "GDI" in s
+        assert s["GDI"] == pytest.approx(
+            (s["R_GDI"] + s["L_GDI"]) / 2, abs=0.1
+        )
+
+    def test_left_pathology_detected_by_gdi(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        al_degraded = {k: v.copy() for k, v in al.items()}
+        al_degraded["knee_flexion"] = al_degraded["knee_flexion"] * 0.3
+        s = compute_gait_summary(ar, al_degraded, fps=30)
+        assert s["L_GDI"] < s["R_GDI"], (
+            f"Left pathology should reduce L_GDI ({s['L_GDI']:.1f}) "
+            f"below R_GDI ({s['R_GDI']:.1f})"
+        )
+
+
 class TestDoubleSupportTime:
     """Verify double support time estimation from gait events."""
 
