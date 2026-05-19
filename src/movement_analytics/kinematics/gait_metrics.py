@@ -174,11 +174,14 @@ def rom(angles: np.ndarray) -> float:
 
 
 def detect_gait_events(hip_flexion: np.ndarray, knee_flexion: np.ndarray,
-                       fps: float) -> dict:
+                       fps: float,
+                       ankle_dorsiflexion: np.ndarray | None = None) -> dict:
     """Detect gait events (heel strikes, toe-offs) from joint angle signals.
 
-    Uses hip flexion peaks (max flexion = ~heel strike) and
-    knee flexion peaks in swing as proxy gait events.
+    Primary: hip flexion peaks (max flexion ≈ heel strike).
+    When ankle_dorsiflexion is provided, refines heel-strike timing by
+    finding the nearest knee-extension minimum within ±0.1s of each
+    hip peak — closer to true initial contact (Perry & Burnfield 2010).
     """
     nyq = fps / 2
     if nyq <= 6.0 or len(hip_flexion) < 13:
@@ -189,6 +192,16 @@ def detect_gait_events(hip_flexion: np.ndarray, knee_flexion: np.ndarray,
 
     hs_indices, _ = find_peaks(hip_filt, distance=int(fps * 0.3))
     to_indices, _ = find_peaks(-hip_filt, distance=int(fps * 0.3))
+
+    if ankle_dorsiflexion is not None and len(hs_indices) > 0:
+        window = max(1, int(fps * 0.1))
+        refined = []
+        for hs in hs_indices:
+            lo = max(0, hs - window)
+            hi = min(len(knee_flexion), hs + window + 1)
+            best = lo + int(np.argmin(knee_flexion[lo:hi]))
+            refined.append(best)
+        hs_indices = np.array(refined)
 
     stride_times = np.diff(hs_indices) / fps if len(hs_indices) > 1 else np.array([])
     cadence = 60.0 / np.mean(stride_times) * 2 if len(stride_times) > 0 else 0.0
@@ -245,8 +258,10 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
             )
 
     if "hip_flexion" in angles_right and "knee_flexion" in angles_right:
+        ankle = angles_right.get("ankle_dorsiflexion")
         events = detect_gait_events(
-            angles_right["hip_flexion"], angles_right["knee_flexion"], fps
+            angles_right["hip_flexion"], angles_right["knee_flexion"], fps,
+            ankle_dorsiflexion=ankle,
         )
         metrics["cadence"] = events["cadence_steps_per_min"]
         metrics["stride_time_mean"] = events["stride_time_mean"]

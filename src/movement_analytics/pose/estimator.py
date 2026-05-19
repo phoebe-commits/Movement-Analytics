@@ -300,8 +300,10 @@ def process_video(
     if "hip_flexion" in angles_right:
         from ..kinematics.gait_metrics import detect_gait_events
         knee = angles_right.get("knee_flexion", np.zeros(n))
+        ankle = angles_right.get("ankle_dorsiflexion")
         events = detect_gait_events(
-            angles_right["hip_flexion"], knee, actual_fps
+            angles_right["hip_flexion"], knee, actual_fps,
+            ankle_dorsiflexion=ankle,
         )
         hs = events["heel_strikes"]
         phase = np.zeros(n)
