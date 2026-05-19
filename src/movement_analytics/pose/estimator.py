@@ -321,7 +321,9 @@ def process_video(
             if not ret:
                 break
 
-            positions, confidence = estimator.process_frame(frame)
+            positions, confidence = estimator.process_frame(
+                frame, min_visibility=0.3,
+            )
             confidences.append(confidence)
             if positions is not None:
                 angles = compute_all_angles(positions)
@@ -420,19 +422,29 @@ def process_video(
             nan_mask = np.isnan(arr)
             frac_key = f"{side}_{key}"
             if np.any(nan_mask):
-                interpolation_fractions[frac_key] = float(np.mean(nan_mask))
+                missing_frac = float(np.mean(nan_mask))
+                interpolation_fractions[frac_key] = missing_frac
                 valid = ~nan_mask
                 if np.any(valid):
                     indices = np.arange(len(arr))
-                    if np.sum(valid) >= 4:
+                    n_valid = int(np.sum(valid))
+                    if n_valid >= 4 and missing_frac < 0.5:
                         interp_fn = PchipInterpolator(
-                            indices[valid], arr[valid], extrapolate=True,
+                            indices[valid], arr[valid], extrapolate=False,
                         )
-                        arr[~valid] = interp_fn(indices[~valid])
+                        pchip_vals = interp_fn(indices[~valid])
+                        still_nan = np.isnan(pchip_vals)
+                        arr[~valid] = pchip_vals
+                        if np.any(still_nan):
+                            edge_nans = np.where(~valid)[0][still_nan]
+                            arr[edge_nans] = np.interp(
+                                edge_nans, indices[valid], arr[valid],
+                            )
                     else:
                         arr[~valid] = np.interp(
                             indices[~valid], indices[valid], arr[valid]
                         )
+                    arr = _reject_outliers(arr, key)
             else:
                 interpolation_fractions[frac_key] = 0.0
             conf_arr = np.array(per_frame_confidences[:len(arr)])
