@@ -460,6 +460,39 @@ class TestJointAngles:
         assert angle_between_vectors(v1, v2) == pytest.approx(0.0, abs=0.1)
 
 
+class TestWaveformSymmetry:
+    """Verify waveform symmetry metric detects shape-based asymmetry."""
+
+    def test_identical_signals(self):
+        from movement_analytics.kinematics.gait_metrics import waveform_symmetry
+        a = np.sin(np.linspace(0, 4 * np.pi, 200))
+        assert waveform_symmetry(a, a) == pytest.approx(100.0)
+
+    def test_antiphase_signals(self):
+        from movement_analytics.kinematics.gait_metrics import waveform_symmetry
+        t = np.linspace(0, 4 * np.pi, 200)
+        a = np.sin(t)
+        b = np.sin(t + np.pi)
+        assert waveform_symmetry(a, b) == pytest.approx(100.0, abs=1.0)
+
+    def test_noisy_signals_lower(self):
+        from movement_analytics.kinematics.gait_metrics import waveform_symmetry
+        t = np.linspace(0, 4 * np.pi, 200)
+        a = np.sin(t)
+        rng = np.random.default_rng(42)
+        b = np.sin(t) + rng.normal(0, 0.5, 200)
+        ws = waveform_symmetry(a, b)
+        assert ws < 100.0
+        assert ws > 50.0
+
+    def test_waveform_sym_in_summary(self):
+        params = GaitParameters()
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
+        summary = compute_gait_summary(right, left, fps=30)
+        assert "hip_flexion_waveform_sym" in summary
+
+
 class TestBilateralNoiseIndependence:
     """Verify that bilateral noise uses independent random seeds."""
 

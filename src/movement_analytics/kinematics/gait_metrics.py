@@ -104,6 +104,23 @@ def symmetry_ratio(left: np.ndarray, right: np.ndarray) -> float:
     return float(min(ml, mr) / (max(ml, mr) + 1e-8))
 
 
+def waveform_symmetry(left: np.ndarray, right: np.ndarray) -> float:
+    """Waveform symmetry via normalized cross-correlation. 100 = identical waveforms.
+
+    Captures shape, timing, and amplitude differences simultaneously.
+    More sensitive than mean-based SI to phase-specific asymmetries.
+    Returns 0-100 scale for consistency with other metrics.
+    """
+    l_centered = left - np.mean(left)
+    r_centered = right - np.mean(right)
+    l_norm = np.linalg.norm(l_centered)
+    r_norm = np.linalg.norm(r_centered)
+    if l_norm < 1e-6 or r_norm < 1e-6:
+        return 100.0 if l_norm < 1e-6 and r_norm < 1e-6 else 0.0
+    ncc = float(np.dot(l_centered, r_centered) / (l_norm * r_norm))
+    return abs(ncc) * 100.0
+
+
 def coefficient_of_variation(values: np.ndarray) -> float:
     """Coefficient of variation (CV) as percentage."""
     m = np.mean(values)
@@ -221,6 +238,9 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
                 angles_left[joint], angles_right[joint]
             )
             metrics[f"{joint}_SR"] = symmetry_ratio(
+                angles_left[joint], angles_right[joint]
+            )
+            metrics[f"{joint}_waveform_sym"] = waveform_symmetry(
                 angles_left[joint], angles_right[joint]
             )
 
