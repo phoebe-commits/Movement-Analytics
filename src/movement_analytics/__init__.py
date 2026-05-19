@@ -14,6 +14,7 @@ from .kinematics.gait_metrics import (
     rom,
     sparc,
     symmetry_index,
+    waveform_symmetry,
 )
 
 __all__ = [
@@ -29,4 +30,5 @@ __all__ = [
     "GaitParameters",
     "GAIT_PROFILES",
     "generate_frames",
+    "waveform_symmetry",
 ]
