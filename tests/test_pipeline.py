@@ -194,6 +194,54 @@ class TestMQS:
             assert 0 <= summary["movement_quality_score"] <= 100, f"{name}: MQS out of bounds"
 
 
+class TestNaNMetricHandling:
+    """Ensure NaN metrics are skipped in domain scoring, not scored as 0."""
+
+    def test_nan_rom_skipped_in_kinematics(self):
+        params = GaitParameters()
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
+        summary = compute_gait_summary(right, left, fps=30)
+        clean_kin = summary["mqs_kinematics"]
+
+        summary["R_hip_flexion_ROM"] = float("nan")
+        domains = mqs_domain_scores(summary)
+        assert domains["kinematics"] > 0, "NaN ROM should be skipped, not scored as 0"
+        assert domains["kinematics"] >= clean_kin - 5, (
+            "Skipping one NaN signal shouldn't crater the score"
+        )
+
+    def test_nan_sparc_skipped_in_smoothness(self):
+        params = GaitParameters()
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
+        summary = compute_gait_summary(right, left, fps=30)
+
+        summary["R_hip_flexion_SPARC"] = float("nan")
+        domains = mqs_domain_scores(summary)
+        assert domains["smoothness"] > 0, "NaN SPARC should be skipped"
+
+    def test_nan_si_skipped_in_symmetry(self):
+        params = GaitParameters()
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
+        summary = compute_gait_summary(right, left, fps=30)
+
+        summary["hip_flexion_SI"] = float("nan")
+        domains = mqs_domain_scores(summary)
+        assert domains["symmetry"] > 0, "NaN SI should be skipped"
+
+    def test_nan_crp_skipped_in_coordination(self):
+        params = GaitParameters()
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
+        summary = compute_gait_summary(right, left, fps=30)
+
+        summary["hip_CRP_MAD"] = float("nan")
+        domains = mqs_domain_scores(summary)
+        assert domains["coordination"] > 0, "NaN CRP should be skipped"
+
+
 class TestCRP:
     def test_antiphase_signals_crp_near_180(self):
         t = np.linspace(0, 4 * np.pi, 200)
