@@ -23,7 +23,7 @@ from .kinematics.gait_metrics import (
 )
 
 
-def analyze_video(video_path: str, fps: float = None) -> dict:
+def analyze_video(video_path: str, fps: float | None = None) -> dict:
     """Analyze a walking video and return movement quality metrics.
 
     High-level API: video in → MQS result out. Runs the full pipeline:

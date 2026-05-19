@@ -201,7 +201,7 @@ class PoseEstimator:
 
 
 def process_video(
-    video_path: str, fps: float = None, store_frames: bool = True,
+    video_path: str, fps: float | None = None, store_frames: bool = True,
 ) -> tuple[list[np.ndarray], dict, dict, float, dict]:
     """Process a video file and extract bilateral joint angle time series.
 
