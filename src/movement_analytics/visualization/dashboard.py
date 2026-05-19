@@ -82,24 +82,27 @@ class RealTimeDashboard:
     def _draw_mqs_card(self, canvas: np.ndarray, x: int, y: int,
                        w: int, metrics: dict[str, float]) -> int:
         """Draw the Movement Quality Score card with arc gauge and domain breakdown."""
-        mqs = metrics.get("movement_quality_score_weighted",
-                         metrics.get("movement_quality_score", 0))
+        mqs_raw = metrics.get("movement_quality_score_weighted",
+                              metrics.get("movement_quality_score", 0))
+        mqs = 0 if (isinstance(mqs_raw, float) and np.isnan(mqs_raw)) else mqs_raw
+        mqs_valid = not (isinstance(mqs_raw, float) and np.isnan(mqs_raw))
         card_h = 110
 
         cv2.rectangle(canvas, (x, y), (x + w, y + card_h), (35, 35, 40), -1)
         cv2.rectangle(canvas, (x, y), (x + w, y + card_h), COLORS["separator"], 1)
 
-        score_color = _score_color(mqs)
+        score_color = _score_color(mqs) if mqs_valid else COLORS["text_dim"]
 
         cx, cy = x + 60, y + 60
         radius = 40
         cv2.ellipse(canvas, (cx, cy), (radius, radius), 0, 135, 405,
                      COLORS["mqs_ring_bg"], 6)
-        end_angle = 135 + int(mqs / 100.0 * 270)
-        cv2.ellipse(canvas, (cx, cy), (radius, radius), 0, 135, end_angle,
-                     score_color, 6)
+        if mqs_valid:
+            end_angle = 135 + int(mqs / 100.0 * 270)
+            cv2.ellipse(canvas, (cx, cy), (radius, radius), 0, 135, end_angle,
+                         score_color, 6)
 
-        score_text = f"{mqs:.0f}"
+        score_text = f"{mqs:.0f}" if mqs_valid else "—"
         (tw, _), _ = cv2.getTextSize(score_text, cv2.FONT_HERSHEY_SIMPLEX, 0.9, 2)
         cv2.putText(canvas, score_text, (cx - tw // 2, cy + 8),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.9, score_color, 2, cv2.LINE_AA)

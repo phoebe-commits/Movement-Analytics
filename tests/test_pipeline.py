@@ -925,6 +925,25 @@ class TestSignalCompleteness:
         assert c["smoothness"] == pytest.approx(0.25)
 
 
+    def test_insufficient_evidence_produces_nan_mqs(self):
+        """When signal completeness is below threshold, MQS should be NaN."""
+        summary = compute_gait_summary(
+            {"hip_flexion": np.sin(np.linspace(0, 2 * np.pi, 30)) * 20 + 25},
+            {},
+            fps=30,
+        )
+        assert summary["mqs_sufficient_evidence"] == 0.0
+        assert np.isnan(summary["movement_quality_score"])
+
+    def test_sufficient_evidence_produces_numeric_mqs(self):
+        """Full synthetic data should produce a valid numeric MQS."""
+        params = GaitParameters()
+        _, right, left, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(right, left, fps=30)
+        assert summary["mqs_sufficient_evidence"] == 1.0
+        assert not np.isnan(summary["movement_quality_score"])
+        assert 0 <= summary["movement_quality_score"] <= 100
+
     def test_nan_metrics_not_counted_as_present(self):
         from movement_analytics.kinematics.gait_metrics import mqs_signal_completeness
         metrics = {
@@ -1944,3 +1963,234 @@ class TestPoseEstimatorUnit:
         assert positions is not None
         assert "head" not in positions
         assert "pelvis" in positions
+
+
+class TestCLIRunAnalysis:
+    """Tests for CLI run_analysis function (synthetic profile pipeline)."""
+
+    def test_run_analysis_headless_normal_profile(self):
+        """run_analysis should complete without error in headless mode."""
+        from movement_analytics.cli import run_analysis
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out = os.path.join(tmpdir, "test.mp4")
+            run_analysis(
+                profile_name="normal", output_path=out,
+                display=False, fps=30, n_cycles=2,
+            )
+            assert os.path.exists(out)
+            assert os.path.getsize(out) > 1000
+
+    def test_run_analysis_invalid_profile_exits(self):
+        """run_analysis with invalid profile should call sys.exit(1)."""
+        from movement_analytics.cli import run_analysis
+
+        with pytest.raises(SystemExit) as exc_info:
+            run_analysis(profile_name="nonexistent", display=False)
+        assert exc_info.value.code == 1
+
+    def test_run_analysis_no_output_headless(self):
+        """run_analysis without output path should still run (no file written)."""
+        from movement_analytics.cli import run_analysis
+
+        run_analysis(
+            profile_name="fast", output_path=None,
+            display=False, fps=30, n_cycles=2,
+        )
+
+    def test_run_analysis_video_writer_failure(self):
+        """run_analysis should raise if VideoWriter fails to open."""
+        from movement_analytics.cli import run_analysis
+
+        with pytest.raises(RuntimeError, match="Failed to create video writer"):
+            run_analysis(
+                profile_name="normal",
+                output_path="/nonexistent/dir/impossible.mp4",
+                display=False, fps=30, n_cycles=2,
+            )
+
+
+class TestCLIRunVideoAnalysis:
+    """Tests for CLI run_video_analysis function."""
+
+    @staticmethod
+    def _make_test_video(path, n_frames=60, fps=30):
+        h, w = 480, 640
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        writer = cv2.VideoWriter(path, fourcc, fps, (w, h))
+        for _ in range(n_frames):
+            writer.write(np.zeros((h, w, 3), dtype=np.uint8))
+        writer.release()
+
+    @staticmethod
+    def _fake_positions(frame_idx, n_frames):
+        t = frame_idx / n_frames * 4 * np.pi
+        hip_offset = 30 * np.sin(t)
+        return {
+            "pelvis": np.array([320.0, 200.0]),
+            "shoulder": np.array([320.0, 120.0]),
+            "neck": np.array([320.0, 110.0]),
+            "head": np.array([320.0, 80.0]),
+            "left_hip": np.array([300.0, 200.0]),
+            "right_hip": np.array([340.0, 200.0]),
+            "left_knee": np.array([300.0 - hip_offset, 320.0]),
+            "right_knee": np.array([340.0 + hip_offset, 320.0]),
+            "left_ankle": np.array([300.0 - hip_offset * 0.5, 430.0]),
+            "right_ankle": np.array([340.0 + hip_offset * 0.5, 430.0]),
+            "left_shoulder": np.array([280.0, 120.0]),
+            "right_shoulder": np.array([360.0, 120.0]),
+            "left_elbow": np.array([260.0, 180.0]),
+            "right_elbow": np.array([380.0, 180.0]),
+            "left_wrist": np.array([250.0, 230.0]),
+            "right_wrist": np.array([390.0, 230.0]),
+            "left_toe": np.array([290.0, 460.0]),
+            "right_toe": np.array([350.0, 460.0]),
+        }
+
+    def test_run_video_analysis_headless_with_output(self):
+        from movement_analytics.cli import run_video_analysis
+
+        n_frames = 60
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "input.mp4")
+            out_path = os.path.join(tmpdir, "output.mp4")
+            self._make_test_video(vid_path, n_frames=n_frames)
+
+            with patch(
+                "movement_analytics.pose.estimator.process_video"
+            ) as mock_pv:
+                real_frames = [np.zeros((480, 640, 3), dtype=np.uint8)] * n_frames
+                ar = {"hip_flexion": np.sin(np.linspace(0, 4 * np.pi, n_frames)) * 20 + 25}
+                al = {"hip_flexion": np.sin(np.linspace(0, 4 * np.pi, n_frames)) * 20 + 25}
+                meta = {"observed_fraction": 0.9, "mean_confidence": 0.85,
+                        "interpolation_fractions": {}}
+                mock_pv.return_value = (real_frames, ar, al, 30.0, meta)
+
+                run_video_analysis(
+                    vid_path, output_path=out_path, display=False,
+                )
+
+            assert os.path.exists(out_path)
+            assert os.path.getsize(out_path) > 0
+
+    def test_run_video_analysis_empty_video_exits(self):
+        from movement_analytics.cli import run_video_analysis
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "empty.mp4")
+            self._make_test_video(vid_path, n_frames=5)
+
+            with patch(
+                "movement_analytics.pose.estimator.process_video"
+            ) as mock_pv:
+                mock_pv.return_value = ([], {}, {}, 30.0, {"observed_fraction": 0.0,
+                    "mean_confidence": 0.0, "interpolation_fractions": {}})
+
+                with pytest.raises(SystemExit) as exc_info:
+                    run_video_analysis(vid_path, display=False)
+                assert exc_info.value.code == 1
+
+    def test_run_video_analysis_no_angles_returns_early(self):
+        from movement_analytics.cli import run_video_analysis
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "test.mp4")
+            self._make_test_video(vid_path, n_frames=10)
+
+            with patch(
+                "movement_analytics.pose.estimator.process_video"
+            ) as mock_pv:
+                frames = [np.zeros((480, 640, 3), dtype=np.uint8)] * 10
+                mock_pv.return_value = (frames, {}, {}, 30.0, {
+                    "observed_fraction": 0.0, "mean_confidence": 0.0,
+                    "interpolation_fractions": {}})
+
+                run_video_analysis(vid_path, display=False)
+
+
+class TestCLIMain:
+    """Tests for the main() CLI argument parsing and dispatch."""
+
+    def test_main_sensitivity_dispatches(self):
+        from movement_analytics.cli import main
+
+        with patch("movement_analytics.cli.generate_sensitivity_report") as mock_sr:
+            with patch("sys.argv", ["prog", "--sensitivity", "--output", "test.png"]):
+                main()
+            mock_sr.assert_called_once_with("test.png", fps=30, n_cycles=6)
+
+    def test_main_benchmark_dispatches(self):
+        from movement_analytics.cli import main
+
+        with patch("movement_analytics.cli.run_benchmark") as mock_bm:
+            with patch("sys.argv", ["prog", "--benchmark", "--output", "bench.json"]):
+                main()
+            mock_bm.assert_called_once_with("bench.json", fps=30, n_cycles=6)
+
+    def test_main_compare_dispatches(self):
+        from movement_analytics.cli import main
+
+        with patch("movement_analytics.cli.generate_comparison_report") as mock_cr:
+            with patch("sys.argv", ["prog", "--compare", "--output", "cmp.png"]):
+                main()
+            mock_cr.assert_called_once_with("cmp.png", fps=30, n_cycles=6)
+
+    def test_main_video_dispatches(self):
+        from movement_analytics.cli import main
+
+        with patch("movement_analytics.cli.run_video_analysis") as mock_va:
+            with patch("sys.argv", ["prog", "--video", "walk.mp4", "--no-display"]):
+                main()
+            mock_va.assert_called_once_with(
+                "walk.mp4", None, display=False, target_fps=None,
+            )
+
+    def test_main_default_profile(self):
+        from movement_analytics.cli import main
+
+        with patch("movement_analytics.cli.run_analysis") as mock_ra:
+            with patch("sys.argv", ["prog", "--no-display"]):
+                main()
+            mock_ra.assert_called_once_with(
+                "normal", None, display=False, fps=30, n_cycles=6,
+            )
+
+    def test_main_custom_fps_and_cycles(self):
+        from movement_analytics.cli import main
+
+        with patch("movement_analytics.cli.run_analysis") as mock_ra:
+            with patch("sys.argv", ["prog", "--profile", "fast",
+                                     "--fps", "60", "--cycles", "3",
+                                     "--no-display"]):
+                main()
+            mock_ra.assert_called_once_with(
+                "fast", None, display=False, fps=60, n_cycles=3,
+            )
+
+    def test_main_all_profiles_dispatches(self):
+        from movement_analytics.cli import main
+
+        with patch("movement_analytics.cli.run_analysis") as mock_ra:
+            with patch("sys.argv", ["prog", "--all-profiles", "--no-display"]):
+                main()
+            assert mock_ra.call_count == len(GAIT_PROFILES)
+
+    def test_main_sensitivity_default_output(self):
+        from movement_analytics.cli import main
+
+        with patch("movement_analytics.cli.generate_sensitivity_report") as mock_sr:
+            with patch("sys.argv", ["prog", "--sensitivity"]):
+                main()
+            mock_sr.assert_called_once_with(
+                "output/mqs_sensitivity.png", fps=30, n_cycles=6,
+            )
+
+    def test_main_compare_default_output(self):
+        from movement_analytics.cli import main
+
+        with patch("movement_analytics.cli.generate_comparison_report") as mock_cr:
+            with patch("sys.argv", ["prog", "--compare"]):
+                main()
+            mock_cr.assert_called_once_with(
+                "output/mqs_comparison.png", fps=30, n_cycles=6,
+            )

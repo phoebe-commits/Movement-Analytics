@@ -93,7 +93,7 @@ For each gait profile, the pipeline computes **50+ metrics** in real time:
 - **Signal Completeness** — per-domain fraction of present signals
 - **Confidence Factor** — pose quality degradation for video-derived MQS
 - **CRP Coordination** — inter-limb (bilateral hip) and intra-limb (hip-knee) phase coupling
-- **Sufficient Evidence** — flag when signal completeness is too low for reliable scoring
+- **Sufficient Evidence** — MQS returns NaN when signal completeness < 50% (prevents misleading scores from sparse data)
 - **Stride-level ROM CV** — per-stride kinematic variability (diagnostic)
 - **Cadence** — steps per minute
 - **Stride time** — mean and coefficient of variation
@@ -273,7 +273,7 @@ The research document identifies **16 signals** across 6 domains that form the b
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown) |
 | Video pose estimation | MediaPipe VIDEO mode with temporal smoothing, heel contact detection, confidence-weighted MQS, 96% unit test coverage |
 | Gait Deviation Index | Simplified GDI (Schwartz & Rozumalski 2008), 100 = normal, validated on 9 profiles (78.1–100.0 range) |
-| CI/CD | GitHub Actions, 157 tests, ruff lint, 70% coverage gate (81% actual) |
+| CI/CD | GitHub Actions, 175 tests, ruff lint, 70% coverage gate (93% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 

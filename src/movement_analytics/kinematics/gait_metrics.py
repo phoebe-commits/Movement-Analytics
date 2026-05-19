@@ -579,7 +579,6 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
                 angles["hip_flexion"], angles["knee_flexion"], fps
             )
 
-    metrics["movement_quality_score"] = movement_quality_score(metrics)
     mqs_breakdown = mqs_domain_scores(metrics)
     for domain, score in mqs_breakdown.items():
         metrics[f"mqs_{domain}"] = score
@@ -588,9 +587,14 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
     for domain, frac in completeness.items():
         metrics[f"mqs_{domain}_completeness"] = frac
     metrics["mqs_overall_completeness"] = float(np.mean(list(completeness.values())))
-    metrics["mqs_sufficient_evidence"] = float(
-        mqs_sufficient_evidence(metrics)
-    )
+
+    sufficient = mqs_sufficient_evidence(metrics)
+    metrics["mqs_sufficient_evidence"] = float(sufficient)
+
+    if sufficient:
+        metrics["movement_quality_score"] = movement_quality_score(metrics)
+    else:
+        metrics["movement_quality_score"] = float("nan")
 
     if pose_metadata is not None:
         obs = pose_metadata.get("observed_fraction", 1.0)
