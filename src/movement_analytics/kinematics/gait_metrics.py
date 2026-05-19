@@ -239,6 +239,12 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
             np.abs(angles_left["hip_flexion"])
         )
 
+    for side_label, angles in [("R", angles_right), ("L", angles_left)]:
+        if "pelvis_obliquity" in angles:
+            metrics[f"{side_label}_pelvis_obliquity_ROM"] = rom(angles["pelvis_obliquity"])
+        if "trunk_lateral_lean" in angles:
+            metrics[f"{side_label}_trunk_lean_ROM"] = rom(angles["trunk_lateral_lean"])
+
     if "hip_flexion" in angles_right and "hip_flexion" in angles_left:
         crp_mad = crp_consistency(
             angles_right["hip_flexion"], angles_left["hip_flexion"], fps
@@ -279,6 +285,8 @@ _SIGNAL_RANGES = {
     "hip_rom": (35.0, 50.0, 10.0, 70.0),
     "knee_rom": (50.0, 70.0, 15.0, 90.0),
     "ankle_rom": (20.0, 35.0, 5.0, 50.0),
+    "pelvic_obliquity": (0.0, 7.0, 0.0, 20.0),
+    "trunk_lean": (0.0, 5.0, 0.0, 15.0),
     "sparc": (-2.0, -1.3, -6.0, -0.5),
     "symmetry": (0.0, 10.0, 0.0, 50.0),
     "stride_cv": (0.0, 4.0, 0.0, 20.0),
@@ -309,6 +317,12 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
             val = metrics.get(f"{side}_{joint}_ROM", 0)
             lo, hi, wlo, whi = _SIGNAL_RANGES[key]
             kin_scores.append(_signal_score(val, lo, hi, wlo, whi))
+        for metric_suffix, range_key in [("pelvis_obliquity_ROM", "pelvic_obliquity"),
+                                         ("trunk_lean_ROM", "trunk_lean")]:
+            val = metrics.get(f"{side}_{metric_suffix}")
+            if val is not None:
+                lo, hi, wlo, whi = _SIGNAL_RANGES[range_key]
+                kin_scores.append(_signal_score(val, lo, hi, wlo, whi))
     domains["kinematics"] = float(np.mean(kin_scores)) if kin_scores else 50.0
 
     sm_scores = []

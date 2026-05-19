@@ -52,8 +52,10 @@ Each domain uses specific signals with clinically validated reference ranges:
 | Hip flexion/extension ROM | 35–50° | 10–70° | Perry & Burnfield, 2010 |
 | Knee flexion ROM | 50–70° | 15–90° | Winter, 2009 |
 | Ankle dorsiflexion ROM | 20–35° | 5–50° | Perry & Burnfield, 2010 |
+| Pelvic obliquity amplitude | 0–7° | 0–20° | Perry & Burnfield, 2010 |
+| Trunk lateral lean | 0–5° | 0–15° | Winter, 2009 |
 
-Computed bilaterally (6 signals total), averaged.
+Sagittal-plane signals (hip, knee, ankle ROM) computed bilaterally (6 signals). Frontal-plane signals (pelvic obliquity, trunk lean) computed bilaterally when available (up to 4 signals). All averaged.
 
 **Smoothness Domain (20%):**
 
@@ -159,7 +161,7 @@ The MQS spread across profiles (60.2–100) provides meaningful differentiation.
 
 ### 3.3 Limitations and Known Gaps
 
-1. **Frontal plane pathologies underweighted:** Trendelenburg gait (excessive pelvic obliquity) scores 96.8 because the current implementation uses sagittal-plane signals. Adding pelvic obliquity to the kinematics domain would improve detection.
+1. **Frontal plane coverage improving:** Pelvic obliquity and trunk lateral lean are now scored in the kinematics domain. Trendelenburg gait is detected (kinematics score drops to ~60). However, frontal-plane signals from real video require either multi-camera setup or 3D pose lifting for reliable measurement.
 
 2. **Smoothness domain uses only hip SPARC:** This is by design (knee/ankle SPARC is confounded by phase transitions) but misses smoothness deficits in isolated distal joints.
 

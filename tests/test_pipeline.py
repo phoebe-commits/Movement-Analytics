@@ -112,6 +112,8 @@ class TestMetrics:
             "movement_quality_score",
             "mqs_kinematics", "mqs_smoothness", "mqs_symmetry",
             "mqs_coordination", "mqs_variability", "mqs_temporal",
+            "R_pelvis_obliquity_ROM", "R_trunk_lean_ROM",
+            "hip_CRP_MAD", "knee_CRP_MAD",
         ]
         for key in required_keys:
             assert key in summary, f"Missing metric: {key}"
@@ -156,6 +158,16 @@ class TestMQS:
         domains = mqs_domain_scores(summary)
         expected = sum(domains[d] * _DOMAIN_WEIGHTS[d] for d in _DOMAIN_WEIGHTS)
         assert summary["movement_quality_score"] == pytest.approx(expected, abs=0.1)
+
+    def test_trendelenburg_penalized_in_kinematics(self):
+        params = GAIT_PROFILES["trendelenburg"].params
+        r = generate_gait_cycle(params, n_frames=60, n_cycles=6, side="right")
+        l = generate_gait_cycle(params, n_frames=60, n_cycles=6, side="left")
+        summary = compute_gait_summary(r, l, fps=30)
+        normal_r = generate_gait_cycle(GaitParameters(), n_frames=60, n_cycles=6, side="right")
+        normal_l = generate_gait_cycle(GaitParameters(), n_frames=60, n_cycles=6, side="left")
+        normal_summary = compute_gait_summary(normal_r, normal_l, fps=30)
+        assert summary["mqs_kinematics"] < normal_summary["mqs_kinematics"]
 
     def test_mqs_bounded(self):
         for name, profile in GAIT_PROFILES.items():
