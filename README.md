@@ -216,7 +216,7 @@ Output: Video file and/or live display
 
 ## Movement Quality Signal Framework
 
-The research document identifies **15 signals** across 6 domains that form the basis for the Movement Quality Score:
+The research document identifies **16 signals** across 6 domains that form the basis for the Movement Quality Score:
 
 | # | Signal | Domain | Clinical Reference |
 |---|---|---|---|
@@ -229,12 +229,13 @@ The research document identifies **15 signals** across 6 domains that form the b
 | 7 | SPARC (knee velocity) | Smoothness | -1.5 to -1.7 (smooth) |
 | 8 | Hip flexion Symmetry Index | Symmetry | <10% normal |
 | 9 | Knee flexion Symmetry Index | Symmetry | <10% normal |
-| 10 | Stride time CV | Variability | 1–3% normal |
-| 11 | Cadence | Temporal | 100–120 spm |
-| 12 | Double support time | Temporal | ~20% of cycle |
-| 13 | Trunk lateral lean | Kinematics | <5° normal |
-| 14 | Inter-limb coordination (CRP) | Coordination | — |
-| 15 | Gait Deviation Index (GDI) | Composite | ≥100 normal |
+| 10 | Pelvis obliquity Symmetry Index | Symmetry | <10% normal |
+| 11 | Stride time CV | Variability | 1–3% normal |
+| 12 | Cadence | Temporal | 100–120 spm |
+| 13 | Double support time | Temporal | ~20% of cycle |
+| 14 | Trunk lateral lean | Kinematics | <5° normal |
+| 15 | Inter-limb coordination (CRP) | Coordination | — |
+| 16 | Gait Deviation Index (GDI) | Composite | ≥100 normal |
 
 ---
 
