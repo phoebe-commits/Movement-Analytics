@@ -70,16 +70,26 @@ def _reject_outliers(arr: np.ndarray, key: str) -> np.ndarray:
 
 
 def _lowpass_smooth(arr: np.ndarray, fps: float, cutoff: float = 6.0) -> np.ndarray:
-    """Apply Butterworth low-pass filter for temporal smoothing."""
-    valid = ~np.isnan(arr)
-    if np.sum(valid) < 13:
+    """Apply Butterworth low-pass filter for temporal smoothing.
+
+    NaN gaps are filled with linear interpolation before filtering,
+    then re-masked afterward to preserve gap locations.
+    """
+    nan_mask = np.isnan(arr)
+    n_valid = int(np.sum(~nan_mask))
+    if n_valid < 13:
         return arr
     nyq = fps / 2
     if nyq <= cutoff:
         return arr
+    filled = arr.copy()
+    if np.any(nan_mask) and n_valid > 0:
+        indices = np.arange(len(arr))
+        valid_idx = indices[~nan_mask]
+        filled[nan_mask] = np.interp(indices[nan_mask], valid_idx, arr[valid_idx])
     b, a = butter(2, cutoff / nyq, btype="low")
-    smoothed = arr.copy()
-    smoothed[valid] = filtfilt(b, a, arr[valid])
+    smoothed = filtfilt(b, a, filled)
+    smoothed[nan_mask] = np.nan
     return smoothed
 
 
