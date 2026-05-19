@@ -308,9 +308,10 @@ def detect_gait_events(hip_flexion: np.ndarray, knee_flexion: np.ndarray,
     """Detect gait events (heel strikes, toe-offs) from joint angle signals.
 
     Primary: hip flexion peaks (max flexion ≈ heel strike).
-    When ankle_dorsiflexion is provided, refines heel-strike timing by
-    finding the nearest knee-extension minimum within ±0.1s of each
-    hip peak — closer to true initial contact (Perry & Burnfield 2010).
+    When *ankle_dorsiflexion* is not None (used as a presence flag for
+    distal signal availability), refines heel-strike timing by finding
+    the nearest knee-extension minimum within ±0.1s of each hip peak —
+    closer to true initial contact (Perry & Burnfield 2010).
     """
     nyq = fps / 2
     if nyq <= 6.0 or len(hip_flexion) < 13:
