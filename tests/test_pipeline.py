@@ -1533,3 +1533,231 @@ class TestVideoProcessingPipeline:
         assert ar == {}
         assert al == {}
         assert meta["observed_fraction"] == 0.0
+
+
+class TestPoseEstimatorUnit:
+    """Unit tests for PoseEstimator class methods with mocked MediaPipe."""
+
+    @staticmethod
+    def _make_mock_landmark(x, y, visibility=0.9):
+        lm = MagicMock()
+        lm.x = x
+        lm.y = y
+        lm.visibility = visibility
+        return lm
+
+    @staticmethod
+    def _make_full_landmarks(visibility=0.9):
+        """Create 33 mock landmarks in standard positions."""
+        lms = []
+        positions = {
+            0: (0.5, 0.1),    # NOSE
+            11: (0.45, 0.3),  # LEFT_SHOULDER
+            12: (0.55, 0.3),  # RIGHT_SHOULDER
+            13: (0.4, 0.45),  # LEFT_ELBOW
+            14: (0.6, 0.45),  # RIGHT_ELBOW
+            15: (0.38, 0.55), # LEFT_WRIST
+            16: (0.62, 0.55), # RIGHT_WRIST
+            23: (0.45, 0.55), # LEFT_HIP
+            24: (0.55, 0.55), # RIGHT_HIP
+            25: (0.45, 0.72), # LEFT_KNEE
+            26: (0.55, 0.72), # RIGHT_KNEE
+            27: (0.45, 0.88), # LEFT_ANKLE
+            28: (0.55, 0.88), # RIGHT_ANKLE
+            29: (0.44, 0.92), # LEFT_HEEL
+            30: (0.56, 0.92), # RIGHT_HEEL
+            31: (0.46, 0.95), # LEFT_FOOT_INDEX
+            32: (0.54, 0.95), # RIGHT_FOOT_INDEX
+        }
+        for i in range(33):
+            x, y = positions.get(i, (0.5, 0.5))
+            lm = MagicMock()
+            lm.x = x
+            lm.y = y
+            lm.visibility = visibility
+            lms.append(lm)
+        return lms
+
+    def test_process_frame_returns_positions_and_confidence(self):
+        from movement_analytics.pose.estimator import PoseEstimator, LANDMARK_MAP
+
+        landmarks = self._make_full_landmarks(visibility=0.9)
+        mock_result = MagicMock()
+        mock_result.pose_landmarks = [landmarks]
+
+        with patch(
+            "movement_analytics.pose.estimator._download_model"
+        ), patch(
+            "movement_analytics.pose.estimator._PoseLandmarker"
+        ) as MockLM:
+            mock_landmarker = MagicMock()
+            mock_landmarker.detect.return_value = mock_result
+            MockLM.create_from_options.return_value = mock_landmarker
+
+            est = PoseEstimator.__new__(PoseEstimator)
+            est.landmarker = mock_landmarker
+            est._video_mode = False
+            est._frame_count = 0
+
+            frame = np.zeros((480, 640, 3), dtype=np.uint8)
+            positions, confidence = est.process_frame(frame)
+
+        assert positions is not None
+        assert "pelvis" in positions
+        assert "shoulder" in positions
+        assert "left_hip" in positions
+        assert "right_knee" in positions
+        assert "left_toe" in positions
+        assert confidence == pytest.approx(0.9, abs=0.01)
+        assert positions["pelvis"].shape == (2,)
+
+    def test_process_frame_no_person_detected(self):
+        from movement_analytics.pose.estimator import PoseEstimator
+
+        mock_result = MagicMock()
+        mock_result.pose_landmarks = []
+
+        with patch(
+            "movement_analytics.pose.estimator._download_model"
+        ), patch(
+            "movement_analytics.pose.estimator._PoseLandmarker"
+        ) as MockLM:
+            mock_landmarker = MagicMock()
+            mock_landmarker.detect.return_value = mock_result
+            MockLM.create_from_options.return_value = mock_landmarker
+
+            est = PoseEstimator.__new__(PoseEstimator)
+            est.landmarker = mock_landmarker
+            est._video_mode = False
+            est._frame_count = 0
+
+            frame = np.zeros((480, 640, 3), dtype=np.uint8)
+            positions, confidence = est.process_frame(frame)
+
+        assert positions is None
+        assert confidence == 0.0
+
+    def test_process_frame_low_visibility_excludes_landmarks(self):
+        from movement_analytics.pose.estimator import PoseEstimator
+
+        landmarks = self._make_full_landmarks(visibility=0.3)
+        mock_result = MagicMock()
+        mock_result.pose_landmarks = [landmarks]
+
+        with patch(
+            "movement_analytics.pose.estimator._download_model"
+        ), patch(
+            "movement_analytics.pose.estimator._PoseLandmarker"
+        ) as MockLM:
+            mock_landmarker = MagicMock()
+            mock_landmarker.detect.return_value = mock_result
+            MockLM.create_from_options.return_value = mock_landmarker
+
+            est = PoseEstimator.__new__(PoseEstimator)
+            est.landmarker = mock_landmarker
+            est._video_mode = False
+            est._frame_count = 0
+
+            frame = np.zeros((480, 640, 3), dtype=np.uint8)
+            positions, confidence = est.process_frame(frame, min_visibility=0.5)
+
+        assert positions is None
+        assert confidence == pytest.approx(0.3, abs=0.01)
+
+    def test_process_frame_video_mode_increments_timestamp(self):
+        from movement_analytics.pose.estimator import PoseEstimator
+
+        landmarks = self._make_full_landmarks(visibility=0.9)
+        mock_result = MagicMock()
+        mock_result.pose_landmarks = [landmarks]
+
+        mock_landmarker = MagicMock()
+        mock_landmarker.detect_for_video.return_value = mock_result
+
+        est = PoseEstimator.__new__(PoseEstimator)
+        est.landmarker = mock_landmarker
+        est._video_mode = True
+        est._frame_count = 0
+
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        est.process_frame(frame)
+        assert est._frame_count == 1
+        est.process_frame(frame)
+        assert est._frame_count == 2
+        assert mock_landmarker.detect_for_video.call_count == 2
+
+    def test_draw_landmarks_produces_annotated_frame(self):
+        from movement_analytics.pose.estimator import PoseEstimator
+
+        est = PoseEstimator.__new__(PoseEstimator)
+
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        positions = {
+            "pelvis": np.array([320.0, 260.0]),
+            "shoulder": np.array([320.0, 140.0]),
+            "neck": np.array([320.0, 130.0]),
+            "head": np.array([320.0, 80.0]),
+            "left_hip": np.array([300.0, 260.0]),
+            "right_hip": np.array([340.0, 260.0]),
+            "left_knee": np.array([300.0, 350.0]),
+            "right_knee": np.array([340.0, 350.0]),
+        }
+        out = est.draw_landmarks(frame, positions)
+        assert out.shape == frame.shape
+        assert not np.array_equal(out, frame), "Annotated frame should differ from input"
+
+    def test_context_manager_calls_close(self):
+        from movement_analytics.pose.estimator import PoseEstimator
+
+        mock_landmarker = MagicMock()
+        est = PoseEstimator.__new__(PoseEstimator)
+        est.landmarker = mock_landmarker
+        est._video_mode = False
+        est._frame_count = 0
+
+        with est:
+            pass
+        mock_landmarker.close.assert_called_once()
+
+    def test_download_model_skips_if_exists(self):
+        from movement_analytics.pose.estimator import _download_model
+        with patch("movement_analytics.pose.estimator.os.path.exists", return_value=True) as mock_exists:
+            _download_model("/fake/model.task")
+            mock_exists.assert_called_once()
+
+    def test_download_model_fetches_if_missing(self):
+        from movement_analytics.pose.estimator import _download_model
+        with patch(
+            "movement_analytics.pose.estimator.os.path.exists", return_value=False
+        ), patch(
+            "movement_analytics.pose.estimator.os.makedirs"
+        ), patch(
+            "urllib.request.urlretrieve"
+        ) as mock_fetch:
+            _download_model("/fake/dir/model.task")
+            mock_fetch.assert_called_once()
+
+    def test_process_frame_head_optional(self):
+        """Head (nose) below visibility threshold should still return positions."""
+        from movement_analytics.pose.estimator import PoseEstimator
+
+        landmarks = self._make_full_landmarks(visibility=0.9)
+        landmarks[0].visibility = 0.1  # NOSE below threshold
+
+        mock_result = MagicMock()
+        mock_result.pose_landmarks = [landmarks]
+
+        mock_landmarker = MagicMock()
+        mock_landmarker.detect.return_value = mock_result
+
+        est = PoseEstimator.__new__(PoseEstimator)
+        est.landmarker = mock_landmarker
+        est._video_mode = False
+        est._frame_count = 0
+
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        positions, confidence = est.process_frame(frame, min_visibility=0.5)
+
+        assert positions is not None
+        assert "head" not in positions
+        assert "pelvis" in positions
