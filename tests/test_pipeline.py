@@ -664,6 +664,31 @@ class TestMQSConfidenceFactor:
         assert mqs_confidence_factor(metrics) == 0.0
 
 
+class TestSufficientEvidence:
+    """Verify MQS sufficient evidence threshold."""
+
+    def test_full_data_is_sufficient(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_sufficient_evidence
+        params = GaitParameters()
+        _, right, left, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(right, left, fps=30)
+        assert mqs_sufficient_evidence(summary)
+        assert summary["mqs_sufficient_evidence"] == 1.0
+
+    def test_empty_data_is_insufficient(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_sufficient_evidence
+        assert not mqs_sufficient_evidence({})
+
+    def test_partial_data_threshold(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_sufficient_evidence
+        metrics = {
+            "R_hip_flexion_ROM": 40,
+            "L_hip_flexion_ROM": 40,
+            "R_hip_flexion_SPARC": -1.5,
+        }
+        assert not mqs_sufficient_evidence(metrics, min_completeness=0.5)
+
+
 class TestEstimatorKeyMapping:
     """Verify pose estimator maps angle keys correctly for MQS."""
 
@@ -793,6 +818,22 @@ class TestSensitivityAnalysis:
                 f"MQS should decrease as asymmetry increases: "
                 f"asym step {i} ({mqs_scores[i]:.1f}) < step {i+1} ({mqs_scores[i+1]:.1f})"
             )
+
+
+    def test_fps_stability(self):
+        """MQS should be stable across frame rates for the same gait."""
+        scores = []
+        for fps in [15, 30, 60]:
+            params = GaitParameters()
+            _, ar, al, _ = generate_frames(params, fps=fps, n_cycles=6)
+            s = compute_gait_summary(ar, al, fps=fps)
+            scores.append(s["movement_quality_score"])
+        for i in range(len(scores)):
+            for j in range(i + 1, len(scores)):
+                assert abs(scores[i] - scores[j]) < 5.0, (
+                    f"MQS varies too much across FPS: "
+                    f"{scores[i]:.1f} vs {scores[j]:.1f}"
+                )
 
 
 class TestSensitivityReport:

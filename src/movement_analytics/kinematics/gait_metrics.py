@@ -332,6 +332,9 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
     for domain, frac in completeness.items():
         metrics[f"mqs_{domain}_completeness"] = frac
     metrics["mqs_overall_completeness"] = float(np.mean(list(completeness.values())))
+    metrics["mqs_sufficient_evidence"] = float(
+        mqs_sufficient_evidence(metrics)
+    )
 
     return metrics
 
@@ -496,6 +499,17 @@ def mqs_signal_completeness(metrics: dict) -> dict[str, float]:
     completeness["temporal"] = t_count / 2.0
 
     return completeness
+
+
+def mqs_sufficient_evidence(metrics: dict, min_completeness: float = 0.5) -> bool:
+    """Check whether enough signals are present for a reliable MQS.
+
+    Returns False when overall signal completeness falls below the
+    threshold, indicating the score should be treated as unreliable.
+    """
+    completeness = mqs_signal_completeness(metrics)
+    overall = float(np.mean(list(completeness.values())))
+    return overall >= min_completeness
 
 
 def mqs_confidence_factor(metrics: dict) -> float:

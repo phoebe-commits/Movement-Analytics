@@ -365,7 +365,9 @@ def run_benchmark(output_path: str | None = None, fps: int = 30, n_cycles: int =
             if k.startswith("mqs_") and k.endswith("_completeness"):
                 ckey = k.replace("mqs_", "").replace("_completeness", "")
                 entry["completeness"][ckey] = round(v, 2)
-            elif k.startswith("mqs_") and k != "mqs_overall_completeness":
+            elif (k.startswith("mqs_")
+                  and k not in ("mqs_overall_completeness",
+                                "mqs_sufficient_evidence")):
                 entry["domains"][k.replace("mqs_", "")] = round(v, 1)
             elif k in ("cadence", "stride_time_mean", "stride_time_CV", "n_strides"):
                 is_nan = isinstance(v, float) and np.isnan(v)

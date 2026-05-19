@@ -12,6 +12,7 @@ from .kinematics.gait_metrics import (
     mqs_confidence_factor,
     mqs_domain_scores,
     mqs_signal_completeness,
+    mqs_sufficient_evidence,
     rom,
     sparc,
     symmetry_index,
@@ -33,4 +34,5 @@ __all__ = [
     "generate_frames",
     "waveform_symmetry",
     "mqs_confidence_factor",
+    "mqs_sufficient_evidence",
 ]
