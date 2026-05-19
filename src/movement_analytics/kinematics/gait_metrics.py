@@ -163,8 +163,12 @@ def detect_gait_events(hip_flexion: np.ndarray, knee_flexion: np.ndarray,
     Uses hip flexion peaks (max flexion = ~heel strike) and
     knee flexion peaks in swing as proxy gait events.
     """
-    b, a = butter(4, 6.0 / (fps / 2), btype="low")
-    hip_filt = filtfilt(b, a, hip_flexion)
+    nyq = fps / 2
+    if nyq <= 6.0 or len(hip_flexion) < 13:
+        hip_filt = hip_flexion
+    else:
+        b, a = butter(4, 6.0 / nyq, btype="low")
+        hip_filt = filtfilt(b, a, hip_flexion)
 
     hs_indices, _ = find_peaks(hip_filt, distance=int(fps * 0.3))
     to_indices, _ = find_peaks(-hip_filt, distance=int(fps * 0.3))
@@ -177,8 +181,8 @@ def detect_gait_events(hip_flexion: np.ndarray, knee_flexion: np.ndarray,
         "toe_offs": to_indices,
         "stride_times": stride_times,
         "cadence_steps_per_min": cadence,
-        "stride_time_mean": float(np.mean(stride_times)) if len(stride_times) > 0 else 0.0,
-        "stride_time_cv": coefficient_of_variation(stride_times) if len(stride_times) > 1 else 0.0,
+        "stride_time_mean": float(np.mean(stride_times)) if len(stride_times) > 0 else float("nan"),
+        "stride_time_cv": coefficient_of_variation(stride_times) if len(stride_times) > 2 else float("nan"),
     }
 
 
@@ -329,18 +333,23 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
             coord_scores.append(_signal_score(val, lo, hi, wlo, whi))
     domains["coordination"] = float(np.mean(coord_scores)) if coord_scores else 50.0
 
-    cv_val = metrics.get("stride_time_CV", 0)
+    cv_val = metrics.get("stride_time_CV", float("nan"))
     lo, hi, wlo, whi = _SIGNAL_RANGES["stride_cv"]
-    domains["variability"] = _signal_score(cv_val, lo, hi, wlo, whi)
+    if np.isnan(cv_val):
+        domains["variability"] = 50.0
+    else:
+        domains["variability"] = _signal_score(cv_val, lo, hi, wlo, whi)
 
     t_scores = []
     cad = metrics.get("cadence", 0)
-    lo, hi, wlo, whi = _SIGNAL_RANGES["cadence"]
-    t_scores.append(_signal_score(cad, lo, hi, wlo, whi))
-    st = metrics.get("stride_time_mean", 0)
-    lo, hi, wlo, whi = _SIGNAL_RANGES["stride_time"]
-    t_scores.append(_signal_score(st, lo, hi, wlo, whi))
-    domains["temporal"] = float(np.mean(t_scores))
+    if not np.isnan(cad):
+        lo, hi, wlo, whi = _SIGNAL_RANGES["cadence"]
+        t_scores.append(_signal_score(cad, lo, hi, wlo, whi))
+    st = metrics.get("stride_time_mean", float("nan"))
+    if not np.isnan(st):
+        lo, hi, wlo, whi = _SIGNAL_RANGES["stride_time"]
+        t_scores.append(_signal_score(st, lo, hi, wlo, whi))
+    domains["temporal"] = float(np.mean(t_scores)) if t_scores else 50.0
 
     return domains
 

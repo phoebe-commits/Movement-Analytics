@@ -249,7 +249,7 @@ def process_video(video_path: str, fps: float = None) -> tuple[list[np.ndarray],
             hip_filt = filtfilt(b, a, hip)
         except Exception:
             hip_filt = hip
-        hip_range = hip_filt.ptp()
+        hip_range = np.ptp(hip_filt)
         if hip_range > 1e-6:
             hip_norm = (hip_filt - hip_filt.min()) / hip_range
         else:

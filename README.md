@@ -2,7 +2,7 @@
 
 **Computational movement quality analysis for physical AI**
 
-A research-grade pipeline for generating synthetic human gait, extracting kinematic signals, computing biomechanically validated movement quality metrics, and visualizing them in real time. Built to establish the scientific and engineering foundation for a Movement Quality Score — a multidimensional scoring model for evaluating human and robotic movement.
+A pipeline for generating synthetic human gait, extracting kinematic signals from video, computing movement quality metrics grounded in biomechanics literature, and visualizing results in real time. Built to establish the scientific and engineering foundation for a Movement Quality Score — a multidimensional scoring model for evaluating human and robotic movement from video.
 
 ---
 
@@ -11,9 +11,9 @@ A research-grade pipeline for generating synthetic human gait, extracting kinema
 Physical AI has a measurement problem. Every humanoid robotics company ships policies optimized against internal benchmarks with no common scoring standard. The text-AI world solved this with evaluation companies (Arize, Braintrust, Weights & Biases). Physical AI has no equivalent.
 
 This repository builds the technical proof that movement quality can be:
-1. **Defined** — grounded in 70+ peer-reviewed biomechanics and motor-control citations
-2. **Measured** — extracted computationally from video in real time
-3. **Scored** — quantified across 15 orthogonal signal dimensions with clinical validation
+1. **Defined** — grounded in 90+ peer-reviewed biomechanics and motor-control citations
+2. **Measured** — extracted computationally from video via MediaPipe pose estimation
+3. **Scored** — quantified across 6 biomechanical domains using literature-derived reference ranges
 
 ---
 
@@ -58,29 +58,31 @@ pose/           Pose estimation integration (MediaPipe)
 
 ### Movement Quality Score (MQS)
 
-A composite **0–100 score** computed from weighted biomechanical domains:
+A composite **0–100 score** computed from 6 weighted biomechanical domains:
 
 | Domain | Weight | Signals Used |
 |---|---|---|
-| **Kinematics** | 30% | Hip/knee/ankle ROM (bilateral) vs. clinical norms |
-| **Smoothness** | 20% | SPARC of hip velocity (spectral arc length) |
-| **Symmetry** | 20% | Hip/knee/ankle Symmetry Index (left vs. right) |
-| **Variability** | 15% | Stride time coefficient of variation |
-| **Temporal** | 15% | Cadence and stride time vs. normal ranges |
+| **Kinematics** | 25% | Hip/knee/ankle ROM (bilateral) vs. clinical norms |
+| **Smoothness** | 18% | SPARC of hip velocity (spectral arc length) |
+| **Symmetry** | 18% | Hip/knee/ankle Symmetry Index (left vs. right) |
+| **Coordination** | 14% | Continuous Relative Phase consistency (bilateral hip/knee) |
+| **Variability** | 13% | Stride time coefficient of variation |
+| **Temporal** | 12% | Cadence and stride time vs. normal ranges |
 
-MQS differentiates across profiles: normal gait scores 100, stiff-knee gait 83.7 (reduced ROM detected), noisy gait 57.3 (degraded smoothness and variability).
+MQS differentiates across profiles: normal gait scores highest across all domains, stiff-knee gait is penalized in kinematics (reduced knee ROM), noisy gait is penalized in smoothness and variability. Reference ranges sourced from Perry & Burnfield 2010, Winter 2009, Balasubramanian et al. 2012, Hausdorff et al. 2001, and Hamill et al. 1999.
 
 ### Computed Metrics
 
 For each gait profile, the pipeline computes **50+ metrics** in real time:
 
-- **Movement Quality Score** — composite 0–100 with 5-domain breakdown
+- **Movement Quality Score** — composite 0–100 with 6-domain breakdown
 - **Joint ROM** — hip, knee, ankle (bilateral)
 - **Peak angular velocity** — per joint
 - **SPARC smoothness** — spectral arc length per joint velocity
 - **Normalized Jerk** — per joint
 - **Symmetry Index** — hip, knee, ankle (left vs. right)
 - **Symmetry Ratio** — bilateral comparison
+- **CRP Coordination** — inter-limb phase coupling consistency (Hilbert transform)
 - **Cadence** — steps per minute
 - **Stride time** — mean and coefficient of variation
 - **Gait phase** — stance/swing detection per frame
@@ -105,6 +107,9 @@ python -m movement_analytics --profile limp --output output/limp.mp4
 
 # Render all profiles (headless)
 python -m movement_analytics --all-profiles --output output/gait --no-display
+
+# Analyze real video (downloads MediaPipe model on first run)
+python -m movement_analytics --video path/to/walking.mp4 --output output/analysis.mp4
 ```
 
 ### CLI Options
@@ -118,6 +123,7 @@ python -m movement_analytics --all-profiles --output output/gait --no-display
 --cycles, -c      Number of gait cycles (default: 6)
 --all-profiles    Generate all profiles
 --compare         Generate MQS comparison report across all profiles
+--video, -v       Input video file for pose estimation analysis
 ```
 
 ### Profile Comparison
@@ -127,24 +133,24 @@ python -m movement_analytics --all-profiles --output output/gait --no-display
 python -m movement_analytics --compare --output output/mqs_comparison.png
 ```
 
-The comparison report shows Movement Quality Score breakdowns across all 8 gait profiles, revealing how each domain (kinematics, smoothness, symmetry, variability, temporal) contributes to the overall score. Clinical reference ranges are displayed for context.
+The comparison report shows Movement Quality Score breakdowns across all 8 gait profiles, revealing how each domain (kinematics, smoothness, symmetry, coordination, variability, temporal) contributes to the overall score. Reference ranges from the biomechanics literature are displayed for context.
 
 ---
 
 ## Architecture
 
 ```
-Input: Gait Parameters (cadence, ROM, asymmetry, noise, etc.)
+Input: Gait Parameters OR Video File
   ↓
-Gait Model → Biomechanically accurate joint angle trajectories
+Gait Model / MediaPipe Pose Estimation → Joint angle trajectories
   ↓
 Stick Figure Renderer → Sagittal-plane animation with color-coded joints
   ↓
 Joint Angle Computation → Per-frame bilateral angle extraction
   ↓
-Gait Metrics Engine → SPARC, NJ, SI, ROM, CV, cadence, phase detection
+Gait Metrics Engine → SPARC, NJ, SI, CRP, ROM, CV, cadence, phase detection
   ↓
-Movement Quality Score → 5-domain composite (0–100)
+Movement Quality Score → 6-domain composite (0–100)
   ↓
 Real-Time Dashboard → MQS gauge + bilateral plots + metric panels
   ↓
@@ -155,7 +161,7 @@ Output: Video file and/or live display
 
 ## Movement Quality Signal Framework
 
-The research document identifies **15 signals** across 5 domains that form the basis for a Movement Quality Score:
+The research document identifies **15 signals** across 6 domains that form the basis for the Movement Quality Score:
 
 | # | Signal | Domain | Clinical Reference |
 |---|---|---|---|
@@ -188,15 +194,15 @@ The research document identifies **15 signals** across 5 domains that form the b
 
 | Component | Status |
 |---|---|
-| Research document | Complete (90+ citations, v2.0) |
+| Research document | Complete (90+ citations, 10 sections) |
 | Gait model (8 profiles) | Complete |
 | Stick-figure renderer | Complete |
 | Joint angle computation | Complete |
 | Gait metrics engine | Complete |
-| Movement Quality Score | Complete (5-domain composite) |
-| Real-time dashboard | Complete (bilateral overlays, MQS gauge) |
-| Pose estimation on external video | In progress |
-| Movement Quality Score model | Planned |
+| Movement Quality Score | Complete (6-domain composite with CRP coordination) |
+| Real-time dashboard | Complete (bilateral overlays, MQS gauge, 6-domain breakdown) |
+| Pose estimation on external video | Complete (MediaPipe PoseLandmarker) |
+| Movement Quality Score model | Planned (learned weights from expert raters) |
 
 ---
 

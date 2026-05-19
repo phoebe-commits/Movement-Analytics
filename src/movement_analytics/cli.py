@@ -15,9 +15,8 @@ import time
 import cv2
 import numpy as np
 
-from .generators.gait_model import GaitParameters, GAIT_PROFILES
+from .generators.gait_model import GAIT_PROFILES
 from .generators.stick_figure import generate_frames
-from .kinematics.joint_angles import compute_all_angles
 from .kinematics.gait_metrics import compute_gait_summary
 from .visualization.dashboard import RealTimeDashboard, create_dashboard_frame
 

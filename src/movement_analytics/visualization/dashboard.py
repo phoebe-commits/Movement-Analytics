@@ -200,21 +200,25 @@ class RealTimeDashboard:
         cv2.putText(canvas, label, (x + 5, y + 13),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.35, COLORS["text_dim"], 1, cv2.LINE_AA)
 
-        val_text = f"{value:.1f} {unit}"
-        color = COLORS["text"]
-        if normal_range:
-            lo, hi = normal_range
-            if lo <= value <= hi:
-                color = COLORS["good"]
-            elif abs(value - lo) < (hi - lo) * 0.3 or abs(value - hi) < (hi - lo) * 0.3:
-                color = COLORS["warn"]
-            else:
-                color = COLORS["bad"]
+        if np.isnan(value):
+            val_text = "— " + unit
+            color = COLORS["text_dim"]
+        else:
+            val_text = f"{value:.1f} {unit}"
+            color = COLORS["text"]
+            if normal_range:
+                lo, hi = normal_range
+                if lo <= value <= hi:
+                    color = COLORS["good"]
+                elif abs(value - lo) < (hi - lo) * 0.3 or abs(value - hi) < (hi - lo) * 0.3:
+                    color = COLORS["warn"]
+                else:
+                    color = COLORS["bad"]
 
         cv2.putText(canvas, val_text, (x + width - 95, y + 13),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.38, color, 1, cv2.LINE_AA)
 
-        if normal_range:
+        if normal_range and not np.isnan(value):
             bar_x = x + 5
             bar_y = y + 19
             bar_w = width - 10
