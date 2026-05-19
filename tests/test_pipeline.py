@@ -2214,15 +2214,43 @@ class TestPoseEstimatorUnit:
 
     def test_download_model_fetches_if_missing(self):
         from movement_analytics.pose.estimator import _download_model
-        with patch(
-            "movement_analytics.pose.estimator.os.path.exists", return_value=False
-        ), patch(
-            "movement_analytics.pose.estimator.os.makedirs"
-        ), patch(
-            "urllib.request.urlretrieve"
-        ) as mock_fetch:
-            _download_model("/fake/dir/model.task")
-            mock_fetch.assert_called_once()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            model_path = os.path.join(tmpdir, "subdir", "model.task")
+            fake_content = b"fake model data"
+            import hashlib
+            fake_sha = hashlib.sha256(fake_content).hexdigest()
+
+            def fake_urlretrieve(url, path):
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, "wb") as f:
+                    f.write(fake_content)
+
+            with patch(
+                "urllib.request.urlretrieve", side_effect=fake_urlretrieve
+            ) as mock_fetch, patch(
+                "movement_analytics.pose.estimator._MODEL_SHA256", fake_sha
+            ):
+                _download_model(model_path)
+                mock_fetch.assert_called_once()
+                assert os.path.exists(model_path)
+
+    def test_download_model_checksum_mismatch_raises(self):
+        from movement_analytics.pose.estimator import _download_model
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            model_path = os.path.join(tmpdir, "model.task")
+
+            def fake_urlretrieve(url, path):
+                with open(path, "wb") as f:
+                    f.write(b"corrupted data")
+
+            with patch(
+                "urllib.request.urlretrieve", side_effect=fake_urlretrieve
+            ):
+                with pytest.raises(RuntimeError, match="checksum mismatch"):
+                    _download_model(model_path)
+            assert not os.path.exists(model_path)
 
     def test_process_frame_head_optional(self):
         """Head (nose) below visibility threshold should still return positions."""

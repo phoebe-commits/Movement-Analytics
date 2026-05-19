@@ -43,6 +43,9 @@ Desktop.ini
 # Models (downloaded at runtime)
 models/
 
+# Test videos (downloaded at runtime)
+test_videos/
+
 # Output artifacts
 output/
 

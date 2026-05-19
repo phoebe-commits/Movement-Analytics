@@ -78,20 +78,33 @@ def _lowpass_smooth(arr: np.ndarray, fps: float, cutoff: float = 6.0) -> np.ndar
     return smoothed
 
 
+_MODEL_URL = (
+    "https://storage.googleapis.com/mediapipe-models/"
+    "pose_landmarker/pose_landmarker_heavy/float16/latest/"
+    "pose_landmarker_heavy.task"
+)
+_MODEL_SHA256 = "64437af838a65d18e5ba7a0d39b465540069bc8aae8308de3e318aad31fcbc7b"
+
+
 def _download_model(model_path: str):
-    """Download the pose landmarker model if not present."""
+    """Download the pose landmarker model if not present, with SHA256 verification."""
     if os.path.exists(model_path):
         return
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
-    url = (
-        "https://storage.googleapis.com/mediapipe-models/"
-        "pose_landmarker/pose_landmarker_heavy/float16/latest/"
-        "pose_landmarker_heavy.task"
-    )
-    print(f"Downloading pose landmarker model ({url})...")
+    print(f"Downloading pose landmarker model ({_MODEL_URL})...")
+    import hashlib
     import urllib.request
-    urllib.request.urlretrieve(url, model_path)
-    print(f"Model saved to {model_path}")
+    tmp_path = model_path + ".tmp"
+    urllib.request.urlretrieve(_MODEL_URL, tmp_path)
+    sha = hashlib.sha256(open(tmp_path, "rb").read()).hexdigest()
+    if sha != _MODEL_SHA256:
+        os.remove(tmp_path)
+        raise RuntimeError(
+            f"Model checksum mismatch: expected {_MODEL_SHA256[:16]}..., "
+            f"got {sha[:16]}... — download may be corrupted or model version changed"
+        )
+    os.replace(tmp_path, model_path)
+    print(f"Model saved to {model_path} (SHA256 verified)")
 
 
 class PoseEstimator:
