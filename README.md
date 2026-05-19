@@ -74,6 +74,8 @@ A composite **0–100 score** computed from 6 weighted biomechanical domains:
 
 MQS differentiates across profiles: normal gait scores highest across all domains, stiff-knee gait is penalized in kinematics (reduced knee ROM), noisy gait is penalized in smoothness and variability. Reference ranges sourced from Perry & Burnfield 2010, Winter 2009, Balasubramanian et al. 2012, Hausdorff et al. 2001, and Hamill et al. 1999.
 
+**Synthetic vs. Video MQS:** Scores from the synthetic benchmark (above) use clean, noise-free angle trajectories and represent the scoring model's theoretical response. Video-derived MQS is scaled by a confidence factor (observed_fraction × mean_pose_confidence) to account for detection gaps and interpolation. Video scores should be interpreted alongside `pose_observed_fraction`, `pose_interpolation_fraction`, and `mqs_confidence_factor` reported in the summary.
+
 ### Computed Metrics
 
 For each gait profile, the pipeline computes **50+ metrics** in real time:
