@@ -243,17 +243,17 @@ The research document identifies **15 signals** across 6 domains that form the b
 
 | Component | Status |
 |---|---|
-| Research document | Complete (90+ citations, 10 sections) |
-| Gait model (9 profiles) | Complete |
-| Stick-figure renderer | Complete |
-| Joint angle computation | Complete |
-| Gait metrics engine | Complete (98% coverage on core metrics) |
-| Movement Quality Score | Complete (6-domain composite with CRP coordination) |
-| Real-time dashboard | Complete (bilateral overlays, MQS gauge, 6-domain breakdown) |
-| Pose estimation on external video | Experimental (MediaPipe PoseLandmarker, sagittal plane) |
-| CI/CD | Complete (GitHub Actions, 70 tests, ruff lint, coverage) |
-| Reproducible benchmark | Complete (JSON output for regression testing) |
-| Movement Quality Score model | Planned (learned weights from expert raters) |
+| Research document | 90+ citations, 10 sections |
+| Gait model (9 profiles) | Implemented, tested |
+| Stick-figure renderer | Implemented |
+| Joint angle computation | Implemented, 100% coverage |
+| Gait metrics engine | Implemented, 98% coverage (synthetic path) |
+| Movement Quality Score | 6-domain composite, validated on 9 profiles (50.9–98.3 range) |
+| Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown) |
+| Video pose estimation | Experimental — MediaPipe sagittal plane, 61% coverage via mock tests |
+| CI/CD | GitHub Actions, 87 tests, ruff lint, 65% coverage gate |
+| Reproducible benchmark | JSON output with locked regression baselines |
+| Learned MQS weights | Planned (expert rater calibration) |
 
 ---
 
