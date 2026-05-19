@@ -1393,7 +1393,7 @@ class TestBenchmarkOutput:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "compare.png")
-            generate_comparison_report(path, fps=30, n_cycles=2)
+            generate_comparison_report(path, fps=30, n_cycles=4)
             assert os.path.exists(path)
             assert os.path.getsize(path) > 1000
 
