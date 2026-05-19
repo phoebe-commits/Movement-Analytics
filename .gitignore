@@ -6,6 +6,9 @@ docs/vision/
 
 # Python
 __pycache__/
+.coverage
+coverage.xml
+htmlcov/
 *.py[cod]
 *$py.class
 *.egg-info/

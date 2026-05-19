@@ -519,22 +519,51 @@ class TestMissingDataHandling:
     def test_missing_rom_excluded_from_kinematics(self):
         full_metrics = {
             "R_hip_flexion_ROM": 40, "L_hip_flexion_ROM": 40,
-            "R_knee_flexion_ROM": 60, "L_knee_flexion_ROM": 60,
-            "R_ankle_dorsiflexion_ROM": 30, "L_ankle_dorsiflexion_ROM": 30,
+            "R_knee_flexion_ROM": 30, "L_knee_flexion_ROM": 30,
+            "R_ankle_dorsiflexion_ROM": 10, "L_ankle_dorsiflexion_ROM": 10,
         }
         partial_metrics = {
             "R_hip_flexion_ROM": 40, "L_hip_flexion_ROM": 40,
         }
         full_domains = mqs_domain_scores(full_metrics)
         partial_domains = mqs_domain_scores(partial_metrics)
-        assert full_domains["kinematics"] != partial_domains["kinematics"] or \
-            full_domains["kinematics"] == partial_domains["kinematics"]
-        assert partial_domains["kinematics"] != 0.0
+        assert partial_domains["kinematics"] > 0
+        assert full_domains["kinematics"] != pytest.approx(
+            partial_domains["kinematics"], abs=0.01
+        ), "Partial metrics should produce different kinematics score than full"
 
     def test_completely_empty_metrics(self):
         from movement_analytics.kinematics.gait_metrics import movement_quality_score
         mqs = movement_quality_score({})
         assert mqs == pytest.approx(50.0)
+
+
+class TestSignalCompleteness:
+    """Verify signal completeness reporting."""
+
+    def test_full_synthetic_completeness(self):
+        params = GaitParameters()
+        _, right, left, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(right, left, fps=30)
+        assert summary["mqs_overall_completeness"] == pytest.approx(1.0)
+
+    def test_empty_metrics_zero_completeness(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_signal_completeness
+        c = mqs_signal_completeness({})
+        assert c["kinematics"] == pytest.approx(0.0)
+        assert c["smoothness"] == pytest.approx(0.0)
+        assert c["symmetry"] == pytest.approx(0.0)
+
+    def test_partial_metrics_partial_completeness(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_signal_completeness
+        metrics = {
+            "R_hip_flexion_ROM": 40,
+            "L_hip_flexion_ROM": 40,
+            "R_hip_flexion_SPARC": -1.5,
+        }
+        c = mqs_signal_completeness(metrics)
+        assert 0 < c["kinematics"] < 1.0
+        assert c["smoothness"] == pytest.approx(0.5)
 
 
 class TestEstimatorKeyMapping:

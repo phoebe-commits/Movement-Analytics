@@ -339,10 +339,14 @@ def run_benchmark(output_path: str | None = None, fps: int = 30, n_cycles: int =
         entry = {
             "mqs": round(summary["movement_quality_score"], 1),
             "domains": {},
+            "completeness": {},
             "key_metrics": {},
         }
         for k, v in summary.items():
-            if k.startswith("mqs_"):
+            if k.startswith("mqs_") and k.endswith("_completeness"):
+                ckey = k.replace("mqs_", "").replace("_completeness", "")
+                entry["completeness"][ckey] = round(v, 2)
+            elif k.startswith("mqs_") and k != "mqs_overall_completeness":
                 entry["domains"][k.replace("mqs_", "")] = round(v, 1)
             elif k in ("cadence", "stride_time_mean", "stride_time_CV", "n_strides"):
                 is_nan = isinstance(v, float) and np.isnan(v)

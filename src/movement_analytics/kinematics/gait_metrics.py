@@ -263,6 +263,11 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
     for domain, score in mqs_breakdown.items():
         metrics[f"mqs_{domain}"] = score
 
+    completeness = mqs_signal_completeness(metrics)
+    for domain, frac in completeness.items():
+        metrics[f"mqs_{domain}_completeness"] = frac
+    metrics["mqs_overall_completeness"] = float(np.mean(list(completeness.values())))
+
     return metrics
 
 
@@ -371,6 +376,53 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
     domains["temporal"] = float(np.mean(t_scores)) if t_scores else 50.0
 
     return domains
+
+
+def mqs_signal_completeness(metrics: dict) -> dict[str, float]:
+    """Compute signal completeness per domain (0-1).
+
+    Reports what fraction of expected signals were present. A completeness
+    below 1.0 means the domain score is based on partial data.
+    """
+    completeness = {}
+
+    kin_expected = 0
+    kin_present = 0
+    for side in ["R", "L"]:
+        for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]:
+            kin_expected += 1
+            if metrics.get(f"{side}_{joint}_ROM") is not None:
+                kin_present += 1
+        for suffix in ["pelvis_obliquity_ROM", "trunk_lean_ROM"]:
+            kin_expected += 1
+            if metrics.get(f"{side}_{suffix}") is not None:
+                kin_present += 1
+    completeness["kinematics"] = kin_present / kin_expected if kin_expected else 0.0
+
+    sm_present = sum(1 for s in ["R", "L"] if metrics.get(f"{s}_hip_flexion_SPARC") is not None)
+    completeness["smoothness"] = sm_present / 2.0
+
+    sy_present = sum(
+        1 for j in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]
+        if metrics.get(f"{j}_SI") is not None
+    )
+    completeness["symmetry"] = sy_present / 3.0
+
+    completeness["coordination"] = 1.0 if metrics.get("hip_CRP_MAD") is not None else 0.0
+
+    cv_val = metrics.get("stride_time_CV", float("nan"))
+    completeness["variability"] = 0.0 if np.isnan(cv_val) else 1.0
+
+    t_count = 0
+    cad = metrics.get("cadence", float("nan"))
+    if not np.isnan(cad):
+        t_count += 1
+    st = metrics.get("stride_time_mean", float("nan"))
+    if not np.isnan(st):
+        t_count += 1
+    completeness["temporal"] = t_count / 2.0
+
+    return completeness
 
 
 def movement_quality_score(metrics: dict) -> float:

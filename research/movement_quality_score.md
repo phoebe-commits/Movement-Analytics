@@ -153,10 +153,10 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.1, 6
 - Trendelenburg is strongly penalized in kinematics (pelvic obliquity 24° vs. 7° normal, trunk lean 16° vs. 5°)
 - Stiff knee is penalized in kinematics (knee ROM 25° vs. 50–70° normal)
 - Limp is penalized in symmetry (hip SI 19.4%)
-- Noisy is penalized in smoothness and variability (SPARC degraded, stride CV 25.6%)
+- Noisy is penalized in smoothness and variability (SPARC degraded, stride CV 33%)
 - Slow and fast are penalized in temporal (cadence outside 90–130 spm range)
-- Parkinsonian scores lowest overall (MQS 50.7) with deficits in smoothness (SPARC degraded by noise), variability (stride CV elevated), and temporal (reduced cadence/stride time)
-- Parkinsonian and noisy are the only profiles scoring below 55, both exhibiting motor noise that degrades SPARC and stride time CV. Bilateral noise is generated with independent random seeds per side (v1.1.1), though SI remains 100% because the mean-based formula is insensitive to zero-mean noise
+- Noisy and parkinsonian score lowest overall (MQS 52.1 and 52.3 respectively), both with deficits in smoothness (SPARC degraded by noise), variability (stride CV elevated), and temporal domains
+- Bilateral noise is generated with independent random seeds per side (v1.1.1), though SI remains 100% because the mean-based formula is insensitive to zero-mean noise — a known limitation (see §3.3.4)
 
 ### 3.2 Discriminative Power
 
