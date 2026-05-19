@@ -342,6 +342,21 @@ class TestEdgeCases:
         events = detect_gait_events(hip, knee, fps=30)
         assert "cadence_steps_per_min" in events
 
+    def test_gait_events_ankle_refinement(self):
+        from movement_analytics.kinematics.gait_metrics import detect_gait_events
+        t = np.linspace(0, 6 * np.pi, 180)
+        hip = 20 * np.sin(t)
+        knee = 30 * (1 - np.cos(t)) / 2
+        ankle = 10 * np.sin(t - 0.2)
+        events_no_ankle = detect_gait_events(hip, knee, fps=30)
+        events_with_ankle = detect_gait_events(
+            hip, knee, fps=30, ankle_dorsiflexion=ankle,
+        )
+        assert len(events_with_ankle["heel_strikes"]) == len(
+            events_no_ankle["heel_strikes"]
+        )
+        assert events_with_ankle["cadence_steps_per_min"] > 0
+
     def test_domain_weights_sum_to_one(self):
         assert sum(_DOMAIN_WEIGHTS.values()) == pytest.approx(1.0)
 
