@@ -201,13 +201,16 @@ class PoseEstimator:
 
 
 def process_video(
-    video_path: str, fps: float = None,
+    video_path: str, fps: float = None, store_frames: bool = True,
 ) -> tuple[list[np.ndarray], dict, dict, float, dict]:
     """Process a video file and extract bilateral joint angle time series.
 
     Returns (frames, angles_right, angles_left, actual_fps, metadata) where
     metadata contains pose quality stats: mean_confidence, observed_fraction,
     interpolation_fractions (per-key dict), and per-frame confidences.
+
+    When store_frames=False, frames list is empty (saves memory for headless
+    analysis). Angles and metadata are still computed.
     """
     from ..kinematics.joint_angles import compute_all_angles
 
@@ -231,12 +234,13 @@ def process_video(
             positions, confidence = estimator.process_frame(frame)
             confidences.append(confidence)
             if positions is not None:
-                annotated = estimator.draw_landmarks(frame, positions)
                 angles = compute_all_angles(positions)
-                frames.append(annotated)
+                if store_frames:
+                    frames.append(estimator.draw_landmarks(frame, positions))
                 all_angles.append(angles)
             else:
-                frames.append(frame)
+                if store_frames:
+                    frames.append(frame)
                 all_angles.append({})
 
     cap.release()
@@ -349,7 +353,7 @@ def process_video(
         "observed_fraction": detected_frames / len(all_angles) if all_angles else 0.0,
         "interpolation_fractions": interpolation_fractions,
         "confidences": confidences,
-        "n_frames": len(frames),
+        "n_frames": len(all_angles) or len(frames),
     }
 
     return frames, angles_right, angles_left, actual_fps, metadata

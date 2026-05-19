@@ -35,7 +35,7 @@ def analyze_video(video_path: str, fps: float = None) -> dict:
     from .pose.estimator import process_video
 
     _, angles_right, angles_left, actual_fps, meta = process_video(
-        video_path, fps=fps,
+        video_path, fps=fps, store_frames=False,
     )
     summary = compute_gait_summary(
         angles_right, angles_left, fps=actual_fps, pose_metadata=meta,

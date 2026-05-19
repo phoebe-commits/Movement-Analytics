@@ -136,13 +136,17 @@ def run_video_analysis(video_path: str, output_path: str | None = None,
     print(f"Processing video: {video_path}")
     print("Running pose estimation (MediaPipe BlazePose)...")
 
-    frames, angles_right, angles_left, fps, meta = process_video(video_path, fps=target_fps)
+    need_frames = output_path is not None or display
+    frames, angles_right, angles_left, fps, meta = process_video(
+        video_path, fps=target_fps, store_frames=need_frames,
+    )
 
-    if not frames:
+    if need_frames and not frames:
         print("Error: No frames extracted from video.")
         sys.exit(1)
 
-    print(f"  Extracted {len(frames)} frames at {fps:.1f} fps")
+    n_total = meta.get("n_frames", len(frames)) if meta else len(frames)
+    print(f"  Extracted {n_total} frames at {fps:.1f} fps")
     if meta:
         obs = meta.get("observed_fraction", 0)
         conf = meta.get("mean_confidence", 0)

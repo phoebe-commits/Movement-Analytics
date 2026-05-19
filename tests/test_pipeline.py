@@ -2209,10 +2209,12 @@ class TestCLIRunVideoAnalysis:
                 "movement_analytics.pose.estimator.process_video"
             ) as mock_pv:
                 mock_pv.return_value = ([], {}, {}, 30.0, {"observed_fraction": 0.0,
-                    "mean_confidence": 0.0, "interpolation_fractions": {}})
+                    "mean_confidence": 0.0, "interpolation_fractions": {},
+                    "n_frames": 0})
 
+                # With output_path, need_frames=True so empty frames exits
                 with pytest.raises(SystemExit) as exc_info:
-                    run_video_analysis(vid_path, display=False)
+                    run_video_analysis(vid_path, output_path="out.mp4", display=False)
                 assert exc_info.value.code == 1
 
     def test_run_video_analysis_no_angles_returns_early(self):
