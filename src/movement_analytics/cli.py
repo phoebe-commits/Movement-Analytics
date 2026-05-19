@@ -48,12 +48,12 @@ def run_analysis(profile_name: str = "normal", output_path: str | None = None,
         print(f"  {key}: {val:.2f}")
     print()
 
-    dashboard = RealTimeDashboard(history_length=150, panel_width=520)
+    dashboard = RealTimeDashboard(history_length=150, panel_width=560)
 
     writer = None
     if output_path:
         sample = create_dashboard_frame(
-            frames[0], {}, summary, dashboard, "Stance", 0
+            frames[0], {}, summary, dashboard, "Stance", 0, profile_name
         )
         h, w = sample.shape[:2]
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
@@ -61,7 +61,7 @@ def run_analysis(profile_name: str = "normal", output_path: str | None = None,
         print(f"Writing output to {output_path} ({w}x{h})")
 
     # Reset dashboard for clean run
-    dashboard = RealTimeDashboard(history_length=150, panel_width=520)
+    dashboard = RealTimeDashboard(history_length=150, panel_width=560)
 
     print("Running real-time analysis...")
     frame_time = 1.0 / fps
@@ -100,7 +100,8 @@ def run_analysis(profile_name: str = "normal", output_path: str | None = None,
         cycle_pct = cp * 100
 
         composite = create_dashboard_frame(
-            frame, display_angles, summary, dashboard, gait_phase, cycle_pct
+            frame, display_angles, summary, dashboard, gait_phase, cycle_pct,
+            profile_name
         )
 
         if writer:

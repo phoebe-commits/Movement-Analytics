@@ -196,4 +196,103 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
             np.abs(angles_left["hip_flexion"])
         )
 
+    metrics["movement_quality_score"] = movement_quality_score(metrics)
+    mqs_breakdown = mqs_domain_scores(metrics)
+    for domain, score in mqs_breakdown.items():
+        metrics[f"mqs_{domain}"] = score
+
     return metrics
+
+
+def _signal_score(value: float, optimal_low: float, optimal_high: float,
+                  worst_low: float, worst_high: float) -> float:
+    """Map a metric value to 0-100 based on clinical reference range.
+
+    100 = within optimal range, linearly decreasing to 0 at worst bounds.
+    """
+    if optimal_low <= value <= optimal_high:
+        return 100.0
+    if value < optimal_low:
+        if worst_low >= optimal_low:
+            return 0.0
+        return max(0.0, 100.0 * (value - worst_low) / (optimal_low - worst_low))
+    if worst_high <= optimal_high:
+        return 0.0
+    return max(0.0, 100.0 * (worst_high - value) / (worst_high - optimal_high))
+
+
+# Clinical reference ranges: (optimal_low, optimal_high, worst_low, worst_high)
+_SIGNAL_RANGES = {
+    "hip_rom": (35.0, 50.0, 10.0, 70.0),
+    "knee_rom": (50.0, 70.0, 15.0, 90.0),
+    "ankle_rom": (20.0, 35.0, 5.0, 50.0),
+    "sparc": (-2.0, -1.3, -6.0, -0.5),
+    "symmetry": (0.0, 10.0, 0.0, 50.0),
+    "stride_cv": (0.0, 4.0, 0.0, 20.0),
+    "cadence": (90.0, 130.0, 40.0, 180.0),
+    "stride_time": (0.8, 1.3, 0.3, 2.5),
+}
+
+# Domain weights from research framework (Section 10)
+_DOMAIN_WEIGHTS = {
+    "kinematics": 0.30,
+    "smoothness": 0.20,
+    "symmetry": 0.20,
+    "variability": 0.15,
+    "temporal": 0.15,
+}
+
+
+def mqs_domain_scores(metrics: dict) -> dict[str, float]:
+    """Compute per-domain scores (0-100) from gait summary metrics."""
+    domains = {}
+
+    kin_scores = []
+    for side in ["R", "L"]:
+        for joint, key in [("hip_flexion", "hip_rom"), ("knee_flexion", "knee_rom"),
+                           ("ankle_dorsiflexion", "ankle_rom")]:
+            val = metrics.get(f"{side}_{joint}_ROM", 0)
+            lo, hi, wlo, whi = _SIGNAL_RANGES[key]
+            kin_scores.append(_signal_score(val, lo, hi, wlo, whi))
+    domains["kinematics"] = float(np.mean(kin_scores)) if kin_scores else 50.0
+
+    sm_scores = []
+    for side in ["R", "L"]:
+        val = metrics.get(f"{side}_hip_flexion_SPARC", -3.0)
+        lo, hi, wlo, whi = _SIGNAL_RANGES["sparc"]
+        sm_scores.append(_signal_score(val, lo, hi, wlo, whi))
+    domains["smoothness"] = float(np.mean(sm_scores)) if sm_scores else 50.0
+
+    sy_scores = []
+    for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]:
+        val = metrics.get(f"{joint}_SI", 0)
+        lo, hi, wlo, whi = _SIGNAL_RANGES["symmetry"]
+        sy_scores.append(_signal_score(val, lo, hi, wlo, whi))
+    domains["symmetry"] = float(np.mean(sy_scores)) if sy_scores else 50.0
+
+    cv_val = metrics.get("stride_time_CV", 0)
+    lo, hi, wlo, whi = _SIGNAL_RANGES["stride_cv"]
+    domains["variability"] = _signal_score(cv_val, lo, hi, wlo, whi)
+
+    t_scores = []
+    cad = metrics.get("cadence", 0)
+    lo, hi, wlo, whi = _SIGNAL_RANGES["cadence"]
+    t_scores.append(_signal_score(cad, lo, hi, wlo, whi))
+    st = metrics.get("stride_time_mean", 0)
+    lo, hi, wlo, whi = _SIGNAL_RANGES["stride_time"]
+    t_scores.append(_signal_score(st, lo, hi, wlo, whi))
+    domains["temporal"] = float(np.mean(t_scores))
+
+    return domains
+
+
+def movement_quality_score(metrics: dict) -> float:
+    """Compute composite Movement Quality Score (0-100).
+
+    Weighted combination across 5 biomechanical domains:
+    kinematics (30%), smoothness (20%), symmetry (20%),
+    variability (15%), temporal (15%).
+    """
+    domains = mqs_domain_scores(metrics)
+    mqs = sum(domains[d] * _DOMAIN_WEIGHTS[d] for d in _DOMAIN_WEIGHTS)
+    return float(np.clip(mqs, 0, 100))

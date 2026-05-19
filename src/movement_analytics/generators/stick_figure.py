@@ -215,12 +215,25 @@ def generate_frames(params: GaitParameters, width: int = 1280, height: int = 720
     stride_px = params.stride_length * figure_height_px / 1.75
     speed_px_per_frame = stride_px * params.cadence * params.speed_factor / (60 * fps)
 
+    # Normal ROM ranges for color-coding joints
+    _NORMAL_RANGES = {
+        "hip_flexion": (35, 50),
+        "knee_flexion": (50, 70),
+        "ankle_dorsiflexion": (20, 35),
+    }
+
     frames = []
     for i in range(total):
         frame = np.full((height, width, 3), (20, 20, 25), dtype=np.uint8)
+
+        # Ground with subtle gradient
         cv2.line(frame, (0, ground_y), (width, ground_y), (60, 60, 65), 2)
         for gx in range(0, width, 80):
             cv2.line(frame, (gx, ground_y), (gx, ground_y + 5), (50, 50, 55), 1)
+        for gy_off in range(1, 40):
+            alpha = max(0, 25 - gy_off)
+            cv2.line(frame, (0, ground_y + gy_off), (width, ground_y + gy_off),
+                     (20 + alpha // 3, 20 + alpha // 3, 25 + alpha // 4), 1)
 
         hip_x = width * 0.35 + speed_px_per_frame * (i % frames_per_cycle)
         positions = _joint_positions(angles_right, angles_left, i,
@@ -228,7 +241,6 @@ def generate_frames(params: GaitParameters, width: int = 1280, height: int = 720
 
         bone_color_back = (100, 120, 140)
         bone_color_front = (180, 200, 220)
-        joint_color = (0, 180, 255)
 
         back_side = "left" if angles_right["hip_flexion"][i] > angles_left["hip_flexion"][i] else "right"
         front_side = "right" if back_side == "left" else "left"
@@ -250,10 +262,35 @@ def generate_frames(params: GaitParameters, width: int = 1280, height: int = 720
         head_r = int(SEGMENT_RATIOS["head_radius"] * figure_height_px)
         cv2.circle(frame, tuple(positions["head"].astype(int)), head_r, (180, 200, 220), 2)
 
+        # Color-coded joint markers with real-time angle labels
+        front_angles = angles_right if front_side == "right" else angles_left
+        joint_angle_map = {
+            f"{front_side}_hip": ("hip_flexion", front_angles["hip_flexion"][i]),
+            f"{front_side}_knee": ("knee_flexion", front_angles["knee_flexion"][i]),
+            f"{front_side}_ankle": ("ankle_dorsiflexion", front_angles["ankle_dorsiflexion"][i]),
+        }
+
         for key, pos in positions.items():
             if key in ("head", "neck"):
                 continue
-            cv2.circle(frame, tuple(pos.astype(int)), 5, joint_color, -1)
+            pt = tuple(pos.astype(int))
+
+            if key in joint_angle_map:
+                joint_name, angle_val = joint_angle_map[key]
+                lo, hi = _NORMAL_RANGES.get(joint_name, (0, 180))
+                abs_angle = abs(angle_val)
+                if lo <= abs_angle <= hi:
+                    jcolor = (80, 200, 80)
+                else:
+                    jcolor = (50, 200, 255) if abs(abs_angle - lo) < 10 or abs(abs_angle - hi) < 10 else (60, 60, 255)
+                cv2.circle(frame, pt, 7, jcolor, -1)
+                cv2.circle(frame, pt, 7, (255, 255, 255), 1)
+
+                label_text = f"{angle_val:.0f}"
+                cv2.putText(frame, label_text, (pt[0] + 10, pt[1] - 5),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.38, jcolor, 1, cv2.LINE_AA)
+            else:
+                cv2.circle(frame, pt, 5, (0, 180, 255), -1)
 
         frames.append(frame)
 
