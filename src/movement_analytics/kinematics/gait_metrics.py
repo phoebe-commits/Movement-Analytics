@@ -349,14 +349,16 @@ def gait_deviation_index(
 
 def detect_gait_events(hip_flexion: np.ndarray, knee_flexion: np.ndarray,
                        fps: float,
-                       ankle_dorsiflexion: np.ndarray | None = None) -> dict:
+                       ankle_dorsiflexion: np.ndarray | None = None,
+                       heel_y: np.ndarray | None = None) -> dict:
     """Detect gait events (heel strikes, toe-offs) from joint angle signals.
 
     Primary: hip flexion peaks (max flexion ≈ heel strike).
-    When *ankle_dorsiflexion* is not None (used as a presence flag for
-    distal signal availability), refines heel-strike timing by finding
-    the nearest knee-extension minimum within ±0.1s of each hip peak —
-    closer to true initial contact (Perry & Burnfield 2010).
+    When *heel_y* is provided (pixel Y-coordinate of heel landmark),
+    refines heel-strike timing using foot contact detection — the heel's
+    lowest point (max Y in screen coords) within ±0.15s of each hip peak.
+    Otherwise when *ankle_dorsiflexion* is not None, refines by finding
+    the nearest knee-extension minimum within ±0.1s of each hip peak.
     """
     nyq = fps / 2
     if nyq <= 6.0 or len(hip_flexion) < 13:
@@ -374,7 +376,21 @@ def detect_gait_events(hip_flexion: np.ndarray, knee_flexion: np.ndarray,
         -hip_filt, distance=int(fps * 0.3), prominence=min_prominence,
     )
 
-    if ankle_dorsiflexion is not None and len(hs_indices) > 0:
+    if heel_y is not None and len(hs_indices) > 0 and not np.all(np.isnan(heel_y)):
+        window = max(1, int(fps * 0.15))
+        refined = []
+        for hs in hs_indices:
+            lo = max(0, hs - window)
+            hi = min(len(heel_y), hs + window + 1)
+            seg = heel_y[lo:hi]
+            valid = ~np.isnan(seg)
+            if np.any(valid):
+                best = lo + int(np.where(valid, seg, -np.inf).argmax())
+            else:
+                best = hs
+            refined.append(best)
+        hs_indices = np.array(refined)
+    elif ankle_dorsiflexion is not None and len(hs_indices) > 0:
         window = max(1, int(fps * 0.1))
         refined = []
         for hs in hs_indices:
@@ -447,9 +463,10 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
 
     if "hip_flexion" in angles_right and "knee_flexion" in angles_right:
         ankle = angles_right.get("ankle_dorsiflexion")
+        r_heel_y = angles_right.get("heel_y")
         events = detect_gait_events(
             angles_right["hip_flexion"], angles_right["knee_flexion"], fps,
-            ankle_dorsiflexion=ankle,
+            ankle_dorsiflexion=ankle, heel_y=r_heel_y,
         )
         metrics["cadence"] = events["cadence_steps_per_min"]
         metrics["stride_time_mean"] = events["stride_time_mean"]
@@ -513,9 +530,10 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
 
         if "hip_flexion" in angles_left and "knee_flexion" in angles_left:
             l_ankle = angles_left.get("ankle_dorsiflexion")
+            l_heel_y = angles_left.get("heel_y")
             l_events = detect_gait_events(
                 angles_left["hip_flexion"], angles_left["knee_flexion"],
-                fps, ankle_dorsiflexion=l_ankle,
+                fps, ankle_dorsiflexion=l_ankle, heel_y=l_heel_y,
             )
             l_hs = l_events["heel_strikes"]
             gdi_l = gait_deviation_index(angles_left, l_hs)

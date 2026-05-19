@@ -80,6 +80,11 @@ def compute_all_angles(positions: dict) -> dict[str, float]:
             positions["pelvis"], positions["shoulder"]
         )
 
+    for side in ["right", "left"]:
+        heel = positions.get(f"{side}_heel")
+        if heel is not None:
+            angles[f"{side}_heel_y"] = float(heel[1])
+
     l_hip = positions.get("left_hip")
     r_hip = positions.get("right_hip")
     if l_hip is not None and r_hip is not None:

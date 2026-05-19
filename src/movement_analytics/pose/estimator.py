@@ -147,7 +147,8 @@ class PoseEstimator:
 
         for side in ["left", "right"]:
             for joint, lm_name in [("hip", f"{side}_hip"), ("knee", f"{side}_knee"),
-                                   ("ankle", f"{side}_ankle"), ("toe", f"{side}_foot_index"),
+                                   ("ankle", f"{side}_ankle"), ("heel", f"{side}_heel"),
+                                   ("toe", f"{side}_foot_index"),
                                    ("shoulder", f"{side}_shoulder"), ("elbow", f"{side}_elbow"),
                                    ("wrist", f"{side}_wrist")]:
                 pt = lm_to_px(lm_name)
@@ -169,7 +170,8 @@ class PoseEstimator:
             skeleton_links.extend([
                 (f"{side}_hip", f"{side}_knee"),
                 (f"{side}_knee", f"{side}_ankle"),
-                (f"{side}_ankle", f"{side}_toe"),
+                (f"{side}_ankle", f"{side}_heel"),
+                (f"{side}_heel", f"{side}_toe"),
                 (f"{side}_shoulder", f"{side}_elbow"),
                 (f"{side}_elbow", f"{side}_wrist"),
                 ("pelvis", f"{side}_hip"),
@@ -322,9 +324,10 @@ def process_video(
         from ..kinematics.gait_metrics import detect_gait_events
         knee = angles_right.get("knee_flexion", np.zeros(n))
         ankle = angles_right.get("ankle_dorsiflexion")
+        r_heel_y = angles_right.get("heel_y")
         events = detect_gait_events(
             angles_right["hip_flexion"], knee, actual_fps,
-            ankle_dorsiflexion=ankle,
+            ankle_dorsiflexion=ankle, heel_y=r_heel_y,
         )
         hs = events["heel_strikes"]
         phase = np.zeros(n)

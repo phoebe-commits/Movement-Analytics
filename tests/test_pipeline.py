@@ -385,6 +385,62 @@ class TestEdgeCases:
         )
         assert events_with_ankle["cadence_steps_per_min"] > 0
 
+    def test_gait_events_heel_y_refinement(self):
+        """Heel Y-position should refine heel strike timing when available."""
+        from movement_analytics.kinematics.gait_metrics import detect_gait_events
+        t = np.linspace(0, 6 * np.pi, 180)
+        hip = 20 * np.sin(t)
+        knee = 30 * (1 - np.cos(t)) / 2
+        heel_y = 400 + 20 * np.sin(t + 0.3)
+        events_no_heel = detect_gait_events(hip, knee, fps=30)
+        events_with_heel = detect_gait_events(
+            hip, knee, fps=30, heel_y=heel_y,
+        )
+        assert len(events_with_heel["heel_strikes"]) == len(
+            events_no_heel["heel_strikes"]
+        )
+        assert events_with_heel["cadence_steps_per_min"] > 0
+        if len(events_no_heel["heel_strikes"]) > 0:
+            assert not np.array_equal(
+                events_with_heel["heel_strikes"],
+                events_no_heel["heel_strikes"],
+            ), "Heel Y should shift timing"
+
+    def test_gait_events_heel_y_nan_fallback(self):
+        """All-NaN heel_y should fall back to hip-peak detection."""
+        from movement_analytics.kinematics.gait_metrics import detect_gait_events
+        t = np.linspace(0, 6 * np.pi, 180)
+        hip = 20 * np.sin(t)
+        knee = 30 * (1 - np.cos(t)) / 2
+        heel_nan = np.full(180, np.nan)
+        events = detect_gait_events(hip, knee, fps=30, heel_y=heel_nan)
+        events_base = detect_gait_events(hip, knee, fps=30)
+        np.testing.assert_array_equal(
+            events["heel_strikes"], events_base["heel_strikes"]
+        )
+
+    def test_heel_y_in_joint_angles(self):
+        """compute_all_angles should extract heel_y when heel position available."""
+        from movement_analytics.kinematics.joint_angles import compute_all_angles
+        positions = {
+            "pelvis": np.array([320.0, 260.0]),
+            "shoulder": np.array([320.0, 140.0]),
+            "right_hip": np.array([340.0, 260.0]),
+            "right_knee": np.array([340.0, 350.0]),
+            "right_ankle": np.array([340.0, 430.0]),
+            "right_heel": np.array([335.0, 445.0]),
+            "right_toe": np.array([350.0, 450.0]),
+            "left_hip": np.array([300.0, 260.0]),
+            "left_knee": np.array([300.0, 350.0]),
+            "left_ankle": np.array([300.0, 430.0]),
+            "left_heel": np.array([305.0, 445.0]),
+            "left_toe": np.array([290.0, 450.0]),
+        }
+        angles = compute_all_angles(positions)
+        assert "right_heel_y" in angles
+        assert "left_heel_y" in angles
+        assert angles["right_heel_y"] == pytest.approx(445.0)
+
     def test_domain_weights_sum_to_one(self):
         assert sum(_DOMAIN_WEIGHTS.values()) == pytest.approx(1.0)
 
