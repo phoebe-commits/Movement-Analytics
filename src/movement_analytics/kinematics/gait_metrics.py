@@ -442,6 +442,7 @@ _SIGNAL_RANGES = {
     "stride_time": (0.8, 1.3, 0.3, 2.5),
     "double_support": (15.0, 25.0, 0.0, 50.0),
     "crp_mad": (0.0, 15.0, 0.0, 60.0),
+    "crp_hip_knee": (15.0, 35.0, 0.0, 60.0),
 }
 
 # Domain weights from research framework (Section 10)
@@ -502,12 +503,17 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
     else:
         domains["symmetry"] = 50.0
 
+    coord_scores = []
     hip_crp = metrics.get("hip_CRP_MAD")
     if hip_crp is not None:
         lo, hi, wlo, whi = _SIGNAL_RANGES["crp_mad"]
-        domains["coordination"] = _signal_score(hip_crp, lo, hi, wlo, whi)
-    else:
-        domains["coordination"] = 50.0
+        coord_scores.append(_signal_score(hip_crp, lo, hi, wlo, whi))
+    for side in ["R", "L"]:
+        hk_crp = metrics.get(f"{side}_hip_knee_CRP_MAD")
+        if hk_crp is not None:
+            lo, hi, wlo, whi = _SIGNAL_RANGES["crp_hip_knee"]
+            coord_scores.append(_signal_score(hk_crp, lo, hi, wlo, whi))
+    domains["coordination"] = float(np.mean(coord_scores)) if coord_scores else 50.0
 
     cv_val = metrics.get("stride_time_CV", float("nan"))
     lo, hi, wlo, whi = _SIGNAL_RANGES["stride_cv"]
@@ -565,7 +571,14 @@ def mqs_signal_completeness(metrics: dict) -> dict[str, float]:
     )
     completeness["symmetry"] = sy_present / 4.0
 
-    completeness["coordination"] = 1.0 if metrics.get("hip_CRP_MAD") is not None else 0.0
+    coord_present = 0
+    coord_expected = 3
+    if metrics.get("hip_CRP_MAD") is not None:
+        coord_present += 1
+    for side in ["R", "L"]:
+        if metrics.get(f"{side}_hip_knee_CRP_MAD") is not None:
+            coord_present += 1
+    completeness["coordination"] = coord_present / coord_expected
 
     cv_val = metrics.get("stride_time_CV", float("nan"))
     completeness["variability"] = 0.0 if np.isnan(cv_val) else 1.0

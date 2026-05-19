@@ -1030,9 +1030,9 @@ class TestBenchmarkRegression:
         "limp": 88.8,
         "trendelenburg": 87.3,
         "slow": 83.8,
-        "stiff_knee": 82.9,
-        "noisy": 67.3,
-        "parkinsonian": 64.8,
+        "stiff_knee": 79.9,
+        "noisy": 67.7,
+        "parkinsonian": 63.4,
     }
 
     MQS_TOLERANCE = 2.0

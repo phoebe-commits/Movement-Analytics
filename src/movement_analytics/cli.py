@@ -335,13 +335,13 @@ def generate_comparison_report(output_path: str, fps: int = 30, n_cycles: int = 
     # Key findings
     y += 35
     key_text = (
-        "Key: ROM 35-50 hip, 50-70 knee | SPARC -2.0 to -1.3 | SI <10%"
+        "Key: ROM 35-50 hip, 50-70 knee | Hip SPARC -2 to -1.3 | Knee SPARC -16 to -12 | SI <10%"
     )
     cv2.putText(img, key_text, (30, y + 14),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.35, (100, 110, 120), 1, cv2.LINE_AA)
+                cv2.FONT_HERSHEY_SIMPLEX, 0.32, (100, 110, 120), 1, cv2.LINE_AA)
     y += 20
     cv2.putText(img, "Cadence 90-130 spm | Stride CV <4% | Stride time 0.8-1.3s",
-                (30, y + 14), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (100, 110, 120), 1, cv2.LINE_AA)
+                (30, y + 14), cv2.FONT_HERSHEY_SIMPLEX, 0.32, (100, 110, 120), 1, cv2.LINE_AA)
 
     cv2.imwrite(output_path, img)
     print(f"Comparison report saved to {output_path}")

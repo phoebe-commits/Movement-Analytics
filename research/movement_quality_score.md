@@ -97,9 +97,10 @@ Single signal. Healthy adults: 1–3% CV; fallers show >6%.
 
 | Signal | Optimal Range | Worst-Case Bounds | Source |
 |---|---|---|---|
-| Hip CRP CSD | 0–15° | 0–60° | Hamill et al., 1999; Plotnik et al., 2005 |
+| Hip CRP CSD (inter-limb) | 0–15° | 0–60° | Hamill et al., 1999; Plotnik et al., 2005 |
+| Hip-Knee CRP MAD (intra-limb) | 15–35° | 0–60° | Derived from synthetic profiles; normal ≈ 28° |
 
-Continuous Relative Phase (CRP) is computed via Hilbert transform of bilateral hip flexion signals. Circular Standard Deviation (CSD) of the CRP time series measures coordination consistency regardless of the dominant phase relationship. Hip flexion is used because it has the most sinusoidal waveform in gait, making it the most reliable signal for Hilbert-based phase extraction. Knee flexion CRP is computed and reported but excluded from the MQS composite due to non-sinusoidal stance/swing transitions that inflate Hilbert phase error (analogous to the smoothness domain using only hip SPARC). Healthy gait shows CSD < 15°; pathological gait shows CSD > 30°.
+Three signals (1 inter-limb + 2 bilateral intra-limb), averaged. Inter-limb CRP: Continuous Relative Phase via Hilbert transform of bilateral hip flexion signals, CSD measures coordination consistency. Intra-limb CRP (v1.4): hip-knee coupling via Hilbert transform of ipsilateral hip flexion and knee flexion, computed bilaterally. Stiff-knee gait shows hip-knee CRP MAD ≈ 43° (disrupted proximal-distal coupling), compared to 28° for normal gait. Knee bilateral CRP is reported but excluded due to non-sinusoidal stance/swing transitions.
 
 **Temporal Domain (12%):**
 
@@ -154,14 +155,14 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.4, 6
 | Limp | 88.8 | 90.9 | 91.5 | 84.8 | 100.0 | 100.0 | 61.2 |
 | Trendelenburg | 87.3 | 60.0 | 99.3 | 100.0 | 100.0 | 100.0 | 78.5 |
 | Slow | 83.8 | 84.9 | 82.6 | 100.0 | 100.0 | 100.0 | 22.7 |
-| Stiff Knee | 82.9 | 74.1 | 70.5 | 100.0 | 100.0 | 100.0 | 55.8 |
-| Noisy | 67.3 | 52.1 | 50.0 | 92.9 | 96.1 | 23.7 | 100.0 |
-| Parkinsonian | 64.8 | 63.0 | 19.8 | 95.7 | 100.0 | 78.9 | 33.4 |
+| Stiff Knee | 79.9 | 74.1 | 70.5 | 100.0 | 78.7 | 100.0 | 55.8 |
+| Noisy | 67.7 | 52.1 | 50.0 | 92.9 | 98.7 | 23.7 | 100.0 |
+| Parkinsonian | 63.4 | 63.0 | 19.8 | 95.7 | 90.3 | 78.9 | 33.4 |
 
 **Expected patterns confirmed:**
 - Normal scores highest with near-perfect kinematics
 - Trendelenburg is strongly penalized in kinematics (pelvic obliquity 24° vs. 7° normal, trunk lean 16° vs. 5°)
-- Stiff knee is penalized in kinematics (knee ROM 25° vs. 50–70° normal)
+- Stiff knee is penalized in kinematics (knee ROM 25° vs. 50–70° normal), smoothness (knee SPARC −21 vs. −16 to −12 normal), and coordination (hip-knee CRP MAD 43° vs. 28° normal)
 - Limp is penalized in symmetry (84.8) via both sagittal SI (hip SI 19.4%) and frontal-plane pelvis obliquity SI (21%) — the asymmetric pelvic drop is now detected (v1.3)
 - Noisy is penalized in smoothness (hip SPARC degraded) and variability (stride CV 33%)
 - Slow and fast are penalized in temporal (cadence outside 90–130 spm range)
