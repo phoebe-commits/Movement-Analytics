@@ -160,6 +160,13 @@ def run_video_analysis(video_path: str, output_path: str | None = None,
             summary["pose_interpolation_fraction"] = float(
                 np.mean(list(interp.values()))
             )
+        from .kinematics.gait_metrics import mqs_confidence_factor
+        cf = mqs_confidence_factor(summary)
+        summary["mqs_confidence_factor"] = cf
+        if cf < 1.0:
+            raw = summary["movement_quality_score"]
+            summary["mqs_raw"] = raw
+            summary["movement_quality_score"] = round(raw * cf, 1)
 
     print("\n--- Gait Summary ---")
     for key, val in sorted(summary.items()):

@@ -619,6 +619,32 @@ class TestSignalCompleteness:
         assert c["smoothness"] == pytest.approx(0.5)
 
 
+class TestMQSConfidenceFactor:
+    """Verify MQS confidence factor degrades with poor pose quality."""
+
+    def test_synthetic_data_full_confidence(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_confidence_factor
+        metrics = {"R_hip_flexion_ROM": 40}
+        assert mqs_confidence_factor(metrics) == 1.0
+
+    def test_perfect_video_confidence(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_confidence_factor
+        metrics = {"pose_observed_fraction": 1.0, "pose_mean_confidence": 0.95}
+        assert mqs_confidence_factor(metrics) == pytest.approx(0.95)
+
+    def test_poor_detection_degrades(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_confidence_factor
+        metrics = {"pose_observed_fraction": 0.5, "pose_mean_confidence": 0.6}
+        cf = mqs_confidence_factor(metrics)
+        assert cf == pytest.approx(0.3)
+        assert cf < 1.0
+
+    def test_zero_confidence(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_confidence_factor
+        metrics = {"pose_observed_fraction": 0.0, "pose_mean_confidence": 0.0}
+        assert mqs_confidence_factor(metrics) == 0.0
+
+
 class TestEstimatorKeyMapping:
     """Verify pose estimator maps angle keys correctly for MQS."""
 

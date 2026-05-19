@@ -468,6 +468,25 @@ def mqs_signal_completeness(metrics: dict) -> dict[str, float]:
     return completeness
 
 
+def mqs_confidence_factor(metrics: dict) -> float:
+    """Compute a 0-1 confidence factor for MQS based on data quality.
+
+    When pose_observed_fraction or pose_mean_confidence are present
+    (injected by video pipeline), returns a factor < 1.0 if data
+    quality is insufficient. Synthetic data (no pose keys) returns 1.0.
+
+    Factor = observed_fraction * mean_confidence (both clamped to [0,1]).
+    Below 50% observed or 0.3 confidence, factor drops sharply.
+    """
+    obs = metrics.get("pose_observed_fraction")
+    conf = metrics.get("pose_mean_confidence")
+    if obs is None and conf is None:
+        return 1.0
+    obs = np.clip(obs if obs is not None else 1.0, 0, 1)
+    conf = np.clip(conf if conf is not None else 1.0, 0, 1)
+    return float(obs * conf)
+
+
 def movement_quality_score(metrics: dict) -> float:
     """Compute composite Movement Quality Score (0-100).
 

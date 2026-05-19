@@ -9,6 +9,7 @@ from .kinematics.gait_metrics import (
     continuous_relative_phase,
     crp_consistency,
     movement_quality_score,
+    mqs_confidence_factor,
     mqs_domain_scores,
     mqs_signal_completeness,
     rom,
@@ -31,4 +32,5 @@ __all__ = [
     "GAIT_PROFILES",
     "generate_frames",
     "waveform_symmetry",
+    "mqs_confidence_factor",
 ]
