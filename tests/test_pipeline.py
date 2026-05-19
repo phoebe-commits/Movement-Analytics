@@ -209,6 +209,36 @@ class TestCRP:
         assert "mqs_coordination" in summary
 
 
+class TestBenchmark:
+    def test_benchmark_all_profiles(self):
+        from movement_analytics.cli import run_benchmark
+        import json
+        import tempfile
+        import os
+
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
+            path = f.name
+
+        try:
+            run_benchmark(path, fps=30, n_cycles=2)
+            with open(path) as f:
+                data = json.load(f)
+
+            assert data["n_domains"] == 6
+            assert len(data["profiles"]) == 8
+            for name in ["normal", "slow", "fast", "limp", "stiff_knee",
+                         "trendelenburg", "model_runway", "noisy"]:
+                assert name in data["profiles"]
+                p = data["profiles"][name]
+                assert 0 <= p["mqs"] <= 100
+                assert set(p["domains"].keys()) == {
+                    "kinematics", "smoothness", "symmetry",
+                    "coordination", "variability", "temporal"
+                }
+        finally:
+            os.unlink(path)
+
+
 class TestFrameGeneration:
     def test_generate_frames_returns_correct_types(self):
         params = GaitParameters()
