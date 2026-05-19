@@ -297,6 +297,14 @@ class TestBenchmark:
         finally:
             os.unlink(path)
 
+    def test_benchmark_stdout(self, capsys):
+        from movement_analytics.cli import run_benchmark
+
+        run_benchmark(output_path=None, fps=30, n_cycles=2)
+        captured = capsys.readouterr()
+        assert '"benchmark"' in captured.out
+        assert '"normal"' in captured.out
+
 
 class TestFrameGeneration:
     def test_generate_frames_returns_correct_types(self):
