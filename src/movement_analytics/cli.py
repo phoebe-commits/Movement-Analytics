@@ -58,6 +58,8 @@ def run_analysis(profile_name: str = "normal", output_path: str | None = None,
         h, w = sample.shape[:2]
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         writer = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
+        if not writer.isOpened():
+            raise RuntimeError(f"Failed to create video writer: {output_path}")
         print(f"Writing output to {output_path} ({w}x{h})")
 
     # Reset dashboard for clean run
@@ -171,6 +173,8 @@ def run_video_analysis(video_path: str, output_path: str | None = None,
         h, w = sample.shape[:2]
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         writer = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
+        if not writer.isOpened():
+            raise RuntimeError(f"Failed to create video writer: {output_path}")
         print(f"Writing output to {output_path} ({w}x{h})")
 
     dashboard = RealTimeDashboard(history_length=150, panel_width=560)
