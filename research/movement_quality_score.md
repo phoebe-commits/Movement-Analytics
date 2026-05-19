@@ -209,9 +209,11 @@ The current piecewise linear mapping is a principled starting point. Future vers
 - Balasubramanian S, et al. A robust and sensitive metric for quantifying movement smoothness. *IEEE TBME*. 2012;59(8):2126–2136.
 - Balasubramanian S, et al. On the analysis of movement smoothness. *J NeuroEngineering Rehab*. 2015;12:112.
 - Baker R, et al. The Gait Profile Score and Movement Analysis Profile. *Gait & Posture*. 2009;30(3):265–269.
+- Hamill J, van Emmerik REA, Heiderscheit BC, Li L. A dynamical systems approach to lower extremity running injuries. *Clin Biomech*. 1999;14(5):297–308.
 - Hausdorff JM, et al. Gait variability and fall risk. *Arch Phys Med Rehabil*. 2001;82(8):1050–1056.
 - Knapik JJ, et al. Strength, flexibility and athletic injuries. *Sports Med*. 1991;11(4):210–227.
 - Perry J, Burnfield JM. *Gait Analysis: Normal and Pathological Function*. 2nd ed. SLACK Inc; 2010.
+- Plotnik M, Giladi N, Hausdorff JM. A new measure for quantifying the bilateral coordination of human gait. *Exp Brain Res*. 2007;181(4):561–570.
 - Robinson RO, et al. Use of force platform variables to quantify gait symmetry. *J Manipulative Physiol Ther*. 1987;10(4):172–176.
 - Schwartz MH, Rozumalski A. The Gait Deviation Index. *Gait & Posture*. 2008;28(3):351–357.
 - Shorter KA, et al. The Normalized Symmetry Index. *J Biomech*. 2020;99:109531.
