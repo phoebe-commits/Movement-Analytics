@@ -4,6 +4,13 @@ docs/vision/
 # Claude Code session data
 .claude/
 
+# Codex CLI temp directories and review outputs
+.codex_tmp/
+.codex_review_*.md
+
+# Temporary test/build artifacts
+.tmp/
+
 # Python
 __pycache__/
 .coverage
