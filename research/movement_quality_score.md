@@ -7,7 +7,7 @@
 
 ## Abstract
 
-This document formally specifies the Movement Quality Score (MQS), a composite metric for evaluating human and robotic movement quality from video. The MQS maps 50+ kinematic measurements across five biomechanical domains into a single 0–100 score grounded in peer-reviewed clinical reference ranges. Every design choice is traceable to published literature.
+This document formally specifies the Movement Quality Score (MQS), a composite metric for evaluating human and robotic movement quality from video. The MQS maps 50+ kinematic measurements across six biomechanical domains into a single 0–100 score grounded in peer-reviewed clinical reference ranges. Every design choice is traceable to published literature.
 
 ---
 
@@ -28,7 +28,7 @@ Movement quality has no universal benchmark. Clinical gait analysis uses 3D opti
 
 ### 2.1 Domain Model
 
-The MQS decomposes movement quality into five orthogonal domains, weighted by discriminative power in the clinical literature:
+The MQS decomposes movement quality into six domains, weighted by discriminative power in the clinical literature:
 
 | Domain | Weight | Rationale |
 |---|---|---|
@@ -45,7 +45,7 @@ Weights sum to 1.0. The 25-18-18-14-13-12 distribution reflects the relative vol
 
 Each domain uses specific signals with clinically validated reference ranges:
 
-**Kinematics Domain (30%):**
+**Kinematics Domain (25%):**
 
 | Signal | Optimal Range | Worst-Case Bounds | Source |
 |---|---|---|---|
@@ -57,7 +57,7 @@ Each domain uses specific signals with clinically validated reference ranges:
 
 Sagittal-plane signals (hip, knee, ankle ROM) computed bilaterally (6 signals). Frontal-plane signals (pelvic obliquity, trunk lean) computed bilaterally when available (up to 4 signals). All averaged.
 
-**Smoothness Domain (20%):**
+**Smoothness Domain (18%):**
 
 | Signal | Optimal Range | Worst-Case Bounds | Source |
 |---|---|---|---|
@@ -65,7 +65,7 @@ Sagittal-plane signals (hip, knee, ankle ROM) computed bilaterally (6 signals). 
 
 Computed bilaterally (2 signals), averaged. Hip velocity SPARC is used because hip flexion has the smoothest sinusoidal profile in healthy gait, making it the most reliable smoothness indicator. Knee and ankle SPARC are excluded from the composite due to sharp phase transitions that inflate spectral complexity independent of movement quality.
 
-**Symmetry Domain (20%):**
+**Symmetry Domain (18%):**
 
 | Signal | Optimal Range | Worst-Case Bounds | Source |
 |---|---|---|---|
@@ -75,7 +75,7 @@ Computed bilaterally (2 signals), averaged. Hip velocity SPARC is used because h
 
 SI = 2 × |mean(L) − mean(R)| / (mean(L) + mean(R)) × 100. Three signals, averaged.
 
-**Variability Domain (15%):**
+**Variability Domain (13%):**
 
 | Signal | Optimal Range | Worst-Case Bounds | Source |
 |---|---|---|---|
@@ -134,29 +134,30 @@ The MQS is bounded [0, 100] by construction (all components are bounded [0, 100]
 
 ### 3.1 Construct Validity
 
-The MQS correctly differentiates across the 8 implemented gait profiles:
+The MQS correctly differentiates across the 8 implemented gait profiles (v1.1, 6-domain model with frontal plane kinematics):
 
-| Profile | MQS | Kinematics | Smoothness | Symmetry | Variability | Temporal |
-|---|---|---|---|---|---|---|
-| Normal | 100 | 100 | 100 | 100 | 100 | 100 |
-| Model Runway | 100 | 100 | 100 | 100 | 100 | 100 |
-| Trendelenburg | 96.8 | 100 | 100 | 100 | 100 | 78.5 |
-| Limp | 90.7 | 95.8 | 100 | 88.9 | 100 | 61.2 |
-| Fast | 89.5 | 100 | 95.2 | 100 | 100 | 36.7 |
-| Slow | 84.2 | 85.8 | 100 | 100 | 100 | 22.7 |
-| Stiff Knee | 83.7 | 67.8 | 100 | 100 | 100 | 55.8 |
-| Noisy | 60.2 | 100 | 0 | 100 | 0 | 68.1 |
+| Profile | MQS | Kinematics | Smoothness | Symmetry | Coordination | Variability | Temporal |
+|---|---|---|---|---|---|---|---|
+| Normal | 98.3 | 93.4 | 100 | 100 | 100 | 100 | 100 |
+| Model Runway | 96.0 | 84.2 | 100 | 100 | 100 | 100 | 100 |
+| Limp | 91.1 | 90.9 | 100 | 88.9 | 100 | 100 | 61.2 |
+| Fast | 89.9 | 93.4 | 95.2 | 100 | 100 | 100 | 36.7 |
+| Stiff Knee | 88.2 | 74.1 | 100 | 100 | 100 | 100 | 55.8 |
+| Trendelenburg | 87.4 | 60.0 | 100 | 100 | 100 | 100 | 78.5 |
+| Slow | 86.9 | 84.9 | 100 | 100 | 100 | 100 | 22.7 |
+| Noisy | 55.2 | 60.0 | 0 | 100 | 100 | 0 | 68.1 |
 
 **Expected patterns confirmed:**
-- Normal and model runway score highest (both exhibit clinically optimal kinematics)
+- Normal scores highest with near-perfect kinematics
+- Trendelenburg is strongly penalized in kinematics (pelvic obliquity 24° vs. 7° normal, trunk lean 16° vs. 5°)
 - Stiff knee is penalized in kinematics (knee ROM 25° vs. 50–70° normal)
-- Limp is penalized in symmetry (Hip SI 19.4%)
+- Limp is penalized in symmetry (hip SI 19.4%)
 - Noisy is penalized in smoothness and variability (SPARC degraded, stride CV 25.6%)
 - Slow and fast are penalized in temporal (cadence outside 90–130 spm range)
 
 ### 3.2 Discriminative Power
 
-The MQS spread across profiles (60.2–100) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability.
+The MQS spread across profiles (55.2–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal plane detection capability added in v1.1.
 
 ### 3.3 Limitations and Known Gaps
 
@@ -178,8 +179,8 @@ The MQS spread across profiles (60.2–100) provides meaningful differentiation.
 
 | Signal | Domain | Implementation Status |
 |---|---|---|
-| Pelvic obliquity amplitude | Kinematics | Data available, scoring not yet integrated |
-| Trunk lateral lean | Kinematics | Data available, scoring not yet integrated |
+| Pelvic obliquity amplitude | Kinematics | **Implemented** (v1.1) |
+| Trunk lateral lean | Kinematics | **Implemented** (v1.1) |
 | Intra-limb CRP (thigh-shank) | Coordination | Requires segment-level angle decomposition |
 | DFA scaling exponent | Variability | Requires >50 strides for reliability |
 | Head stabilization index | New: Global | Requires head tracking with sufficient resolution |
