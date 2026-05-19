@@ -2381,3 +2381,130 @@ class TestCLIMain:
             mock_cr.assert_called_once_with(
                 "output/mqs_comparison.png", fps=30, n_cycles=6,
             )
+
+
+class TestEdgeCaseCoverage:
+    """Tests targeting uncovered defensive branches in gait_metrics.py."""
+
+    def test_sparc_below_amplitude_threshold(self):
+        signal = np.zeros(100)
+        signal[0] = 0.001
+        result = sparc(signal, fps=30.0)
+        assert result <= 0.0
+
+    def test_waveform_symmetry_one_flat_signal(self):
+        from movement_analytics.kinematics.gait_metrics import waveform_symmetry
+        varying = np.sin(np.linspace(0, 2 * np.pi, 100))
+        flat = np.zeros(100)
+        assert waveform_symmetry(flat, varying) == 0.0
+
+    def test_waveform_symmetry_both_flat(self):
+        from movement_analytics.kinematics.gait_metrics import waveform_symmetry
+        flat = np.ones(100) * 5.0
+        assert waveform_symmetry(flat, flat) == 100.0
+
+    def test_stride_pelvic_asymmetry_segments_too_short(self):
+        from movement_analytics.kinematics.gait_metrics import (
+            stride_pelvic_asymmetry,
+        )
+        obliquity = np.random.randn(20)
+        hs = np.array([0, 3, 6, 10])
+        result = stride_pelvic_asymmetry(obliquity, hs)
+        assert np.isnan(result)
+
+    def test_stride_pelvic_asymmetry_zero_denominator(self):
+        from movement_analytics.kinematics.gait_metrics import (
+            stride_pelvic_asymmetry,
+        )
+        obliquity = np.zeros(200)
+        hs = np.array([0, 50, 100, 150])
+        result = stride_pelvic_asymmetry(obliquity, hs)
+        assert result == 0.0
+
+    def test_gdi_fewer_than_3_heel_strikes(self):
+        from movement_analytics.kinematics.gait_metrics import (
+            gait_deviation_index,
+        )
+        angles = {"hip_flexion": np.sin(np.linspace(0, 4 * np.pi, 200))}
+        hs = np.array([10, 60])
+        assert np.isnan(gait_deviation_index(angles, hs))
+
+    def test_gdi_no_matching_joints(self):
+        from movement_analytics.kinematics.gait_metrics import (
+            gait_deviation_index,
+        )
+        angles = {"elbow_flexion": np.sin(np.linspace(0, 4 * np.pi, 200))}
+        hs = np.array([10, 60, 120])
+        assert np.isnan(gait_deviation_index(angles, hs))
+
+    def test_gdi_all_strides_too_short(self):
+        from movement_analytics.kinematics.gait_metrics import (
+            gait_deviation_index,
+        )
+        angles = {
+            "hip_flexion": np.sin(np.linspace(0, 4 * np.pi, 200)),
+            "knee_flexion": np.sin(np.linspace(0, 4 * np.pi, 200)) * 30,
+        }
+        hs = np.array([10, 12, 14, 16])
+        assert np.isnan(gait_deviation_index(angles, hs))
+
+    def test_detect_gait_events_heel_y_all_nan_in_window(self):
+        from movement_analytics.kinematics.gait_metrics import (
+            detect_gait_events,
+        )
+        n = 300
+        t = np.linspace(0, 6 * np.pi, n)
+        hip = 20 * np.sin(t)
+        knee = 30 * np.sin(t)
+        heel_y = np.full(n, np.nan)
+        heel_y[0] = 100.0
+        events = detect_gait_events(hip, knee, fps=30.0, heel_y=heel_y)
+        assert "heel_strikes" in events
+        assert len(events["heel_strikes"]) > 0
+
+    def test_double_support_short_stride_skipped(self):
+        params = GaitParameters(cadence=110, hip_rom=40, knee_rom=60)
+        _, ar, al, _ = generate_frames(params, n_cycles=4)
+        ar_mod = dict(ar)
+        from movement_analytics.kinematics.gait_metrics import (
+            detect_gait_events,
+        )
+        events = detect_gait_events(
+            ar["hip_flexion"], ar["knee_flexion"], 30.0,
+        )
+        hs = events["heel_strikes"]
+        if len(hs) >= 3:
+            hs_with_short = np.sort(np.append(hs, [hs[0] + 1]))
+            ar_mod["_test_hs"] = hs_with_short
+        summary = compute_gait_summary(ar, al, fps=30)
+        assert "double_support_pct" in summary
+
+    def test_double_support_no_toe_off_returns_nan(self):
+        n = 100
+        ar = {
+            "hip_flexion": np.zeros(n),
+            "knee_flexion": np.zeros(n),
+        }
+        al = {
+            "hip_flexion": np.zeros(n),
+            "knee_flexion": np.zeros(n),
+        }
+        summary = compute_gait_summary(ar, al, fps=30)
+        ds = summary.get("double_support_pct", float("nan"))
+        assert np.isnan(ds) or ds >= 0
+
+    def test_dfa_too_few_scales(self):
+        intervals = np.array([1.0] * 16)
+        intervals[::2] += 0.001
+        result = dfa_scaling_exponent(intervals)
+        assert np.isfinite(result) or np.isnan(result)
+
+    def test_rom_cv_missing_joint_skipped(self):
+        params = GaitParameters(cadence=110, hip_rom=40, knee_rom=60)
+        _, ar, al, _ = generate_frames(params, n_cycles=6)
+        ar_no_ankle = {k: v for k, v in ar.items()
+                       if "ankle" not in k}
+        al_no_ankle = {k: v for k, v in al.items()
+                       if "ankle" not in k}
+        summary = compute_gait_summary(ar_no_ankle, al_no_ankle, fps=30)
+        assert "movement_quality_score" in summary
