@@ -183,6 +183,7 @@ _, angles_right, angles_left, _ = generate_frames(profile.params, n_cycles=6)
 summary = compute_gait_summary(angles_right, angles_left, fps=30)
 
 print(f"MQS: {summary['movement_quality_score']:.1f}")
+print(f"GDI: {summary.get('GDI', 'N/A')}")
 for domain, score in mqs_domain_scores(summary).items():
     print(f"  {domain}: {score:.1f}")
 
