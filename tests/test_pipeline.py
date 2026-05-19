@@ -224,6 +224,28 @@ class TestCRP:
         assert "knee_CRP_MAD" in summary
         assert "mqs_coordination" in summary
 
+    def test_intra_limb_crp_in_summary(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        s = compute_gait_summary(ar, al, fps=30)
+        assert "R_hip_knee_CRP_MAD" in s
+        assert "L_hip_knee_CRP_MAD" in s
+
+    def test_stiff_knee_coordination_penalized(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_domain_scores
+        normal_p = GAIT_PROFILES["normal"]
+        _, nr, nl, _ = generate_frames(normal_p.params, fps=30, n_cycles=6)
+        normal_d = mqs_domain_scores(compute_gait_summary(nr, nl, fps=30))
+
+        stiff_p = GAIT_PROFILES["stiff_knee"]
+        _, sr, sl, _ = generate_frames(stiff_p.params, fps=30, n_cycles=6)
+        stiff_d = mqs_domain_scores(compute_gait_summary(sr, sl, fps=30))
+
+        assert stiff_d["coordination"] < normal_d["coordination"], (
+            f"Stiff knee coordination ({stiff_d['coordination']:.1f}) should be "
+            f"lower than normal ({normal_d['coordination']:.1f})"
+        )
+
 
 class TestBenchmark:
     def test_benchmark_all_profiles(self):

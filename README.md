@@ -260,7 +260,7 @@ The research document identifies **16 signals** across 6 domains that form the b
 | Movement Quality Score | 6-domain composite with frontal-plane symmetry, bilateral SPARC, and intra-limb CRP, validated on 9 profiles (63.4–98.3 range) |
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown) |
 | Video pose estimation | Experimental — MediaPipe sagittal plane, 61% coverage, confidence-weighted MQS |
-| CI/CD | GitHub Actions, 120 tests, ruff lint, 70% coverage gate (74% actual) |
+| CI/CD | GitHub Actions, 122 tests, ruff lint, 70% coverage gate (74% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 
