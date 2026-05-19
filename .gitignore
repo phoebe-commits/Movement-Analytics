@@ -1,0 +1,51 @@
+# Confidential project documents
+docs/vision/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Data artifacts
+*.h5
+*.hdf5
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+data/raw/
+data/processed/
+
+# Experiment outputs
+experiments/outputs/
+experiments/checkpoints/
+wandb/
+mlruns/
+
+# Secrets
+.env
+.env.*
+credentials.json
+*.pem
+*.key
