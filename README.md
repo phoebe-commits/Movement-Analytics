@@ -119,7 +119,7 @@ python -m movement_analytics --video path/to/walking.mp4 --output output/analysi
 
 ```
 --profile, -p     Gait profile (normal, slow, fast, limp, stiff_knee,
-                  trendelenburg, model_runway, noisy)
+                  trendelenburg, model_runway, noisy, parkinsonian)
 --output, -o      Output video path (MP4) or image path (PNG for --compare)
 --no-display      Skip live window (headless rendering)
 --fps             Frames per second (default: 30)
@@ -137,6 +137,8 @@ python -m movement_analytics --video path/to/walking.mp4 --output output/analysi
 python -m movement_analytics --compare --output output/mqs_comparison.png
 ```
 
+The comparison report shows Movement Quality Score breakdowns across all 9 gait profiles, revealing how each domain contributes to the overall score.
+
 ### Reproducible Benchmark
 
 ```bash
@@ -146,9 +148,29 @@ python -m movement_analytics --benchmark --output output/benchmark.json
 
 The benchmark computes MQS and all domain/metric scores across all 9 profiles in a deterministic, reproducible format. Use `--cycles` to control the number of gait cycles evaluated.
 
-### Profile Comparison
+### Python API
 
-The comparison report shows Movement Quality Score breakdowns across all 9 gait profiles, revealing how each domain (kinematics, smoothness, symmetry, coordination, variability, temporal) contributes to the overall score. Reference ranges from the biomechanics literature are displayed for context.
+```python
+from movement_analytics import (
+    GaitParameters, GAIT_PROFILES, generate_frames,
+    compute_gait_summary, mqs_domain_scores,
+)
+
+# Score a built-in gait profile
+profile = GAIT_PROFILES["parkinsonian"]
+_, angles_right, angles_left, _ = generate_frames(profile.params, n_cycles=6)
+summary = compute_gait_summary(angles_right, angles_left, fps=30)
+
+print(f"MQS: {summary['movement_quality_score']:.1f}")
+for domain, score in mqs_domain_scores(summary).items():
+    print(f"  {domain}: {score:.1f}")
+
+# Custom gait parameters
+custom = GaitParameters(hip_rom=25, knee_rom=35, cadence=85)
+_, ar, al, _ = generate_frames(custom, n_cycles=6)
+custom_summary = compute_gait_summary(ar, al, fps=30)
+print(f"Custom MQS: {custom_summary['movement_quality_score']:.1f}")
+```
 
 ---
 
