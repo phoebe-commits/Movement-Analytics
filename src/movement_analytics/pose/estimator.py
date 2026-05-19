@@ -245,6 +245,7 @@ def process_video(
         return frames, {}, {}, actual_fps, {
             "mean_confidence": 0.0, "observed_fraction": 0.0,
             "interpolation_fractions": {}, "confidences": [],
+            "n_frames": len(frames),
         }
 
     angle_keys_right = set()
@@ -348,6 +349,7 @@ def process_video(
         "observed_fraction": detected_frames / len(all_angles) if all_angles else 0.0,
         "interpolation_fractions": interpolation_fractions,
         "confidences": confidences,
+        "n_frames": len(frames),
     }
 
     return frames, angles_right, angles_left, actual_fps, metadata
