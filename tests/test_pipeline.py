@@ -2508,3 +2508,52 @@ class TestEdgeCaseCoverage:
                        if "ankle" not in k}
         summary = compute_gait_summary(ar_no_ankle, al_no_ankle, fps=30)
         assert "movement_quality_score" in summary
+
+    def test_video_analysis_with_elbow_and_pelvis(self):
+        from movement_analytics.cli import run_video_analysis
+
+        n_frames = 60
+        t = np.linspace(0, 4 * np.pi, n_frames)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "input.mp4")
+            out_path = os.path.join(tmpdir, "output.mp4")
+            h, w = 480, 640
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            writer = cv2.VideoWriter(vid_path, fourcc, 30, (w, h))
+            for _ in range(n_frames):
+                writer.write(np.zeros((h, w, 3), dtype=np.uint8))
+            writer.release()
+
+            with patch(
+                "movement_analytics.pose.estimator.process_video"
+            ) as mock_pv:
+                ar = {
+                    "hip_flexion": np.sin(t) * 20 + 25,
+                    "knee_flexion": np.sin(t + 0.5) * 30 + 35,
+                    "ankle_dorsiflexion": np.sin(t + 1.0) * 10 + 5,
+                    "elbow_flexion": np.sin(t) * 15 + 30,
+                    "pelvis_tilt": np.sin(t) * 3 + 10,
+                }
+                al = {
+                    "hip_flexion": np.sin(t) * 20 + 25,
+                    "knee_flexion": np.sin(t + 0.5) * 30 + 35,
+                    "ankle_dorsiflexion": np.sin(t + 1.0) * 10 + 5,
+                    "elbow_flexion": np.sin(t) * 15 + 30,
+                }
+                frames = [
+                    np.zeros((h, w, 3), dtype=np.uint8)
+                ] * n_frames
+                meta = {
+                    "observed_fraction": 0.95,
+                    "mean_confidence": 0.9,
+                    "interpolation_fractions": {},
+                    "n_frames": n_frames,
+                }
+                mock_pv.return_value = (frames, ar, al, 30.0, meta)
+
+                run_video_analysis(
+                    vid_path, output_path=out_path, display=False,
+                )
+
+            assert os.path.exists(out_path)
+            assert os.path.getsize(out_path) > 0
