@@ -222,6 +222,17 @@ def generate_frames(params: GaitParameters, width: int = 1280, height: int = 720
         "ankle_dorsiflexion": (20, 35),
     }
 
+    # Trail buffers for key joints (stores positions relative to hip)
+    trail_length = min(frames_per_cycle, 40)
+    trail_joints = ["right_knee", "right_ankle", "left_knee", "left_ankle"]
+    trail_colors = {
+        "right_knee": (255, 160, 50),
+        "right_ankle": (100, 255, 100),
+        "left_knee": (255, 120, 30),
+        "left_ankle": (80, 200, 80),
+    }
+    trails: dict[str, list] = {j: [] for j in trail_joints}
+
     frames = []
     for i in range(total):
         frame = np.full((height, width, 3), (20, 20, 25), dtype=np.uint8)
@@ -238,6 +249,25 @@ def generate_frames(params: GaitParameters, width: int = 1280, height: int = 720
         hip_x = width * 0.35 + speed_px_per_frame * (i % frames_per_cycle)
         positions = _joint_positions(angles_right, angles_left, i,
                                      figure_height_px, hip_x, ground_y)
+
+        # Update and draw trajectory trails (relative to pelvis for stationarity)
+        pelvis_pos = positions["pelvis"]
+        for jname in trail_joints:
+            if jname in positions:
+                rel = positions[jname] - pelvis_pos
+                trails[jname].append(rel.copy())
+                if len(trails[jname]) > trail_length:
+                    trails[jname].pop(0)
+
+        for jname in trail_joints:
+            trail = trails[jname]
+            tc = trail_colors[jname]
+            for t_idx in range(1, len(trail)):
+                alpha = t_idx / len(trail)
+                c = tuple(int(ch * alpha * 0.5) for ch in tc)
+                p1 = (pelvis_pos + trail[t_idx - 1]).astype(int)
+                p2 = (pelvis_pos + trail[t_idx]).astype(int)
+                cv2.line(frame, tuple(p1), tuple(p2), c, 1, cv2.LINE_AA)
 
         bone_color_back = (100, 120, 140)
         bone_color_front = (180, 200, 220)
