@@ -155,10 +155,12 @@ The MQS correctly differentiates across the 9 implemented gait profiles (v1.1, 6
 - Limp is penalized in symmetry (hip SI 19.4%)
 - Noisy is penalized in smoothness and variability (SPARC degraded, stride CV 25.6%)
 - Slow and fast are penalized in temporal (cadence outside 90–130 spm range)
+- Parkinsonian scores lowest overall (MQS 50.7) with deficits in smoothness (SPARC degraded by noise), variability (stride CV elevated), and temporal (reduced cadence/stride time)
+- Parkinsonian and noisy are the only profiles scoring below 60, both exhibiting motor noise that degrades SPARC and stride time CV
 
 ### 3.2 Discriminative Power
 
-The MQS spread across profiles (55.2–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal plane detection capability added in v1.1.
+The MQS spread across profiles (50.7–98.3) provides meaningful differentiation. The domain breakdown explains *why* each profile scores as it does, which is critical for clinical and engineering interpretability. Notably, the Trendelenburg profile (kinematics = 60.0) demonstrates the frontal plane detection capability added in v1.1.
 
 ### 3.3 Limitations and Known Gaps
 
