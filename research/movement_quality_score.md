@@ -77,6 +77,8 @@ SI = 2 × |mean(L) − mean(R)| / (mean(L) + mean(R)) × 100. Three signals, ave
 
 Waveform symmetry (|NCC| × 100, where NCC = normalized cross-correlation of centered bilateral signals) is integrated into the symmetry domain composite as of v1.2. The symmetry domain score = `min(SI_mean, hip_waveform_sym)`, ensuring that either amplitude asymmetry (caught by SI) or shape asymmetry (caught by waveform NCC) will penalize the score. Anti-phase bilateral coupling (healthy gait) scores 100% because absolute NCC is used. Waveform symmetry captures shape and timing differences that mean-based SI misses (e.g., noisy gait: SI=0.1%, waveform=92.9%).
 
+**Design note:** Only hip flexion waveform symmetry is used in the MQS composite. Knee and ankle waveform symmetry are computed and reported as diagnostics but excluded from scoring because their non-sinusoidal waveforms (stance/swing transitions) produce low NCC even in healthy gait (knee ~45%, ankle ~39%). These values reflect the inherent asymmetry of the knee/ankle kinematic curve shape between stance and swing phases, not pathological asymmetry. Hip flexion, with its near-sinusoidal profile, is the most reliable waveform symmetry indicator.
+
 **Variability Domain (13%):**
 
 | Signal | Optimal Range | Worst-Case Bounds | Source |
@@ -189,7 +191,7 @@ The MQS spread across profiles (58.3–98.3) provides meaningful differentiation
 |---|---|---|
 | Pelvic obliquity amplitude | Kinematics | **Implemented** (v1.1) |
 | Trunk lateral lean | Kinematics | **Implemented** (v1.1) |
-| Intra-limb CRP (thigh-shank) | Coordination | Requires segment-level angle decomposition |
+| Intra-limb CRP (hip-knee) | Coordination | **Implemented** (v1.2) — reported as diagnostic, not in MQS |
 | DFA scaling exponent | Variability | Requires >50 strides for reliability |
 | Head stabilization index | New: Global | Requires head tracking with sufficient resolution |
 
