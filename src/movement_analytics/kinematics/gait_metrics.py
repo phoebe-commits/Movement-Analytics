@@ -339,13 +339,12 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
         sy_scores.append(_signal_score(val, lo, hi, wlo, whi))
     domains["symmetry"] = float(np.mean(sy_scores)) if sy_scores else 50.0
 
-    coord_scores = []
-    for crp_key in ["hip_CRP_MAD", "knee_CRP_MAD"]:
-        val = metrics.get(crp_key)
-        if val is not None:
-            lo, hi, wlo, whi = _SIGNAL_RANGES["crp_mad"]
-            coord_scores.append(_signal_score(val, lo, hi, wlo, whi))
-    domains["coordination"] = float(np.mean(coord_scores)) if coord_scores else 50.0
+    hip_crp = metrics.get("hip_CRP_MAD")
+    if hip_crp is not None:
+        lo, hi, wlo, whi = _SIGNAL_RANGES["crp_mad"]
+        domains["coordination"] = _signal_score(hip_crp, lo, hi, wlo, whi)
+    else:
+        domains["coordination"] = 50.0
 
     cv_val = metrics.get("stride_time_CV", float("nan"))
     lo, hi, wlo, whi = _SIGNAL_RANGES["stride_cv"]

@@ -88,9 +88,8 @@ Single signal. Healthy adults: 1–3% CV; fallers show >6%.
 | Signal | Optimal Range | Worst-Case Bounds | Source |
 |---|---|---|---|
 | Hip CRP CSD | 0–15° | 0–60° | Hamill et al., 1999; Plotnik et al., 2005 |
-| Knee CRP CSD | 0–15° | 0–60° | Hamill et al., 1999 |
 
-Continuous Relative Phase (CRP) is computed via Hilbert transform of bilateral joint angle signals. Circular Standard Deviation (CSD) of the CRP time series measures coordination consistency regardless of the dominant phase relationship. This avoids assuming a specific phase offset (e.g., anti-phase), making the metric applicable to both synthetic and real data. Healthy gait shows CSD < 15°; pathological gait (e.g., Parkinson's) shows CSD > 30°. Two signals (hip and knee), averaged.
+Continuous Relative Phase (CRP) is computed via Hilbert transform of bilateral hip flexion signals. Circular Standard Deviation (CSD) of the CRP time series measures coordination consistency regardless of the dominant phase relationship. Hip flexion is used because it has the most sinusoidal waveform in gait, making it the most reliable signal for Hilbert-based phase extraction. Knee flexion CRP is computed and reported but excluded from the MQS composite due to non-sinusoidal stance/swing transitions that inflate Hilbert phase error (analogous to the smoothness domain using only hip SPARC). Healthy gait shows CSD < 15°; pathological gait shows CSD > 30°.
 
 **Temporal Domain (12%):**
 
