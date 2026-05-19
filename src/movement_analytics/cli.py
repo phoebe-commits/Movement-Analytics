@@ -321,6 +321,48 @@ def generate_comparison_report(output_path: str, fps: int = 30, n_cycles: int = 
     print(f"Comparison report saved to {output_path}")
 
 
+def run_benchmark(output_path: str | None = None, fps: int = 30, n_cycles: int = 6):
+    """Run MQS benchmark across all profiles, output JSON for reproducibility."""
+    import json
+
+    results = {}
+    for name, profile in GAIT_PROFILES.items():
+        _, ar, al, _ = generate_frames(profile.params, fps=fps, n_cycles=n_cycles)
+        summary = compute_gait_summary(ar, al, fps=fps)
+        entry = {
+            "mqs": round(summary["movement_quality_score"], 1),
+            "domains": {},
+            "key_metrics": {},
+        }
+        for k, v in summary.items():
+            if k.startswith("mqs_"):
+                entry["domains"][k.replace("mqs_", "")] = round(v, 1)
+            elif k in ("cadence", "stride_time_mean", "stride_time_CV", "n_strides"):
+                entry["key_metrics"][k] = round(v, 2) if not (isinstance(v, float) and np.isnan(v)) else None
+            elif k.endswith("_ROM") or k.endswith("_SI") or k.endswith("_SPARC") or k.endswith("_CRP_MAD"):
+                entry["key_metrics"][k] = round(v, 2)
+        results[name] = entry
+
+    output = {
+        "benchmark": "movement_quality_score",
+        "version": "1.1",
+        "n_domains": 6,
+        "fps": fps,
+        "n_cycles": n_cycles,
+        "profiles": results,
+    }
+
+    text = json.dumps(output, indent=2)
+    if output_path:
+        import os
+        os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+        with open(output_path, "w") as f:
+            f.write(text)
+        print(f"Benchmark saved to {output_path}")
+    else:
+        print(text)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Movement Analytics — synthetic gait analysis dashboard"
@@ -358,7 +400,15 @@ def main():
         "--video", "-v", default=None,
         help="Input video file for pose estimation analysis"
     )
+    parser.add_argument(
+        "--benchmark", action="store_true",
+        help="Run MQS benchmark across all profiles (outputs JSON)"
+    )
     args = parser.parse_args()
+
+    if args.benchmark:
+        run_benchmark(args.output, fps=args.fps, n_cycles=args.cycles)
+        return
 
     if args.compare:
         out = args.output or "output/mqs_comparison.png"

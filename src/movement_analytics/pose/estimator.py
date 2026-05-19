@@ -72,51 +72,73 @@ class PoseEstimator:
         )
         self.landmarker = _PoseLandmarker.create_from_options(options)
 
-    def process_frame(self, frame: np.ndarray) -> dict | None:
+    def process_frame(self, frame: np.ndarray,
+                      min_visibility: float = 0.5) -> tuple[dict | None, float]:
         """Extract keypoints from a single BGR frame.
 
-        Returns a positions dict compatible with kinematics.joint_angles.compute_all_angles(),
-        or None if no person detected.
+        Returns (positions, confidence) where positions is a dict compatible
+        with kinematics.joint_angles.compute_all_angles() or None if no
+        person detected. Confidence is the mean visibility of key landmarks
+        (0-1). Landmarks below min_visibility are excluded.
         """
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
         result = self.landmarker.detect(mp_image)
 
         if not result.pose_landmarks or len(result.pose_landmarks) == 0:
-            return None
+            return None, 0.0
 
         h, w = frame.shape[:2]
         landmarks = result.pose_landmarks[0]
 
-        def lm_to_px(name: str) -> np.ndarray:
+        def lm_visibility(name: str) -> float:
+            idx = LANDMARK_MAP[name].value
+            return landmarks[idx].visibility
+
+        def lm_to_px(name: str) -> np.ndarray | None:
             idx = LANDMARK_MAP[name].value
             lm = landmarks[idx]
+            if lm.visibility < min_visibility:
+                return None
             return np.array([lm.x * w, lm.y * h])
 
-        def midpoint(name_a: str, name_b: str) -> np.ndarray:
-            return (lm_to_px(name_a) + lm_to_px(name_b)) / 2
+        def midpoint(name_a: str, name_b: str) -> np.ndarray | None:
+            a = lm_to_px(name_a)
+            b = lm_to_px(name_b)
+            if a is None or b is None:
+                return None
+            return (a + b) / 2
+
+        key_landmarks = ["left_hip", "right_hip", "left_knee", "right_knee",
+                         "left_ankle", "right_ankle", "left_shoulder", "right_shoulder"]
+        visibilities = [lm_visibility(n) for n in key_landmarks]
+        confidence = float(np.mean(visibilities))
 
         pelvis = midpoint("left_hip", "right_hip")
         shoulder_center = midpoint("left_shoulder", "right_shoulder")
         head = lm_to_px("nose")
 
+        if pelvis is None or shoulder_center is None:
+            return None, confidence
+
         positions = {
             "pelvis": pelvis,
             "shoulder": shoulder_center,
-            "head": head,
             "neck": shoulder_center.copy(),
         }
+        if head is not None:
+            positions["head"] = head
 
         for side in ["left", "right"]:
-            positions[f"{side}_hip"] = lm_to_px(f"{side}_hip")
-            positions[f"{side}_knee"] = lm_to_px(f"{side}_knee")
-            positions[f"{side}_ankle"] = lm_to_px(f"{side}_ankle")
-            positions[f"{side}_toe"] = lm_to_px(f"{side}_foot_index")
-            positions[f"{side}_shoulder"] = lm_to_px(f"{side}_shoulder")
-            positions[f"{side}_elbow"] = lm_to_px(f"{side}_elbow")
-            positions[f"{side}_wrist"] = lm_to_px(f"{side}_wrist")
+            for joint, lm_name in [("hip", f"{side}_hip"), ("knee", f"{side}_knee"),
+                                   ("ankle", f"{side}_ankle"), ("toe", f"{side}_foot_index"),
+                                   ("shoulder", f"{side}_shoulder"), ("elbow", f"{side}_elbow"),
+                                   ("wrist", f"{side}_wrist")]:
+                pt = lm_to_px(lm_name)
+                if pt is not None:
+                    positions[f"{side}_{joint}"] = pt
 
-        return positions
+        return positions, confidence
 
     def draw_landmarks(self, frame: np.ndarray, positions: dict,
                        skeleton_color: tuple = (0, 255, 200),
@@ -177,13 +199,16 @@ def process_video(video_path: str, fps: float = None) -> tuple[list[np.ndarray],
     frames = []
     all_angles = []
 
+    confidences = []
+
     with PoseEstimator() as estimator:
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
 
-            positions = estimator.process_frame(frame)
+            positions, confidence = estimator.process_frame(frame)
+            confidences.append(confidence)
             if positions is not None:
                 annotated = estimator.draw_landmarks(frame, positions)
                 angles = compute_all_angles(positions)
