@@ -317,6 +317,12 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
             angles_right["knee_flexion"], angles_left["knee_flexion"], fps
         )
 
+    for side_label, angles in [("R", angles_right), ("L", angles_left)]:
+        if "hip_flexion" in angles and "knee_flexion" in angles:
+            metrics[f"{side_label}_hip_knee_CRP_MAD"] = crp_consistency(
+                angles["hip_flexion"], angles["knee_flexion"], fps
+            )
+
     metrics["movement_quality_score"] = movement_quality_score(metrics)
     mqs_breakdown = mqs_domain_scores(metrics)
     for domain, score in mqs_breakdown.items():
