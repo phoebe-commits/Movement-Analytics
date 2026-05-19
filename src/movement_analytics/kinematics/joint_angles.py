@@ -39,7 +39,6 @@ def segment_angle_to_vertical(p_proximal: np.ndarray, p_distal: np.ndarray) -> f
     Positive = anterior/forward lean, Negative = posterior.
     """
     seg = p_distal - p_proximal
-    vertical = np.array([0, 1])  # downward in image coords
     angle = np.degrees(np.arctan2(seg[0], seg[1]))
     return angle
 

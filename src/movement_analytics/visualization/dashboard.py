@@ -310,10 +310,10 @@ class RealTimeDashboard:
         ]
 
         for i in range(3):
-            l, v, u, nr = left_gauges[i]
-            self._draw_gauge(canvas, x, y, l, v, u, nr, gauge_w)
-            l2, v2, u2, nr2 = right_gauges[i]
-            self._draw_gauge(canvas, x + gauge_w + 8, y, l2, v2, u2, nr2, gauge_w)
+            lbl, v, u, nr = left_gauges[i]
+            self._draw_gauge(canvas, x, y, lbl, v, u, nr, gauge_w)
+            lbl2, v2, u2, nr2 = right_gauges[i]
+            self._draw_gauge(canvas, x + gauge_w + 8, y, lbl2, v2, u2, nr2, gauge_w)
             y += 32
 
         y += 3
@@ -336,10 +336,10 @@ class RealTimeDashboard:
         ]
 
         for i in range(3):
-            l, v, u, nr = sym_pairs[i]
-            self._draw_gauge(canvas, x, y, l, v, u, nr, gauge_w)
-            l2, v2, u2, nr2 = smooth_pairs[i]
-            self._draw_gauge(canvas, sx2, y, l2, v2, u2, nr2, gauge_w)
+            lbl, v, u, nr = sym_pairs[i]
+            self._draw_gauge(canvas, x, y, lbl, v, u, nr, gauge_w)
+            lbl2, v2, u2, nr2 = smooth_pairs[i]
+            self._draw_gauge(canvas, sx2, y, lbl2, v2, u2, nr2, gauge_w)
             y += 32
 
 

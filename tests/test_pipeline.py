@@ -15,7 +15,7 @@ from movement_analytics.kinematics.gait_metrics import (
     angular_velocity, sparc, symmetry_index, rom,
     normalized_jerk, coefficient_of_variation,
     continuous_relative_phase, crp_consistency,
-    compute_gait_summary, movement_quality_score, mqs_domain_scores,
+    compute_gait_summary, mqs_domain_scores,
     _signal_score, _DOMAIN_WEIGHTS,
 )
 from movement_analytics.visualization.dashboard import (
@@ -64,23 +64,23 @@ class TestMetrics:
     @pytest.fixture
     def normal_angles(self):
         params = GaitParameters()
-        r = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
-        l = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
-        return r, l
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
+        return right, left
 
     def test_rom_positive(self, normal_angles):
-        r, _ = normal_angles
+        right, _ = normal_angles
         for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]:
-            assert rom(r[joint]) > 0
+            assert rom(right[joint]) > 0
 
     def test_normal_hip_rom_range(self, normal_angles):
-        r, _ = normal_angles
-        hip_rom = rom(r["hip_flexion"])
+        right, _ = normal_angles
+        hip_rom = rom(right["hip_flexion"])
         assert 30 < hip_rom < 55, f"Hip ROM {hip_rom} outside expected range"
 
     def test_sparc_negative(self, normal_angles):
-        r, _ = normal_angles
-        vel = angular_velocity(r["hip_flexion"], 30)
+        right, _ = normal_angles
+        vel = angular_velocity(right["hip_flexion"], 30)
         s = sparc(vel, 30)
         assert s < 0
 
@@ -95,16 +95,16 @@ class TestMetrics:
         assert si > 0
 
     def test_normalized_jerk_positive(self, normal_angles):
-        r, _ = normal_angles
-        nj = normalized_jerk(r["hip_flexion"], 30)
+        right, _ = normal_angles
+        nj = normalized_jerk(right["hip_flexion"], 30)
         assert nj > 0
 
     def test_cv_zero_for_constant(self):
         assert coefficient_of_variation(np.ones(100) * 5) == pytest.approx(0.0)
 
     def test_gait_summary_completeness(self, normal_angles):
-        r, l = normal_angles
-        summary = compute_gait_summary(r, l, fps=30)
+        right, left = normal_angles
+        summary = compute_gait_summary(right, left, fps=30)
         required_keys = [
             "R_hip_flexion_ROM", "L_hip_flexion_ROM",
             "R_knee_flexion_ROM", "hip_flexion_SI",
@@ -131,39 +131,39 @@ class TestMQS:
 
     def test_normal_mqs_high(self):
         params = GaitParameters()
-        r = generate_gait_cycle(params, n_frames=60, n_cycles=6, side="right")
-        l = generate_gait_cycle(params, n_frames=60, n_cycles=6, side="left")
-        summary = compute_gait_summary(r, l, fps=30)
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=6, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=6, side="left")
+        summary = compute_gait_summary(right, left, fps=30)
         assert summary["movement_quality_score"] >= 85
 
     def test_noisy_mqs_lower(self):
         params = GaitParameters(noise_level=4)
-        r = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
-        l = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
-        summary = compute_gait_summary(r, l, fps=30)
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
+        summary = compute_gait_summary(right, left, fps=30)
         assert summary["movement_quality_score"] < 80
 
     def test_stiff_knee_penalized(self):
         params = GAIT_PROFILES["stiff_knee"].params
-        r = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
-        l = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
-        summary = compute_gait_summary(r, l, fps=30)
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
+        summary = compute_gait_summary(right, left, fps=30)
         assert summary["mqs_kinematics"] < 80
 
     def test_domain_scores_sum_to_mqs(self):
         params = GaitParameters()
-        r = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
-        l = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
-        summary = compute_gait_summary(r, l, fps=30)
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
+        summary = compute_gait_summary(right, left, fps=30)
         domains = mqs_domain_scores(summary)
         expected = sum(domains[d] * _DOMAIN_WEIGHTS[d] for d in _DOMAIN_WEIGHTS)
         assert summary["movement_quality_score"] == pytest.approx(expected, abs=0.1)
 
     def test_trendelenburg_penalized_in_kinematics(self):
         params = GAIT_PROFILES["trendelenburg"].params
-        r = generate_gait_cycle(params, n_frames=60, n_cycles=6, side="right")
-        l = generate_gait_cycle(params, n_frames=60, n_cycles=6, side="left")
-        summary = compute_gait_summary(r, l, fps=30)
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=6, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=6, side="left")
+        summary = compute_gait_summary(right, left, fps=30)
         normal_r = generate_gait_cycle(GaitParameters(), n_frames=60, n_cycles=6, side="right")
         normal_l = generate_gait_cycle(GaitParameters(), n_frames=60, n_cycles=6, side="left")
         normal_summary = compute_gait_summary(normal_r, normal_l, fps=30)
@@ -171,9 +171,9 @@ class TestMQS:
 
     def test_mqs_bounded(self):
         for name, profile in GAIT_PROFILES.items():
-            r = generate_gait_cycle(profile.params, n_frames=60, n_cycles=3, side="right")
-            l = generate_gait_cycle(profile.params, n_frames=60, n_cycles=3, side="left")
-            summary = compute_gait_summary(r, l, fps=30)
+            right = generate_gait_cycle(profile.params, n_frames=60, n_cycles=3, side="right")
+            left = generate_gait_cycle(profile.params, n_frames=60, n_cycles=3, side="left")
+            summary = compute_gait_summary(right, left, fps=30)
             assert 0 <= summary["movement_quality_score"] <= 100, f"{name}: MQS out of bounds"
 
 
@@ -201,9 +201,9 @@ class TestCRP:
 
     def test_crp_in_gait_summary(self):
         params = GaitParameters()
-        r = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
-        l = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
-        summary = compute_gait_summary(r, l, fps=30)
+        right = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="right")
+        left = generate_gait_cycle(params, n_frames=60, n_cycles=3, side="left")
+        summary = compute_gait_summary(right, left, fps=30)
         assert "hip_CRP_MAD" in summary
         assert "knee_CRP_MAD" in summary
         assert "mqs_coordination" in summary

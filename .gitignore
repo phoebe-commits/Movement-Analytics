@@ -1,6 +1,9 @@
 # Confidential project documents
 docs/vision/
 
+# Claude Code session data
+.claude/
+
 # Python
 __pycache__/
 *.py[cod]

@@ -1,5 +1,7 @@
 # Movement Analytics
 
+[![CI](https://github.com/dl1683/Movement-Analytics/actions/workflows/ci.yml/badge.svg)](https://github.com/dl1683/Movement-Analytics/actions/workflows/ci.yml)
+
 **Computational movement quality analysis for physical AI**
 
 A pipeline for generating synthetic human gait, extracting kinematic signals from video, computing movement quality metrics grounded in biomechanics literature, and visualizing results in real time. Built to establish the scientific and engineering foundation for a Movement Quality Score — a multidimensional scoring model for evaluating human and robotic movement from video.

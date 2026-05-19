@@ -6,7 +6,7 @@ Winter, 2009). All angles in degrees, following ISB convention (flexion positive
 """
 
 import numpy as np
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
