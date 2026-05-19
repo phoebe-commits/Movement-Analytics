@@ -1257,3 +1257,72 @@ class TestVideoProcessingPipeline:
             assert np.isfinite(val), f"{key} is not finite: {val}"
             if "flexion" in key and "dorsiflexion" not in key:
                 assert 0 <= val <= 180, f"{key} out of range: {val}"
+
+    def test_pelvic_obliquity_from_video_positions(self):
+        from movement_analytics.kinematics.joint_angles import compute_all_angles
+        positions = self._fake_positions(0, 100)
+        angles = compute_all_angles(positions)
+        assert "pelvic_obliquity" in angles
+        assert "pelvic_obliquity_signed" in angles
+        assert angles["pelvic_obliquity"] >= 0
+
+    def test_pelvic_obliquity_signed_direction(self):
+        from movement_analytics.kinematics.joint_angles import compute_all_angles
+        pos_tilted = self._fake_positions(0, 100).copy()
+        pos_tilted["right_hip"] = np.array([340.0, 210.0])
+        pos_tilted["left_hip"] = np.array([300.0, 200.0])
+        angles = compute_all_angles(pos_tilted)
+        assert angles["pelvic_obliquity_signed"] > 0
+        pos_tilted["right_hip"] = np.array([340.0, 190.0])
+        pos_tilted["left_hip"] = np.array([300.0, 200.0])
+        angles2 = compute_all_angles(pos_tilted)
+        assert angles2["pelvic_obliquity_signed"] < 0
+
+    def test_trunk_lean_from_video_positions(self):
+        from movement_analytics.kinematics.joint_angles import compute_all_angles
+        positions = self._fake_positions(0, 100)
+        angles = compute_all_angles(positions)
+        assert "trunk_lean" in angles
+
+    def test_process_video_includes_frontal_signals(self):
+        from movement_analytics.pose.estimator import process_video
+
+        n_frames = 60
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vid_path = os.path.join(tmpdir, "test.mp4")
+            self._make_test_video(vid_path, n_frames=n_frames)
+
+            call_count = [0]
+
+            def mock_process_frame(frame, min_visibility=0.5):
+                idx = call_count[0]
+                call_count[0] += 1
+                return self._fake_positions(idx, n_frames), 0.9
+
+            with patch(
+                "movement_analytics.pose.estimator.PoseEstimator"
+            ) as MockEst:
+                instance = MagicMock()
+                instance.process_frame = mock_process_frame
+                instance.__enter__ = lambda s: s
+                instance.__exit__ = lambda s, *a: None
+                MockEst.return_value = instance
+
+                _, ar, al, _, _ = process_video(vid_path)
+
+            assert "pelvis_obliquity" in ar
+            assert "pelvis_obliquity" in al
+            assert "trunk_lateral_lean" in ar
+
+    def test_confidence_factor_with_video_metadata(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_confidence_factor
+        metrics = {"pose_observed_fraction": 0.85, "pose_mean_confidence": 0.9}
+        cf = mqs_confidence_factor(metrics)
+        assert 0 < cf < 1.0
+        assert cf == pytest.approx(0.85 * 0.9, abs=0.01)
+
+    def test_confidence_factor_synthetic_is_1(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_confidence_factor
+        metrics = {"cadence": 110, "stride_time_mean": 1.0}
+        cf = mqs_confidence_factor(metrics)
+        assert cf == 1.0

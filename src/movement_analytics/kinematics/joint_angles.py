@@ -88,5 +88,6 @@ def compute_all_angles(positions: dict) -> dict[str, float]:
         if hip_dist > 1e-6:
             obliq = np.degrees(np.arctan2(hip_vec[1], hip_vec[0]))
             angles["pelvic_obliquity"] = abs(obliq)
+            angles["pelvic_obliquity_signed"] = obliq
 
     return angles
