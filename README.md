@@ -267,6 +267,7 @@ Input: Gait Parameters OR Video File(s)
 │ MediaPipe Pose (VIDEO mode, multi-person)                            │
 │   → Pelvis-based person tracking                                     │
 │   → Physiological outlier rejection (pre-interpolation)              │
+│   → Median pre-filter (impulsive noise removal)                      │
 │   → PCHIP interpolation (cubic, linear fallback for sparse data)     │
 │   → Physiological outlier rejection (post-interpolation)             │
 │   → Confidence-adaptive two-pass Butterworth smoothing               │
@@ -286,17 +287,19 @@ Output: Video file, JSON summary, and/or live display
 
 ### Video Pipeline: Signal Processing
 
-The video analysis path applies a 5-stage signal processing pipeline to extract clinically meaningful kinematics from noisy 2D pose estimation:
+The video analysis path applies a 6-stage signal processing pipeline to extract clinically meaningful kinematics from noisy 2D pose estimation:
 
 1. **Pose estimation** — MediaPipe Pose (VIDEO mode) with `num_poses=3` for multi-person scenes. The closest subject is tracked across frames using pelvis centroid continuity.
 
-2. **Physiological outlier rejection** — Per-joint angles outside clinically plausible ranges (e.g., knee flexion 0–150°, hip flexion -30–90°) are replaced with NaN before interpolation.
+2. **Physiological outlier rejection** — Per-joint angles outside clinically plausible ranges (e.g., knee flexion -20–160°, hip flexion -50–120°) are replaced with NaN before interpolation.
 
-3. **Gap filling** — PCHIP (Piecewise Cubic Hermite Interpolating Polynomial) interpolation for gaps with <50% missing data, preserving waveform shape without Runge oscillation. Sparse signals (>50% missing) fall back to linear interpolation.
+3. **Median pre-filter** — 5-sample median filter removes impulsive noise (single-frame spikes) from pose estimation jitter. Operates on non-NaN segments, preserving gaps.
 
-4. **Adaptive smoothing** — Two-pass Butterworth filter: aggressive 3 Hz cutoff on low-confidence frames (MediaPipe confidence < 0.7), standard 6 Hz on high-confidence frames. Preserves genuine movement dynamics while suppressing pose estimation jitter.
+4. **Gap filling** — PCHIP (Piecewise Cubic Hermite Interpolating Polynomial) interpolation for gaps with <50% missing data, preserving waveform shape without Runge oscillation. Sparse signals (>50% missing) fall back to linear interpolation.
 
-5. **Confidence-weighted scoring** — MQS is scaled by `observed_fraction × mean_pose_confidence`. When signal completeness drops below 50%, MQS returns NaN (insufficient evidence) rather than a misleading score.
+5. **Adaptive smoothing** — Two-pass Butterworth filter: aggressive 3 Hz cutoff on low-confidence frames (MediaPipe confidence < 0.7), standard 6 Hz on high-confidence frames. Preserves genuine movement dynamics while suppressing pose estimation jitter.
+
+6. **Confidence-weighted scoring** — MQS is scaled by `observed_fraction × mean_pose_confidence`. When signal completeness drops below 50%, MQS returns NaN (insufficient evidence) rather than a misleading score.
 
 Per-joint detection rates are reported in metadata, enabling downstream quality assessment.
 

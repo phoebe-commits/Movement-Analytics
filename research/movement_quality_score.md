@@ -1,6 +1,6 @@
 # Movement Quality Score (MQS): Technical Specification
 
-**Version:** 1.8.0
+**Version:** 1.8.1
 **Date:** 2026-05-19
 
 ---
@@ -222,19 +222,23 @@ Per-frame joint angles outside biomechanical ranges are replaced with NaN before
 
 A second outlier rejection pass runs after interpolation to catch values that cubic interpolation may push outside range.
 
-### 4.3 Interpolation Strategy
+### 4.3 Median Pre-Filter
+
+A 5-sample median filter removes impulsive noise (single-frame spikes from pose estimation jitter) before interpolation. The filter operates independently on each contiguous non-NaN segment, preserving gap locations. Segments shorter than the kernel size are left unfiltered. This prevents isolated spike artifacts from corrupting PCHIP interpolation, which would otherwise amplify them as cubic oscillations.
+
+### 4.4 Interpolation
 
 NaN gaps from missed detections or outlier rejection are filled using:
 - **PCHIP (Piecewise Cubic Hermite Interpolating Polynomial)** when ≥4 valid points and <50% missing — produces smooth, monotonicity-preserving curves that approximate physiological trajectories. Extrapolation disabled to prevent edge artifacts.
 - **Linear interpolation** as fallback for sparse data (>50% missing) or <4 valid points — safer than cubic for noisy signals.
 
-### 4.4 Temporal Smoothing
+### 4.5 Temporal Smoothing
 
 Two-stage Butterworth low-pass filtering:
 1. **Adaptive pre-pass:** Frames with pose confidence below 0.7 receive aggressive smoothing (3 Hz cutoff, 2nd-order) to reduce MediaPipe jitter in uncertain detections
 2. **Standard pass:** 6 Hz cutoff, 2nd-order Butterworth applied to the full signal with proper NaN handling (gaps filled before filtering, re-masked after)
 
-### 4.5 Confidence-Weighted MQS
+### 4.6 Confidence-Weighted MQS
 
 Video-derived MQS is scaled by a confidence factor:
 
@@ -245,7 +249,7 @@ MQS_weighted = MQS_raw × confidence_factor
 
 Where `mean_detected_confidence` is computed only from frames where a pose was actually detected (excluding zeros from missed frames). When overall signal completeness drops below 50%, MQS returns NaN rather than a misleading score.
 
-### 4.6 Multi-View Analysis
+### 4.7 Multi-View Analysis
 
 When multiple camera views are available, signals are merged by domain:
 - **Sagittal view** → hip/knee/ankle ROM, smoothness, coordination
