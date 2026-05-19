@@ -37,7 +37,7 @@ A comprehensive literature review covering:
 ### Analysis Pipeline (`src/movement_analytics/`)
 
 ```
-generators/     Procedural biomechanical gait synthesis (8 profiles)
+generators/     Procedural biomechanical gait synthesis (9 profiles)
 kinematics/     Joint angle computation + gait quality metrics
 visualization/  Real-time dashboard with time-series plots and gauges
 pose/           Pose estimation integration (MediaPipe)
@@ -55,6 +55,7 @@ pose/           Pose estimation integration (MediaPipe)
 | `trendelenburg` | Excessive pelvic drop + trunk lean | Hip abductor weakness |
 | `model_runway` | Trained fashion model walk | Exaggerated pelvis, controlled trunk |
 | `noisy` | High motor variability | 4° noise on all joints |
+| `parkinsonian` | Shuffling gait (Parkinson's) | Reduced ROM, diminished arm swing, short stride |
 
 ### Movement Quality Score (MQS)
 
@@ -141,11 +142,11 @@ python -m movement_analytics --compare --output output/mqs_comparison.png
 python -m movement_analytics --benchmark --output output/benchmark.json
 ```
 
-The benchmark computes MQS and all domain/metric scores across all 8 profiles in a deterministic, reproducible format. Use `--cycles` to control the number of gait cycles evaluated.
+The benchmark computes MQS and all domain/metric scores across all 9 profiles in a deterministic, reproducible format. Use `--cycles` to control the number of gait cycles evaluated.
 
 ### Profile Comparison
 
-The comparison report shows Movement Quality Score breakdowns across all 8 gait profiles, revealing how each domain (kinematics, smoothness, symmetry, coordination, variability, temporal) contributes to the overall score. Reference ranges from the biomechanics literature are displayed for context.
+The comparison report shows Movement Quality Score breakdowns across all 9 gait profiles, revealing how each domain (kinematics, smoothness, symmetry, coordination, variability, temporal) contributes to the overall score. Reference ranges from the biomechanics literature are displayed for context.
 
 ---
 
@@ -207,7 +208,7 @@ The research document identifies **15 signals** across 6 domains that form the b
 | Component | Status |
 |---|---|
 | Research document | Complete (90+ citations, 10 sections) |
-| Gait model (8 profiles) | Complete |
+| Gait model (9 profiles) | Complete |
 | Stick-figure renderer | Complete |
 | Joint angle computation | Complete |
 | Gait metrics engine | Complete |

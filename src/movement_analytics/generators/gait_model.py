@@ -97,6 +97,16 @@ GAIT_PROFILES = {
         params=GaitParameters(noise_level=4.0),
         description="Normal gait with high motor noise / variability added",
     ),
+    "parkinsonian": GaitProfile(
+        name="Parkinsonian Gait",
+        params=GaitParameters(
+            cadence=100, stride_length=0.7, hip_rom=20, knee_rom=30,
+            ankle_rom=15, pelvic_tilt=2, pelvic_obliquity=3,
+            trunk_sway=1.5, arm_swing=8, speed_factor=0.55,
+            asymmetry=0.15, noise_level=1.5,
+        ),
+        description="Shuffling gait: reduced ROM, diminished arm swing, shortened stride, mild asymmetry (Plotnik et al., 2005)",
+    ),
 }
 
 

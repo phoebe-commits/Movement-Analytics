@@ -134,7 +134,7 @@ The MQS is bounded [0, 100] by construction (all components are bounded [0, 100]
 
 ### 3.1 Construct Validity
 
-The MQS correctly differentiates across the 8 implemented gait profiles (v1.1, 6-domain model with frontal plane kinematics):
+The MQS correctly differentiates across the 9 implemented gait profiles (v1.1, 6-domain model with frontal plane kinematics):
 
 | Profile | MQS | Kinematics | Smoothness | Symmetry | Coordination | Variability | Temporal |
 |---|---|---|---|---|---|---|---|

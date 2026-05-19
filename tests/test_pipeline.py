@@ -26,7 +26,7 @@ from movement_analytics.visualization.dashboard import (
 class TestGaitModel:
     def test_all_profiles_exist(self):
         expected = {"normal", "slow", "fast", "limp", "stiff_knee",
-                    "trendelenburg", "model_runway", "noisy"}
+                    "trendelenburg", "model_runway", "noisy", "parkinsonian"}
         assert set(GAIT_PROFILES.keys()) == expected
 
     def test_generate_gait_cycle_shape(self):
@@ -225,9 +225,9 @@ class TestBenchmark:
                 data = json.load(f)
 
             assert data["n_domains"] == 6
-            assert len(data["profiles"]) == 8
+            assert len(data["profiles"]) == 9
             for name in ["normal", "slow", "fast", "limp", "stiff_knee",
-                         "trendelenburg", "model_runway", "noisy"]:
+                         "trendelenburg", "model_runway", "noisy", "parkinsonian"]:
                 assert name in data["profiles"]
                 p = data["profiles"][name]
                 assert 0 <= p["mqs"] <= 100
