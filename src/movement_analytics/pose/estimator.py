@@ -60,12 +60,12 @@ _PHYSIO_RANGES = {
 def _reject_outliers(arr: np.ndarray, key: str) -> np.ndarray:
     """Replace values outside physiological range with NaN."""
     base = key.replace("right_", "").replace("left_", "")
-    for canon, (lo, hi) in _PHYSIO_RANGES.items():
-        if canon in base:
-            out = arr.copy()
-            mask = (out < lo) | (out > hi)
-            out[mask] = np.nan
-            return out
+    if base in _PHYSIO_RANGES:
+        lo, hi = _PHYSIO_RANGES[base]
+        out = arr.copy()
+        mask = (out < lo) | (out > hi)
+        out[mask] = np.nan
+        return out
     return arr
 
 
@@ -139,7 +139,8 @@ def _download_model(model_path: str):
     import urllib.request
     tmp_path = model_path + ".tmp"
     urllib.request.urlretrieve(_MODEL_URL, tmp_path)
-    sha = hashlib.sha256(open(tmp_path, "rb").read()).hexdigest()
+    with open(tmp_path, "rb") as fh:
+        sha = hashlib.sha256(fh.read()).hexdigest()
     if sha != _MODEL_SHA256:
         os.remove(tmp_path)
         raise RuntimeError(

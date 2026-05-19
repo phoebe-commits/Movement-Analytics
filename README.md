@@ -327,7 +327,7 @@ The research document identifies **20 signals** across 6 domains that form the b
 | Video pose estimation | MediaPipe VIDEO mode with PCHIP interpolation, adaptive confidence-weighted smoothing, physiological outlier rejection, heel contact detection, confidence-weighted MQS (detected-only confidence), frontal dedup, memory-efficient headless mode, 96% unit test coverage |
 | Multi-view analysis | Sagittal + frontal camera merging into unified MQS, auto-detects best view per signal domain |
 | Gait Deviation Index | Simplified GDI (Schwartz & Rozumalski 2008), 100 = normal, validated on 9 profiles (78.1–100.0 range) |
-| CI/CD | GitHub Actions, 222 tests, ruff lint, 70% coverage gate (98% actual) |
+| CI/CD | GitHub Actions, 224 tests, ruff lint, 70% coverage gate (95% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 

@@ -1,6 +1,6 @@
 """Movement Analytics — gait synthesis, pose estimation, and movement quality scoring."""
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 from .generators.gait_model import GAIT_PROFILES, GaitParameters
 from .generators.stick_figure import generate_frames
@@ -50,7 +50,7 @@ _SAGITTAL_KEYS = {
 }
 _FRONTAL_KEYS = {
     "pelvis_obliquity", "pelvis_obliquity_signed", "trunk_lateral_lean",
-    "pelvic_obliquity",
+    "pelvic_obliquity", "trunk_lean",
 }
 
 
@@ -125,7 +125,7 @@ def analyze_multi_view(
         front = views[front_idx]
         for key in list(front["angles_right"].keys()):
             base = key.replace("right_", "").replace("left_", "")
-            if any(fk in base for fk in _FRONTAL_KEYS):
+            if base in _FRONTAL_KEYS:
                 if key in front["angles_right"]:
                     merged_right[key] = front["angles_right"][key]
                 if key in front["angles_left"]:
