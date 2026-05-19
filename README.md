@@ -273,7 +273,7 @@ The research document identifies **16 signals** across 6 domains that form the b
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown) |
 | Video pose estimation | MediaPipe VIDEO mode with temporal smoothing, heel contact detection, confidence-weighted MQS, 96% unit test coverage |
 | Gait Deviation Index | Simplified GDI (Schwartz & Rozumalski 2008), 100 = normal, validated on 9 profiles (78.1–100.0 range) |
-| CI/CD | GitHub Actions, 156 tests, ruff lint, 70% coverage gate (81% actual) |
+| CI/CD | GitHub Actions, 157 tests, ruff lint, 70% coverage gate (81% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 
