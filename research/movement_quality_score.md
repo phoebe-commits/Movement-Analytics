@@ -144,19 +144,19 @@ The MQS is bounded [0, 100] by construction (all components are bounded [0, 100]
 
 ### 3.1 Construct Validity
 
-The MQS correctly differentiates across the 9 implemented gait profiles (v1.3, 6-domain model with frontal-plane symmetry):
+The MQS correctly differentiates across the 9 implemented gait profiles (v1.4, 6-domain model with frontal-plane symmetry and bilateral SPARC):
 
 | Profile | MQS | Kinematics | Smoothness | Symmetry | Coordination | Variability | Temporal |
 |---|---|---|---|---|---|---|---|
-| Normal | 98.3 | 93.4 | 100 | 100 | 100 | 100 | 100 |
-| Model Runway | 96.1 | 84.6 | 100 | 99.9 | 100 | 100 | 100 |
-| Limp | 90.3 | 90.9 | 100 | 84.8 | 100 | 100 | 61.2 |
-| Fast | 89.5 | 93.4 | 93 | 100 | 100 | 100 | 36.7 |
-| Stiff Knee | 88.2 | 74.1 | 100 | 100 | 100 | 100 | 55.8 |
-| Trendelenburg | 87.4 | 60.0 | 100 | 100 | 100 | 100 | 78.5 |
-| Slow | 86.9 | 84.9 | 100 | 100 | 100 | 100 | 22.7 |
-| Parkinsonian | 61.2 | 63.0 | 0 | 95.7 | 100 | 78.9 | 33.4 |
-| Noisy | 58.3 | 52.1 | 0 | 92.9 | 96 | 23.7 | 100 |
+| Normal | 98.3 | 93.4 | 100.0 | 100.0 | 100.0 | 100.0 | 100.0 |
+| Model Runway | 96.1 | 84.6 | 100.0 | 99.9 | 100.0 | 100.0 | 100.0 |
+| Fast | 90.1 | 93.4 | 96.5 | 100.0 | 100.0 | 100.0 | 36.7 |
+| Limp | 88.8 | 90.9 | 91.5 | 84.8 | 100.0 | 100.0 | 61.2 |
+| Trendelenburg | 87.3 | 60.0 | 99.3 | 100.0 | 100.0 | 100.0 | 78.5 |
+| Slow | 83.8 | 84.9 | 82.6 | 100.0 | 100.0 | 100.0 | 22.7 |
+| Stiff Knee | 82.9 | 74.1 | 70.5 | 100.0 | 100.0 | 100.0 | 55.8 |
+| Noisy | 67.3 | 52.1 | 50.0 | 92.9 | 96.1 | 23.7 | 100.0 |
+| Parkinsonian | 64.8 | 63.0 | 19.8 | 95.7 | 100.0 | 78.9 | 33.4 |
 
 **Expected patterns confirmed:**
 - Normal scores highest with near-perfect kinematics
