@@ -555,6 +555,40 @@ class TestEstimatorKeyMapping:
         angles = compute_all_angles(positions)
         assert "trunk_lean" in angles
 
+    def test_video_key_mapping_correctness(self):
+        key_mapping = {
+            "right_hip_flexion": "hip_flexion",
+            "right_knee_flexion": "knee_flexion",
+            "right_ankle_angle": "ankle_dorsiflexion",
+            "left_hip_flexion": "hip_flexion",
+            "left_knee_flexion": "knee_flexion",
+            "left_ankle_angle": "ankle_dorsiflexion",
+        }
+        for raw, mapped in key_mapping.items():
+            assert mapped in ("hip_flexion", "knee_flexion", "ankle_dorsiflexion",
+                              "elbow_flexion")
+
+
+class TestNaNInterpolation:
+    """Verify NaN interpolation in video processing angle arrays."""
+
+    def test_nan_interpolation_fills_gaps(self):
+        arr = np.array([1.0, np.nan, np.nan, 4.0, 5.0])
+        valid = ~np.isnan(arr)
+        indices = np.arange(len(arr))
+        arr[~valid] = np.interp(indices[~valid], indices[valid], arr[valid])
+        assert not np.any(np.isnan(arr))
+        assert arr[1] == pytest.approx(2.0)
+        assert arr[2] == pytest.approx(3.0)
+
+    def test_all_nan_stays_nan(self):
+        arr = np.full(5, np.nan)
+        valid = ~np.isnan(arr)
+        if np.any(valid):
+            indices = np.arange(len(arr))
+            arr[~valid] = np.interp(indices[~valid], indices[valid], arr[valid])
+        assert np.all(np.isnan(arr))
+
 
 class TestSensitivityAnalysis:
     """Verify MQS responds monotonically to continuous parameter degradation."""

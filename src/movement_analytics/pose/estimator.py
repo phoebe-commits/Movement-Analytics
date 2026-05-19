@@ -269,6 +269,18 @@ def process_video(video_path: str, fps: float = None) -> tuple[list[np.ndarray],
         angles_right["trunk_lateral_lean"] = trunk
         angles_left["trunk_lateral_lean"] = trunk
 
+    for d in (angles_right, angles_left):
+        for key in d:
+            arr = d[key]
+            if np.any(np.isnan(arr)):
+                valid = ~np.isnan(arr)
+                if np.any(valid):
+                    indices = np.arange(len(arr))
+                    arr[~valid] = np.interp(
+                        indices[~valid], indices[valid], arr[valid]
+                    )
+                    d[key] = arr
+
     if "hip_flexion" in angles_right:
         from scipy.signal import butter, filtfilt
         hip = angles_right["hip_flexion"]
