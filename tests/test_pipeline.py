@@ -1063,3 +1063,21 @@ class TestVideoProcessingPipeline:
             assert ar == {}
             assert al == {}
             assert meta["observed_fraction"] == 0.0
+
+    def test_angle_computation_round_trip(self):
+        """Validate that compute_all_angles → key mapping is consistent."""
+        from movement_analytics.kinematics.joint_angles import compute_all_angles
+
+        positions = self._fake_positions(0, 100)
+        angles = compute_all_angles(positions)
+
+        assert "right_hip_flexion" in angles
+        assert "left_hip_flexion" in angles
+        assert "right_knee_flexion" in angles
+        assert "right_ankle_dorsiflexion" in angles
+
+        for key in angles:
+            val = angles[key]
+            assert np.isfinite(val), f"{key} is not finite: {val}"
+            if "flexion" in key and "dorsiflexion" not in key:
+                assert 0 <= val <= 180, f"{key} out of range: {val}"
