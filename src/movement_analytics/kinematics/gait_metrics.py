@@ -578,6 +578,27 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
                     angles["trunk_lateral_lean"]
                 )
 
+    for side_label, angles in [("R", angles_right), ("L", angles_left)]:
+        if "shoulder_flexion" in angles:
+            sf = angles["shoulder_flexion"]
+            metrics[f"{side_label}_shoulder_ROM"] = rom(sf)
+            metrics[f"{side_label}_elbow_ROM"] = (
+                rom(angles["elbow_flexion"])
+                if "elbow_flexion" in angles else float("nan")
+            )
+    if ("shoulder_flexion" in angles_right
+            and "shoulder_flexion" in angles_left):
+        r_sf = angles_right["shoulder_flexion"]
+        l_sf = angles_left["shoulder_flexion"]
+        if r_sf is not l_sf:
+            metrics["arm_swing_SI"] = symmetry_index(r_sf, l_sf)
+        arm_rom_mean = np.mean([rom(r_sf), rom(l_sf)])
+        metrics["arm_swing_ROM_mean"] = float(arm_rom_mean)
+        _NORMAL_ARM_SWING_ROM = 25.0
+        metrics["arm_swing_ratio"] = float(
+            np.clip(arm_rom_mean / _NORMAL_ARM_SWING_ROM, 0, 2)
+        )
+
     if "hip_flexion" in angles_right and "hip_flexion" in angles_left:
         crp_mad = crp_consistency(
             angles_right["hip_flexion"], angles_left["hip_flexion"], fps

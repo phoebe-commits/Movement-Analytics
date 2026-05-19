@@ -101,6 +101,7 @@ For each gait profile, the pipeline computes **50+ metrics** in real time:
 - **Gait Deviation Index (simplified)** — sagittal-plane waveform deviation from normal reference (inspired by Schwartz & Rozumalski 2008; uses synthetic reference, not clinical PCA)
 - **DFA Scaling Exponent** — detrended fluctuation analysis of stride-to-stride intervals (Hausdorff 2001; diagnostic, requires ≥16 strides)
 - **Heel contact detection** — video-based foot contact from heel landmark Y-position (refines gait event timing)
+- **Arm swing metrics** — shoulder/elbow ROM (bilateral), arm swing SI, arm swing ratio vs. normal reference (detects Parkinsonian diminished arm swing)
 - **Gait phase** — stance/swing detection with prominence-based heel strikes, heel-contact-refined when available
 
 ---
@@ -250,6 +251,8 @@ The research document identifies **16 signals** across 6 domains that form the b
 | 15 | Inter-limb coordination (CRP) | Coordination | — |
 | 16 | Gait Deviation Index (simplified) | Composite | 100 = normal |
 | 17 | DFA Scaling Exponent (α) | Variability | ~0.75 healthy (fractal) |
+| 18 | Arm swing ROM | Upper body | ~25° normal shoulder flexion |
+| 19 | Arm swing ratio | Upper body | 1.0 = normal, <0.7 = diminished (Parkinsonian) |
 
 ---
 
@@ -273,7 +276,7 @@ The research document identifies **16 signals** across 6 domains that form the b
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown, NaN-safe) |
 | Video pose estimation | MediaPipe VIDEO mode with temporal smoothing, heel contact detection, confidence-weighted MQS, frontal dedup, 96% unit test coverage |
 | Gait Deviation Index | Simplified GDI (Schwartz & Rozumalski 2008), 100 = normal, validated on 9 profiles (78.1–100.0 range) |
-| CI/CD | GitHub Actions, 175 tests, ruff lint, 70% coverage gate (93% actual) |
+| CI/CD | GitHub Actions, 179 tests, ruff lint, 70% coverage gate (93% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 

@@ -215,6 +215,7 @@ The MQS spread across profiles (58.7–98.3) provides meaningful differentiation
 | Heel contact detection | Gait events | **Implemented** (v1.6) — heel landmark Y-position refines gait event timing from video; falls back to hip-peak proxy when unavailable |
 | Insufficient evidence guard | Reliability | **Implemented** (v1.7) — MQS returns NaN when overall signal completeness < 50%; prevents misleading scores from sparse/failed pose |
 | Frontal-plane dedup | Reliability | **Implemented** (v1.7) — L-side pelvis/trunk ROM skipped when video copies R signal to both sides, preventing completeness inflation |
+| Arm swing ROM | Upper body | **Implemented** (v1.7) — bilateral shoulder/elbow ROM, arm swing SI, ratio vs. normal (25°). Parkinsonian gait: ratio ≈ 0.63 (37% reduced). Diagnostic only, not in MQS composite. |
 | Head stabilization index | New: Global | Requires head tracking with sufficient resolution |
 
 ### 4.2 Humanoid Robotics Extension

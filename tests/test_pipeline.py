@@ -530,6 +530,40 @@ class TestMQSRanking:
         assert all_mqs_scores["noisy"]["mqs_variability"] < 50
 
 
+class TestArmSwingMetrics:
+    """Validate arm swing diagnostic metrics."""
+
+    def test_normal_arm_swing_full_range(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        s = compute_gait_summary(ar, al, fps=30)
+        assert "arm_swing_ROM_mean" in s
+        assert "arm_swing_ratio" in s
+        assert "R_shoulder_ROM" in s
+        assert s["arm_swing_ratio"] == pytest.approx(1.0, abs=0.05)
+
+    def test_parkinsonian_diminished_arm_swing(self):
+        p = GAIT_PROFILES["parkinsonian"].params
+        _, ar, al, _ = generate_frames(p, fps=30, n_cycles=6)
+        s = compute_gait_summary(ar, al, fps=30)
+        assert s["arm_swing_ratio"] < 0.7
+        assert s["arm_swing_ROM_mean"] < 18
+
+    def test_arm_swing_si_symmetric_for_normal(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        s = compute_gait_summary(ar, al, fps=30)
+        assert s["arm_swing_SI"] < 1.0
+
+    def test_elbow_rom_present(self):
+        params = GaitParameters()
+        _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
+        s = compute_gait_summary(ar, al, fps=30)
+        assert "R_elbow_ROM" in s
+        assert "L_elbow_ROM" in s
+        assert s["R_elbow_ROM"] > 0
+
+
 class TestJointAngles:
     def test_compute_all_angles_basic(self):
         from movement_analytics.kinematics.joint_angles import compute_all_angles
