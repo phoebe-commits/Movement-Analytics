@@ -1,6 +1,6 @@
 # Movement Quality Score (MQS): Technical Specification
 
-**Version:** 1.7.0
+**Version:** 1.8.0
 **Date:** 2026-05-19
 
 ---
@@ -197,9 +197,66 @@ The MQS spread across profiles (61.1–98.3) provides meaningful differentiation
 
 ---
 
-## 4. Extension Path
+## 4. Video Pipeline Signal Processing (v1.8)
 
-### 4.1 Planned Signal Additions
+When MQS is computed from video-derived pose estimation rather than synthetic gait models, additional signal processing is required to handle detection gaps, noise, and multi-person scenes.
+
+### 4.1 Pose Estimation
+
+MediaPipe PoseLandmarker (heavy model, VIDEO mode) extracts 33 keypoints per frame. Key design choices:
+- **Visibility threshold:** 0.3 (lowered from default 0.5 to improve lower-body detection on real-world footage)
+- **Person tracking:** When multiple poses are detected (num_poses=3), the person closest to the previous frame's pelvis position is selected, preventing random subject-switching
+
+### 4.2 Outlier Rejection
+
+Per-frame joint angles outside biomechanical ranges are replaced with NaN before interpolation:
+
+| Joint | Physiological Range | Source |
+|---|---|---|
+| Hip flexion | -50° to 120° | Perry & Burnfield, 2010 |
+| Knee flexion | -20° to 160° | Winter, 2009 |
+| Ankle dorsiflexion | -90° to 60° | Perry & Burnfield, 2010 |
+| Shoulder flexion | -60° to 180° | Neumann, 2016 |
+| Pelvis obliquity | -40° to 40° | Perry & Burnfield, 2010 |
+| Trunk lean | -45° to 45° | Winter, 2009 |
+
+A second outlier rejection pass runs after interpolation to catch values that cubic interpolation may push outside range.
+
+### 4.3 Interpolation Strategy
+
+NaN gaps from missed detections or outlier rejection are filled using:
+- **PCHIP (Piecewise Cubic Hermite Interpolating Polynomial)** when ≥4 valid points and <50% missing — produces smooth, monotonicity-preserving curves that approximate physiological trajectories. Extrapolation disabled to prevent edge artifacts.
+- **Linear interpolation** as fallback for sparse data (>50% missing) or <4 valid points — safer than cubic for noisy signals.
+
+### 4.4 Temporal Smoothing
+
+Two-stage Butterworth low-pass filtering:
+1. **Adaptive pre-pass:** Frames with pose confidence below 0.7 receive aggressive smoothing (3 Hz cutoff, 2nd-order) to reduce MediaPipe jitter in uncertain detections
+2. **Standard pass:** 6 Hz cutoff, 2nd-order Butterworth applied to the full signal with proper NaN handling (gaps filled before filtering, re-masked after)
+
+### 4.5 Confidence-Weighted MQS
+
+Video-derived MQS is scaled by a confidence factor:
+
+```
+confidence_factor = observed_fraction × mean_detected_confidence × (1 - interp_fraction/2)
+MQS_weighted = MQS_raw × confidence_factor
+```
+
+Where `mean_detected_confidence` is computed only from frames where a pose was actually detected (excluding zeros from missed frames). When overall signal completeness drops below 50%, MQS returns NaN rather than a misleading score.
+
+### 4.6 Multi-View Analysis
+
+When multiple camera views are available, signals are merged by domain:
+- **Sagittal view** → hip/knee/ankle ROM, smoothness, coordination
+- **Frontal view** → pelvic obliquity, trunk lean
+- Auto-detection: when view labels are not provided, the highest-confidence view is used for all signals
+
+---
+
+## 5. Extension Path (Planned)
+
+### 5.1 Planned Signal Additions
 
 | Signal | Domain | Implementation Status |
 |---|---|---|
@@ -220,14 +277,14 @@ The MQS spread across profiles (61.1–98.3) provides meaningful differentiation
 | Kinematic CV (composite) | Variability | **Implemented** (v1.7) — composite mean of per-joint stride-to-stride ROM CVs; scored alongside stride_time_CV in variability domain. Range: 0–5% optimal, 0–30% worst. |
 | Head stabilization index | New: Global | Requires head tracking with sufficient resolution |
 
-### 4.2 Humanoid Robotics Extension
+### 5.2 Humanoid Robotics Extension
 
 The MQS framework extends naturally to humanoid robot evaluation:
 - Replace "clinical normal range" with "reference policy range"
 - Add robot-specific signals: actuator smoothness, energy efficiency, contact force symmetry
 - Weight domains based on deployment context (e.g., industrial handling prioritizes stability; social robots prioritize naturalness)
 
-### 4.3 Scoring Model Evolution
+### 5.3 Scoring Model Evolution
 
 The current piecewise linear mapping is a principled starting point. Future versions may use:
 - **Nonlinear mappings** derived from logistic regression on clinical outcome data
