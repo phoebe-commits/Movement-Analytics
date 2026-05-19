@@ -1197,7 +1197,7 @@ class TestBenchmarkOutput:
             assert os.path.exists(path)
             with open(path) as f:
                 data = json.load(f)
-            assert data["version"] == "1.6.0"
+            assert data["version"] == "1.7.0"
             assert data["n_domains"] == 6
             assert "normal" in data["profiles"]
             normal = data["profiles"]["normal"]

@@ -1,6 +1,6 @@
 # Movement Quality Score (MQS): Technical Specification
 
-**Version:** 1.6.0
+**Version:** 1.7.0
 **Date:** 2026-05-19
 
 ---
@@ -211,6 +211,8 @@ The MQS spread across profiles (58.7–98.3) provides meaningful differentiation
 | Gait Deviation Index (GDI) | Composite | **Implemented** (v1.5) — simplified GDI per Schwartz & Rozumalski 2008; compares stride-normalized waveforms (hip, knee, ankle) against normal reference, 100 = normal, ~10 points per SD of deviation |
 | DFA scaling exponent | Variability | **Implemented** (v1.6) — Hausdorff 2001, requires ≥16 strides, diagnostic only; α ~ 0.75 healthy, ~0.5 pathological |
 | Heel contact detection | Gait events | **Implemented** (v1.6) — heel landmark Y-position refines gait event timing from video; falls back to hip-peak proxy when unavailable |
+| Insufficient evidence guard | Reliability | **Implemented** (v1.7) — MQS returns NaN when overall signal completeness < 50%; prevents misleading scores from sparse/failed pose |
+| Frontal-plane dedup | Reliability | **Implemented** (v1.7) — L-side pelvis/trunk ROM skipped when video copies R signal to both sides, preventing completeness inflation |
 | Head stabilization index | New: Global | Requires head tracking with sufficient resolution |
 
 ### 4.2 Humanoid Robotics Extension
