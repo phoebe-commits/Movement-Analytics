@@ -268,6 +268,24 @@ def compute_gait_summary(angles_right: dict, angles_left: dict,
         metrics["stride_time_CV"] = events["stride_time_cv"]
         metrics["n_strides"] = len(events["stride_times"])
 
+        hs = events["heel_strikes"]
+        if len(hs) >= 3:
+            for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]:
+                for side_l, ang in [("R", angles_right), ("L", angles_left)]:
+                    if joint not in ang:
+                        continue
+                    stride_roms = []
+                    for si in range(len(hs) - 1):
+                        seg = ang[joint][hs[si]:hs[si + 1]]
+                        if len(seg) > 2:
+                            stride_roms.append(float(np.ptp(seg)))
+                    if len(stride_roms) >= 2:
+                        cv = coefficient_of_variation(np.array(stride_roms))
+                        short = joint.replace("_flexion", "").replace(
+                            "_dorsiflexion", ""
+                        )
+                        metrics[f"{side_l}_{short}_ROM_CV"] = cv
+
     if "hip_flexion" in angles_right:
         metrics["R_hip_CV"] = coefficient_of_variation(
             np.abs(angles_right["hip_flexion"])

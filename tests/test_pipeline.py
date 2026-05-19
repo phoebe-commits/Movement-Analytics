@@ -513,6 +513,26 @@ class TestWaveformSymmetry:
         assert "hip_flexion_waveform_sym" in summary
 
 
+class TestStrideROMVariability:
+    """Verify stride-level ROM coefficient of variation computation."""
+
+    def test_normal_gait_low_rom_cv(self):
+        params = GaitParameters()
+        _, right, left, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(right, left, fps=30)
+        hip_cv = summary.get("R_hip_ROM_CV", None)
+        assert hip_cv is not None
+        assert hip_cv < 1.0
+
+    def test_noisy_gait_high_rom_cv(self):
+        params = GaitParameters(noise_level=4.0)
+        _, right, left, _ = generate_frames(params, fps=30, n_cycles=6)
+        summary = compute_gait_summary(right, left, fps=30)
+        hip_cv = summary.get("R_hip_ROM_CV", None)
+        assert hip_cv is not None
+        assert hip_cv > 5.0
+
+
 class TestBilateralNoiseIndependence:
     """Verify that bilateral noise uses independent random seeds."""
 
