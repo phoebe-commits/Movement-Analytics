@@ -831,8 +831,9 @@ def mqs_confidence_factor(metrics: dict) -> float:
     (injected by video pipeline), returns a factor < 1.0 if data
     quality is insufficient. Synthetic data (no pose keys) returns 1.0.
 
-    Factor = observed_fraction * mean_confidence (both clamped to [0,1]).
-    Below 50% observed or 0.3 confidence, factor drops sharply.
+    Factor = observed_fraction * mean_confidence * (1 - interp_penalty).
+    The interpolation penalty scales with the fraction of angle data
+    that was linearly interpolated (missing frames filled in).
     """
     obs = metrics.get("pose_observed_fraction")
     conf = metrics.get("pose_mean_confidence")
@@ -840,7 +841,9 @@ def mqs_confidence_factor(metrics: dict) -> float:
         return 1.0
     obs = np.clip(obs if obs is not None else 1.0, 0, 1)
     conf = np.clip(conf if conf is not None else 1.0, 0, 1)
-    return float(obs * conf)
+    interp = metrics.get("pose_interpolation_fraction", 0.0)
+    interp_penalty = np.clip(interp * 0.5, 0, 0.5)
+    return float(obs * conf * (1.0 - interp_penalty))
 
 
 def movement_quality_score(metrics: dict) -> float:

@@ -1568,6 +1568,17 @@ class TestVideoProcessingPipeline:
         cf = mqs_confidence_factor(metrics)
         assert cf == 1.0
 
+    def test_confidence_factor_interpolation_penalty(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_confidence_factor
+        base = {"pose_observed_fraction": 1.0, "pose_mean_confidence": 1.0}
+        cf_no_interp = mqs_confidence_factor(base)
+        assert cf_no_interp == pytest.approx(1.0)
+
+        with_interp = {**base, "pose_interpolation_fraction": 0.5}
+        cf_interp = mqs_confidence_factor(with_interp)
+        assert cf_interp < cf_no_interp
+        assert cf_interp == pytest.approx(1.0 * (1.0 - 0.5 * 0.5))
+
     def test_pose_metadata_produces_weighted_mqs(self):
         params = GaitParameters()
         _, ar, al, _ = generate_frames(params, fps=30, n_cycles=6)
@@ -1582,7 +1593,8 @@ class TestVideoProcessingPipeline:
         assert "pose_observed_fraction" in summary
         raw = summary["movement_quality_score"]
         cf = summary["mqs_confidence_factor"]
-        assert cf == pytest.approx(0.8 * 0.9, abs=0.01)
+        expected_cf = 0.8 * 0.9 * (1.0 - 0.2 * 0.5)
+        assert cf == pytest.approx(expected_cf, abs=0.01)
         assert summary["movement_quality_score_weighted"] == pytest.approx(
             raw * cf, abs=0.1
         )
