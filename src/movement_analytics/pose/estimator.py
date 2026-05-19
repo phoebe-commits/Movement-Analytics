@@ -62,16 +62,20 @@ def _download_model(model_path: str):
 class PoseEstimator:
     """MediaPipe PoseLandmarker wrapper for gait analysis."""
 
-    def __init__(self, model_path: str | None = None, num_poses: int = 1):
+    def __init__(self, model_path: str | None = None, num_poses: int = 1,
+                 video_mode: bool = False):
         path = model_path or _DEFAULT_MODEL
         _download_model(path)
 
+        mode = _RunningMode.VIDEO if video_mode else _RunningMode.IMAGE
         options = _PoseLandmarkerOptions(
             base_options=_BaseOptions(model_asset_path=path),
-            running_mode=_RunningMode.IMAGE,
+            running_mode=mode,
             num_poses=num_poses,
         )
         self.landmarker = _PoseLandmarker.create_from_options(options)
+        self._video_mode = video_mode
+        self._frame_count = 0
 
     def process_frame(self, frame: np.ndarray,
                       min_visibility: float = 0.5) -> tuple[dict | None, float]:
@@ -81,10 +85,19 @@ class PoseEstimator:
         with kinematics.joint_angles.compute_all_angles() or None if no
         person detected. Confidence is the mean visibility of key landmarks
         (0-1). Landmarks below min_visibility are excluded.
+
+        In VIDEO mode, timestamps are tracked automatically. Frames must
+        be passed in chronological order.
         """
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-        result = self.landmarker.detect(mp_image)
+        if self._video_mode:
+            self._frame_count += 1
+            result = self.landmarker.detect_for_video(
+                mp_image, self._frame_count
+            )
+        else:
+            result = self.landmarker.detect(mp_image)
 
         if not result.pose_landmarks or len(result.pose_landmarks) == 0:
             return None, 0.0
@@ -205,7 +218,7 @@ def process_video(
 
     confidences = []
 
-    with PoseEstimator() as estimator:
+    with PoseEstimator(video_mode=True) as estimator:
         while True:
             ret, frame = cap.read()
             if not ret:

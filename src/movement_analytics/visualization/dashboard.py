@@ -82,7 +82,8 @@ class RealTimeDashboard:
     def _draw_mqs_card(self, canvas: np.ndarray, x: int, y: int,
                        w: int, metrics: dict[str, float]) -> int:
         """Draw the Movement Quality Score card with arc gauge and domain breakdown."""
-        mqs = metrics.get("movement_quality_score", 0)
+        mqs = metrics.get("movement_quality_score_weighted",
+                         metrics.get("movement_quality_score", 0))
         card_h = 110
 
         cv2.rectangle(canvas, (x, y), (x + w, y + card_h), (35, 35, 40), -1)
@@ -106,7 +107,11 @@ class RealTimeDashboard:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.35, COLORS["text_dim"], 1, cv2.LINE_AA)
 
         label_x = x + 125
-        cv2.putText(canvas, "MOVEMENT QUALITY", (label_x, y + 18),
+        cf = metrics.get("mqs_confidence_factor")
+        header = "MOVEMENT QUALITY"
+        if cf is not None and cf < 1.0:
+            header += f"  (CF={cf:.0%})"
+        cv2.putText(canvas, header, (label_x, y + 18),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.55, COLORS["accent"], 1, cv2.LINE_AA)
 
         domains = [
