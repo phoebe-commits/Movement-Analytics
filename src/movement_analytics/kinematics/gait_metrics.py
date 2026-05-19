@@ -391,6 +391,7 @@ def detect_gait_events(hip_flexion: np.ndarray, knee_flexion: np.ndarray,
             refined.append(best)
         hs_indices = np.array(refined)
     elif ankle_dorsiflexion is not None and len(hs_indices) > 0:
+        # Knee near full extension at heel strike; ankle gates data quality
         window = max(1, int(fps * 0.1))
         refined = []
         for hs in hs_indices:

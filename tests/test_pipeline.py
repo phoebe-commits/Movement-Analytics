@@ -1883,8 +1883,8 @@ class TestPoseEstimatorUnit:
         est.process_frame(frame)
         assert est._frame_count == 2
         call_args = mock_landmarker.detect_for_video.call_args_list
-        assert call_args[0][0][1] == 33  # ~33ms at 30fps
-        assert call_args[1][0][1] == 66  # ~66ms at 30fps
+        assert call_args[0][0][1] == 0   # first frame = 0ms
+        assert call_args[1][0][1] == 33  # second frame ~33ms at 30fps
         assert mock_landmarker.detect_for_video.call_count == 2
 
     def test_draw_landmarks_produces_annotated_frame(self):

@@ -93,8 +93,8 @@ class PoseEstimator:
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
         if self._video_mode:
-            self._frame_count += 1
             timestamp_ms = int(self._frame_count * self._ms_per_frame)
+            self._frame_count += 1
             result = self.landmarker.detect_for_video(
                 mp_image, timestamp_ms
             )
