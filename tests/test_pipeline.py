@@ -1711,7 +1711,7 @@ class TestPoseEstimatorUnit:
         return lms
 
     def test_process_frame_returns_positions_and_confidence(self):
-        from movement_analytics.pose.estimator import PoseEstimator, LANDMARK_MAP
+        from movement_analytics.pose.estimator import PoseEstimator
 
         landmarks = self._make_full_landmarks(visibility=0.9)
         mock_result = MagicMock()
@@ -1857,7 +1857,8 @@ class TestPoseEstimatorUnit:
 
     def test_download_model_skips_if_exists(self):
         from movement_analytics.pose.estimator import _download_model
-        with patch("movement_analytics.pose.estimator.os.path.exists", return_value=True) as mock_exists:
+        target = "movement_analytics.pose.estimator.os.path.exists"
+        with patch(target, return_value=True) as mock_exists:
             _download_model("/fake/model.task")
             mock_exists.assert_called_once()
 
