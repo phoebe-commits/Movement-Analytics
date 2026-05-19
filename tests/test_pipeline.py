@@ -142,6 +142,10 @@ class TestMQS:
         assert _signal_score(10, 35, 50, 10, 70) == 0.0
         assert _signal_score(70, 35, 50, 10, 70) == 0.0
 
+    def test_signal_score_nan_returns_nan(self):
+        result = _signal_score(float("nan"), 35, 50, 10, 70)
+        assert np.isnan(result)
+
     def test_signal_score_interpolation(self):
         score = _signal_score(22.5, 35, 50, 10, 70)
         assert 0 < score < 100

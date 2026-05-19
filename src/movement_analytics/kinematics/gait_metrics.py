@@ -662,6 +662,8 @@ def _signal_score(value: float, optimal_low: float, optimal_high: float,
 
     100 = within optimal range, linearly decreasing to 0 at worst bounds.
     """
+    if np.isnan(value):
+        return float("nan")
     if optimal_low <= value <= optimal_high:
         return 100.0
     if value < optimal_low:
