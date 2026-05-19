@@ -294,6 +294,42 @@ class TestFrameGeneration:
         frames, _, _, _ = generate_frames(params, width=640, height=480, n_cycles=2)
         assert frames[0].shape == (480, 640, 3)
 
+    def test_render_walking_video_to_file(self):
+        from movement_analytics.generators.stick_figure import render_walking_video
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "walk.mp4")
+            result = render_walking_video(
+                GaitParameters(), output_path=path,
+                width=320, height=240, fps=15, n_cycles=1,
+                figure_height_px=180,
+            )
+            assert result == path
+            assert os.path.exists(path)
+            assert os.path.getsize(path) > 500
+
+    def test_render_walking_video_no_output_returns_none(self):
+        from movement_analytics.generators.stick_figure import render_walking_video
+
+        result = render_walking_video(
+            GaitParameters(), output_path=None,
+            width=320, height=240, fps=15, n_cycles=1,
+            figure_height_px=180,
+        )
+        assert result is None
+
+    def test_render_walking_video_without_joint_markers(self):
+        from movement_analytics.generators.stick_figure import render_walking_video
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "walk.mp4")
+            render_walking_video(
+                GaitParameters(), output_path=path,
+                width=320, height=240, fps=15, n_cycles=1,
+                figure_height_px=180, show_joint_markers=False,
+            )
+            assert os.path.exists(path)
+
 
 class TestDashboard:
     def test_dashboard_creates_canvas(self):
