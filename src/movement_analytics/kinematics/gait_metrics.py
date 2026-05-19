@@ -660,11 +660,20 @@ def mqs_domain_scores(metrics: dict) -> dict[str, float]:
     return domains
 
 
+def _is_valid_metric(value) -> bool:
+    """Check if a metric value is present and not NaN."""
+    if value is None:
+        return False
+    if isinstance(value, float) and np.isnan(value):
+        return False
+    return True
+
+
 def mqs_signal_completeness(metrics: dict) -> dict[str, float]:
     """Compute signal completeness per domain (0-1).
 
-    Reports what fraction of expected signals were present. A completeness
-    below 1.0 means the domain score is based on partial data.
+    Reports what fraction of expected signals were present and non-NaN.
+    A completeness below 1.0 means the domain score is based on partial data.
     """
     completeness = {}
 
@@ -673,34 +682,34 @@ def mqs_signal_completeness(metrics: dict) -> dict[str, float]:
     for side in ["R", "L"]:
         for joint in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion"]:
             kin_expected += 1
-            if metrics.get(f"{side}_{joint}_ROM") is not None:
+            if _is_valid_metric(metrics.get(f"{side}_{joint}_ROM")):
                 kin_present += 1
         for suffix in ["pelvis_obliquity_ROM", "trunk_lean_ROM"]:
             kin_expected += 1
-            if metrics.get(f"{side}_{suffix}") is not None:
+            if _is_valid_metric(metrics.get(f"{side}_{suffix}")):
                 kin_present += 1
     completeness["kinematics"] = kin_present / kin_expected if kin_expected else 0.0
 
     sm_present = 0
     for s in ["R", "L"]:
         for joint in ["hip_flexion", "knee_flexion"]:
-            if metrics.get(f"{s}_{joint}_SPARC") is not None:
+            if _is_valid_metric(metrics.get(f"{s}_{joint}_SPARC")):
                 sm_present += 1
     completeness["smoothness"] = sm_present / 4.0
 
     sy_present = sum(
         1 for j in ["hip_flexion", "knee_flexion", "ankle_dorsiflexion",
                      "pelvis_obliquity"]
-        if metrics.get(f"{j}_SI") is not None
+        if _is_valid_metric(metrics.get(f"{j}_SI"))
     )
     completeness["symmetry"] = sy_present / 4.0
 
     coord_present = 0
     coord_expected = 3
-    if metrics.get("hip_CRP_MAD") is not None:
+    if _is_valid_metric(metrics.get("hip_CRP_MAD")):
         coord_present += 1
     for side in ["R", "L"]:
-        if metrics.get(f"{side}_hip_knee_CRP_MAD") is not None:
+        if _is_valid_metric(metrics.get(f"{side}_hip_knee_CRP_MAD")):
             coord_present += 1
     completeness["coordination"] = coord_present / coord_expected
 

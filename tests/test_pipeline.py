@@ -845,6 +845,18 @@ class TestSignalCompleteness:
         assert c["smoothness"] == pytest.approx(0.25)
 
 
+    def test_nan_metrics_not_counted_as_present(self):
+        from movement_analytics.kinematics.gait_metrics import mqs_signal_completeness
+        metrics = {
+            "R_hip_flexion_ROM": float("nan"),
+            "L_hip_flexion_ROM": 40.0,
+            "R_hip_flexion_SPARC": float("nan"),
+        }
+        c = mqs_signal_completeness(metrics)
+        assert c["kinematics"] == pytest.approx(1 / 10)
+        assert c["smoothness"] == pytest.approx(0.0)
+
+
 class TestMQSConfidenceFactor:
     """Verify MQS confidence factor degrades with poor pose quality."""
 
