@@ -5,8 +5,21 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "movement-analytics"
 version = "0.2.0"
-description = "Movement analysis pipeline: synthetic gait generation, pose estimation, kinematic computation, and real-time visualization"
+description = "Computational movement quality analysis for physical AI — 6-domain Movement Quality Score from video"
 requires-python = ">=3.10"
+license = {text = "Proprietary"}
+authors = [
+    {name = "Devansh", email = "devansh@iqidis.ai"},
+]
+keywords = ["biomechanics", "gait-analysis", "movement-quality", "pose-estimation", "physical-ai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 dependencies = [
     "numpy>=1.24",
     "opencv-python>=4.8",
@@ -27,6 +40,13 @@ movement-analytics = "movement_analytics.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]

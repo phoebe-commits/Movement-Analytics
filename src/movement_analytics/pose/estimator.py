@@ -6,9 +6,10 @@ processing for real-time analysis.
 """
 
 import os
+
 import cv2
-import numpy as np
 import mediapipe as mp
+import numpy as np
 
 _BaseOptions = mp.tasks.BaseOptions
 _PoseLandmarker = mp.tasks.vision.PoseLandmarker

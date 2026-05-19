@@ -182,7 +182,10 @@ def detect_gait_events(hip_flexion: np.ndarray, knee_flexion: np.ndarray,
         "stride_times": stride_times,
         "cadence_steps_per_min": cadence,
         "stride_time_mean": float(np.mean(stride_times)) if len(stride_times) > 0 else float("nan"),
-        "stride_time_cv": coefficient_of_variation(stride_times) if len(stride_times) > 2 else float("nan"),
+        "stride_time_cv": (
+            coefficient_of_variation(stride_times)
+            if len(stride_times) > 2 else float("nan")
+        ),
     }
 
 

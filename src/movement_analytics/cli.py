@@ -76,7 +76,8 @@ def run_analysis(profile_name: str = "normal", output_path: str | None = None,
                 if joint in angles_dict:
                     current_angles[f"{side}_{joint}"] = float(angles_dict[joint][i])
             if "shoulder_flexion" in angles_dict:
-                current_angles[f"{side}_shoulder_flexion"] = float(angles_dict["shoulder_flexion"][i])
+                val = float(angles_dict["shoulder_flexion"][i])
+                current_angles[f"{side}_shoulder_flexion"] = val
             if "elbow_flexion" in angles_dict:
                 current_angles[f"{side}_elbow_flexion"] = float(angles_dict["elbow_flexion"][i])
 
@@ -280,7 +281,10 @@ def generate_comparison_report(output_path: str, fps: int = 30, n_cycles: int = 
         cv2.rectangle(img, (240, y + 5), (240 + bar_max_w, y + 20), (45, 45, 50), -1)
         cv2.rectangle(img, (240, y + 5), (240 + mqs_bar_w, y + 20), score_color, -1)
 
-        domain_keys = ["kinematics", "smoothness", "symmetry", "coordination", "variability", "temporal"]
+        domain_keys = [
+            "kinematics", "smoothness", "symmetry",
+            "coordination", "variability", "temporal",
+        ]
         domain_x_offsets = [310, 420, 530, 640, 750, 860]
 
         for dk, dx in zip(domain_keys, domain_x_offsets):
@@ -311,8 +315,11 @@ def generate_comparison_report(output_path: str, fps: int = 30, n_cycles: int = 
 
     # Key findings
     y += 35
-    cv2.putText(img, "Key: Normal ROM 35-50 deg hip, 50-70 deg knee | SPARC -2.0 to -1.3 (smooth) | SI <10% (symmetric)",
-                (30, y + 14), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (100, 110, 120), 1, cv2.LINE_AA)
+    key_text = (
+        "Key: ROM 35-50 hip, 50-70 knee | SPARC -2.0 to -1.3 | SI <10%"
+    )
+    cv2.putText(img, key_text, (30, y + 14),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.35, (100, 110, 120), 1, cv2.LINE_AA)
     y += 20
     cv2.putText(img, "Cadence 90-130 spm | Stride CV <4% | Stride time 0.8-1.3s",
                 (30, y + 14), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (100, 110, 120), 1, cv2.LINE_AA)
@@ -338,8 +345,10 @@ def run_benchmark(output_path: str | None = None, fps: int = 30, n_cycles: int =
             if k.startswith("mqs_"):
                 entry["domains"][k.replace("mqs_", "")] = round(v, 1)
             elif k in ("cadence", "stride_time_mean", "stride_time_CV", "n_strides"):
-                entry["key_metrics"][k] = round(v, 2) if not (isinstance(v, float) and np.isnan(v)) else None
-            elif k.endswith("_ROM") or k.endswith("_SI") or k.endswith("_SPARC") or k.endswith("_CRP_MAD"):
+                is_nan = isinstance(v, float) and np.isnan(v)
+                entry["key_metrics"][k] = None if is_nan else round(v, 2)
+            elif (k.endswith("_ROM") or k.endswith("_SI")
+                  or k.endswith("_SPARC") or k.endswith("_CRP_MAD")):
                 entry["key_metrics"][k] = round(v, 2)
         results[name] = entry
 

@@ -8,18 +8,28 @@ import numpy as np
 import pytest
 
 from movement_analytics.generators.gait_model import (
-    GaitParameters, GAIT_PROFILES, generate_gait_cycle,
+    GAIT_PROFILES,
+    GaitParameters,
+    generate_gait_cycle,
 )
 from movement_analytics.generators.stick_figure import generate_frames
 from movement_analytics.kinematics.gait_metrics import (
-    angular_velocity, sparc, symmetry_index, rom,
-    normalized_jerk, coefficient_of_variation,
-    continuous_relative_phase, crp_consistency,
-    compute_gait_summary, mqs_domain_scores,
-    _signal_score, _DOMAIN_WEIGHTS,
+    _DOMAIN_WEIGHTS,
+    _signal_score,
+    angular_velocity,
+    coefficient_of_variation,
+    compute_gait_summary,
+    continuous_relative_phase,
+    crp_consistency,
+    mqs_domain_scores,
+    normalized_jerk,
+    rom,
+    sparc,
+    symmetry_index,
 )
 from movement_analytics.visualization.dashboard import (
-    RealTimeDashboard, create_dashboard_frame,
+    RealTimeDashboard,
+    create_dashboard_frame,
 )
 
 
@@ -211,10 +221,11 @@ class TestCRP:
 
 class TestBenchmark:
     def test_benchmark_all_profiles(self):
-        from movement_analytics.cli import run_benchmark
         import json
-        import tempfile
         import os
+        import tempfile
+
+        from movement_analytics.cli import run_benchmark
 
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w") as f:
             path = f.name
@@ -353,16 +364,18 @@ class TestMQSRanking:
         for name, summary in all_mqs_scores.items():
             if name == "normal":
                 continue
-            assert normal_mqs >= summary["movement_quality_score"], \
-                f"Normal ({normal_mqs:.1f}) should score >= {name} ({summary['movement_quality_score']:.1f})"
+            other = summary["movement_quality_score"]
+            assert normal_mqs >= other, \
+                f"Normal ({normal_mqs:.1f}) should >= {name} ({other:.1f})"
 
     def test_parkinsonian_scores_lowest(self, all_mqs_scores):
         park_mqs = all_mqs_scores["parkinsonian"]["movement_quality_score"]
         for name, summary in all_mqs_scores.items():
             if name in ("parkinsonian", "noisy"):
                 continue
-            assert park_mqs <= summary["movement_quality_score"], \
-                f"Parkinsonian ({park_mqs:.1f}) should score <= {name} ({summary['movement_quality_score']:.1f})"
+            other = summary["movement_quality_score"]
+            assert park_mqs <= other, \
+                f"Parkinsonian ({park_mqs:.1f}) should <= {name} ({other:.1f})"
 
     def test_pathological_below_healthy(self, all_mqs_scores):
         healthy = all_mqs_scores["normal"]["movement_quality_score"]

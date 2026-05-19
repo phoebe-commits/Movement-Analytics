@@ -7,6 +7,7 @@ with biomechanically accurate segment proportions (Winter, 2009).
 
 import cv2
 import numpy as np
+
 from .gait_model import GaitParameters, generate_gait_cycle
 
 # Segment lengths as fraction of total height (Winter, 2009 anthropometric data)
@@ -141,10 +142,16 @@ def render_walking_video(params: GaitParameters, output_path: str | None = None,
         head_color = (180, 200, 220)
 
         # Back leg first (dimmer)
-        back_side = "left" if angles_right["hip_flexion"][i] > angles_left["hip_flexion"][i] else "right"
+        r_hip = angles_right["hip_flexion"][i]
+        l_hip = angles_left["hip_flexion"][i]
+        back_side = "left" if r_hip > l_hip else "right"
         front_side = "right" if back_side == "left" else "left"
 
-        for side, color, thickness in [(back_side, bone_color_back, 3), (front_side, bone_color_front, 4)]:
+        sides = [
+            (back_side, bone_color_back, 3),
+            (front_side, bone_color_front, 4),
+        ]
+        for side, color, thickness in sides:
             pts = [positions[f"{side}_hip"], positions[f"{side}_knee"],
                    positions[f"{side}_ankle"], positions[f"{side}_toe"]]
             for a, b in zip(pts[:-1], pts[1:]):
@@ -155,15 +162,13 @@ def render_walking_video(params: GaitParameters, output_path: str | None = None,
             for a, b in zip(arm_pts[:-1], arm_pts[1:]):
                 cv2.line(frame, tuple(a.astype(int)), tuple(b.astype(int)), color, thickness)
 
-        # Trunk
         cv2.line(frame, tuple(positions["pelvis"].astype(int)),
                  tuple(positions["shoulder"].astype(int)), bone_color_front, 4)
-        # Neck
         cv2.line(frame, tuple(positions["shoulder"].astype(int)),
                  tuple(positions["neck"].astype(int)), bone_color_front, 3)
-        # Head
         head_r = int(SEGMENT_RATIOS["head_radius"] * figure_height_px)
-        cv2.circle(frame, tuple(positions["head"].astype(int)), head_r, head_color, 2)
+        cv2.circle(frame, tuple(positions["head"].astype(int)),
+                   head_r, head_color, 2)
 
         if show_joint_markers:
             for key, pos in positions.items():
@@ -189,9 +194,10 @@ def render_walking_video(params: GaitParameters, output_path: str | None = None,
     return output_path
 
 
-def generate_frames(params: GaitParameters, width: int = 1280, height: int = 720,
-                    fps: int = 30, n_cycles: int = 4,
-                    figure_height_px: float = 400) -> tuple[list[np.ndarray], dict, dict, GaitParameters]:
+def generate_frames(
+    params: GaitParameters, width: int = 1280, height: int = 720,
+    fps: int = 30, n_cycles: int = 4, figure_height_px: float = 400,
+) -> tuple[list[np.ndarray], dict, dict, GaitParameters]:
     """Generate frames and return (frames, angles_right, angles_left, params).
 
     This is the primary interface for the analysis pipeline — it returns
@@ -272,10 +278,16 @@ def generate_frames(params: GaitParameters, width: int = 1280, height: int = 720
         bone_color_back = (100, 120, 140)
         bone_color_front = (180, 200, 220)
 
-        back_side = "left" if angles_right["hip_flexion"][i] > angles_left["hip_flexion"][i] else "right"
+        r_hip = angles_right["hip_flexion"][i]
+        l_hip = angles_left["hip_flexion"][i]
+        back_side = "left" if r_hip > l_hip else "right"
         front_side = "right" if back_side == "left" else "left"
 
-        for side, color, thickness in [(back_side, bone_color_back, 3), (front_side, bone_color_front, 4)]:
+        sides = [
+            (back_side, bone_color_back, 3),
+            (front_side, bone_color_front, 4),
+        ]
+        for side, color, thickness in sides:
             pts = [positions[f"{side}_hip"], positions[f"{side}_knee"],
                    positions[f"{side}_ankle"], positions[f"{side}_toe"]]
             for a, b in zip(pts[:-1], pts[1:]):
@@ -312,7 +324,8 @@ def generate_frames(params: GaitParameters, width: int = 1280, height: int = 720
                 if lo <= abs_angle <= hi:
                     jcolor = (80, 200, 80)
                 else:
-                    jcolor = (50, 200, 255) if abs(abs_angle - lo) < 10 or abs(abs_angle - hi) < 10 else (60, 60, 255)
+                    near = abs(abs_angle - lo) < 10 or abs(abs_angle - hi) < 10
+                    jcolor = (50, 200, 255) if near else (60, 60, 255)
                 cv2.circle(frame, pt, 7, jcolor, -1)
                 cv2.circle(frame, pt, 7, (255, 255, 255), 1)
 

@@ -5,10 +5,10 @@ plots and metric gauges on the right. All kinematic quantities update frame-by-f
 Includes a prominent Movement Quality Score and bilateral joint overlays.
 """
 
-import cv2
-import numpy as np
 from collections import deque
 
+import cv2
+import numpy as np
 
 COLORS = {
     "bg": (20, 20, 25),

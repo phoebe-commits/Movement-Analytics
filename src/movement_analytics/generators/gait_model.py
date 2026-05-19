@@ -5,8 +5,9 @@ using sinusoidal approximations of clinical gait analysis norms (Perry & Burnfie
 Winter, 2009). All angles in degrees, following ISB convention (flexion positive).
 """
 
-import numpy as np
 from dataclasses import dataclass
+
+import numpy as np
 
 
 @dataclass
@@ -24,7 +25,7 @@ class GaitParameters:
     arm_swing: float = 25.0          # shoulder flexion/extension ROM (degrees)
     stance_ratio: float = 0.60       # fraction of cycle in stance (normal ~0.60)
     speed_factor: float = 1.0        # multiplier on overall speed
-    asymmetry: float = 0.0           # left-right asymmetry factor (0 = symmetric, 0.3 = noticeable limp)
+    asymmetry: float = 0.0           # left-right asymmetry (0=symmetric, 0.3=limp)
     noise_level: float = 0.0         # motor noise / variability (degrees std)
 
 
@@ -90,7 +91,10 @@ GAIT_PROFILES = {
             ankle_rom=32, pelvic_tilt=6, pelvic_obliquity=7, trunk_sway=2,
             arm_swing=20, speed_factor=0.95, noise_level=0.5,
         ),
-        description="Trained runway gait: exaggerated pelvic motion, controlled trunk, precise foot placement",
+        description=(
+            "Trained runway gait: exaggerated pelvic motion, "
+            "controlled trunk, precise foot placement"
+        ),
     ),
     "noisy": GaitProfile(
         name="High-Variability Walk",
@@ -105,7 +109,10 @@ GAIT_PROFILES = {
             trunk_sway=1.5, arm_swing=8, speed_factor=0.55,
             asymmetry=0.15, noise_level=1.5,
         ),
-        description="Shuffling gait: reduced ROM, diminished arm swing, shortened stride, mild asymmetry (Plotnik et al., 2005)",
+        description=(
+            "Shuffling gait: reduced ROM, diminished arm swing, "
+            "shortened stride, mild asymmetry (Plotnik et al., 2005)"
+        ),
     ),
 }
 
