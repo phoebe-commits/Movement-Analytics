@@ -358,6 +358,10 @@ class TestEdgeCases:
         for i in range(len(scores) - 1):
             assert scores[i] <= scores[i + 1]
 
+    def test_signal_score_degenerate_worst_bounds(self):
+        assert _signal_score(30, 35, 50, 40, 70) == 0.0
+        assert _signal_score(60, 35, 50, 10, 45) == 0.0
+
     def test_gait_events_short_signal(self):
         from movement_analytics.kinematics.gait_metrics import detect_gait_events
         hip = np.sin(np.linspace(0, np.pi, 10))
@@ -1400,3 +1404,34 @@ class TestVideoProcessingPipeline:
         metrics = {"cadence": 110, "stride_time_mean": 1.0}
         cf = mqs_confidence_factor(metrics)
         assert cf == 1.0
+
+    def test_process_video_bad_path_raises(self):
+        from movement_analytics.pose.estimator import process_video
+        with pytest.raises(FileNotFoundError):
+            process_video("nonexistent_video_file.mp4")
+
+    def test_process_video_zero_frames(self):
+        from movement_analytics.pose.estimator import process_video
+
+        mock_cap = MagicMock()
+        mock_cap.isOpened.return_value = True
+        mock_cap.get.return_value = 30.0
+        mock_cap.read.return_value = (False, None)
+
+        with patch(
+            "movement_analytics.pose.estimator.cv2.VideoCapture",
+            return_value=mock_cap,
+        ), patch(
+            "movement_analytics.pose.estimator.PoseEstimator"
+        ) as MockEst:
+            instance = MagicMock()
+            instance.process_frame = lambda f, min_visibility=0.5: (None, 0.0)
+            instance.__enter__ = lambda s: s
+            instance.__exit__ = lambda s, *a: None
+            MockEst.return_value = instance
+
+            frames, ar, al, _, meta = process_video("dummy.mp4")
+
+        assert ar == {}
+        assert al == {}
+        assert meta["observed_fraction"] == 0.0
