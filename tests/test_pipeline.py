@@ -633,6 +633,22 @@ class TestSensitivityAnalysis:
             )
 
 
+class TestSensitivityReport:
+    """Test the sensitivity analysis report generation."""
+
+    def test_sensitivity_report_creates_file(self):
+        import os
+        import tempfile
+
+        from movement_analytics.cli import generate_sensitivity_report
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "sensitivity.png")
+            generate_sensitivity_report(path, fps=30, n_cycles=2)
+            assert os.path.exists(path)
+            assert os.path.getsize(path) > 1000
+
+
 class TestBenchmarkRegression:
     """Lock MQS scores to detect unintended regressions."""
 
