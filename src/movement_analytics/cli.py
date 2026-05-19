@@ -406,16 +406,17 @@ def generate_sensitivity_report(output_path: str, fps: int = 30, n_cycles: int =
 
     from .generators.gait_model import GaitParameters
 
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     fig.suptitle("MQS Sensitivity Analysis", fontsize=14, fontweight="bold")
 
     sweeps = [
-        ("Knee ROM", "knee_rom", np.linspace(15, 70, 12)),
-        ("Noise Level", "noise_level", np.linspace(0, 6, 13)),
+        ("Knee ROM (°)", "knee_rom", np.linspace(15, 70, 12)),
+        ("Noise Level (°)", "noise_level", np.linspace(0, 6, 13)),
         ("Asymmetry", "asymmetry", np.linspace(0, 0.5, 11)),
+        ("Pelvic Obliquity (°)", "pelvic_obliquity", np.linspace(3, 25, 12)),
     ]
 
-    for ax, (label, param, values) in zip(axes, sweeps):
+    for ax, (label, param, values) in zip(axes.flat, sweeps):
         mqs_vals = []
         domain_data = {d: [] for d in ["kinematics", "smoothness", "symmetry",
                                         "coordination", "variability", "temporal"]}

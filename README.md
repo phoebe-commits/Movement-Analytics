@@ -147,7 +147,7 @@ python -m movement_analytics --video path/to/walking.mp4 --output output/analysi
 python -m movement_analytics --sensitivity --output output/mqs_sensitivity.png
 ```
 
-The sensitivity report sweeps three parameters (knee ROM, noise level, asymmetry) and plots how MQS and each domain score respond. All curves are monotonic — the score degrades continuously as movement quality worsens, with no discontinuities or inversions.
+The sensitivity report sweeps four parameters (knee ROM, noise level, asymmetry, pelvic obliquity) across the 6-domain MQS model. All curves are monotonic — the score degrades continuously as movement quality worsens, with no discontinuities or inversions. The pelvic obliquity sweep demonstrates frontal-plane pathology detection: kinematics score drops sharply beyond the 7° clinical threshold.
 
 ### Profile Comparison
 
@@ -259,7 +259,7 @@ The research document identifies **16 signals** across 6 domains that form the b
 | Movement Quality Score | 6-domain composite with frontal-plane symmetry, validated on 9 profiles (58.3–98.3 range) |
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown) |
 | Video pose estimation | Experimental — MediaPipe sagittal plane, 61% coverage, confidence-weighted MQS |
-| CI/CD | GitHub Actions, 109 tests, ruff lint, 70% coverage gate (74% actual) |
+| CI/CD | GitHub Actions, 110 tests, ruff lint, 70% coverage gate (74% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 

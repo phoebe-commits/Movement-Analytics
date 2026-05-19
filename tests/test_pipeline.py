@@ -902,6 +902,19 @@ class TestSensitivityAnalysis:
             )
 
 
+    def test_pelvic_obliquity_sensitivity(self):
+        mqs_scores = []
+        for obliq in [5, 10, 15, 20]:
+            params = GaitParameters(pelvic_obliquity=obliq)
+            _, ar, al, _ = generate_frames(params, fps=30, n_cycles=4)
+            s = compute_gait_summary(ar, al, fps=30)
+            mqs_scores.append(s["movement_quality_score"])
+        for i in range(len(mqs_scores) - 1):
+            assert mqs_scores[i] >= mqs_scores[i + 1], (
+                f"MQS should decrease as pelvic obliquity increases: "
+                f"obliq step {i} ({mqs_scores[i]:.1f}) < step {i+1} ({mqs_scores[i+1]:.1f})"
+            )
+
     def test_fps_stability(self):
         """MQS should be stable across frame rates for the same gait."""
         scores = []
