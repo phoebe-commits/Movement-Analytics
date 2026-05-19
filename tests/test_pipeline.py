@@ -358,6 +358,32 @@ class TestBenchmark:
         assert '"normal"' in captured.out
 
 
+class TestMQSRegressionBaselines:
+    """Lock MQS baselines to detect scoring drift. Values from v0.9.0 synthetic pipeline."""
+
+    _BASELINES = {
+        "normal": 98.3,
+        "parkinsonian": 61.1,
+        "limp": 88.8,
+        "stiff_knee": 79.9,
+        "noisy": 61.7,
+        "fast": 89.5,
+        "slow": 83.8,
+        "trendelenburg": 87.3,
+        "model_runway": 96.1,
+    }
+
+    @pytest.mark.parametrize("profile_name,expected_mqs", list(_BASELINES.items()))
+    def test_mqs_baseline_locked(self, profile_name, expected_mqs):
+        p = GAIT_PROFILES[profile_name].params
+        _, ar, al, _ = generate_frames(p, n_cycles=6, fps=30)
+        s = compute_gait_summary(ar, al, fps=30)
+        actual = s["movement_quality_score"]
+        assert abs(actual - expected_mqs) < 1.0, (
+            f"{profile_name}: MQS drifted from {expected_mqs} to {actual:.1f}"
+        )
+
+
 class TestFrameGeneration:
     def test_generate_frames_returns_correct_types(self):
         params = GaitParameters()
