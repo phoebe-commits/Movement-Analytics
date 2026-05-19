@@ -1278,7 +1278,7 @@ class TestVideoProcessingPipeline:
                 assert not np.any(np.isnan(ar[key])), f"NaN in right {key}"
             for key in al:
                 assert not np.any(np.isnan(al[key])), f"NaN in left {key}"
-            hip_interp = meta["interpolation_fractions"].get("hip_flexion", 0)
+            hip_interp = meta["interpolation_fractions"].get("R_hip_flexion", 0)
             assert hip_interp > 0, "Should have interpolated missing frames"
 
     def test_process_video_produces_valid_mqs(self):

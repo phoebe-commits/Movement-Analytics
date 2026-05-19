@@ -286,12 +286,13 @@ def process_video(
         angles_left["pelvis_obliquity_signed"] = obliq_signed
 
     interpolation_fractions = {}
-    for d in (angles_right, angles_left):
+    for side, d in [("R", angles_right), ("L", angles_left)]:
         for key in d:
             arr = d[key]
             nan_mask = np.isnan(arr)
+            frac_key = f"{side}_{key}"
             if np.any(nan_mask):
-                interpolation_fractions[key] = float(np.mean(nan_mask))
+                interpolation_fractions[frac_key] = float(np.mean(nan_mask))
                 valid = ~nan_mask
                 if np.any(valid):
                     indices = np.arange(len(arr))
@@ -300,7 +301,7 @@ def process_video(
                     )
                     d[key] = arr
             else:
-                interpolation_fractions[key] = 0.0
+                interpolation_fractions[frac_key] = 0.0
 
     if "hip_flexion" in angles_right:
         from ..kinematics.gait_metrics import detect_gait_events
