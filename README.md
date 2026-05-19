@@ -100,7 +100,8 @@ For each gait profile, the pipeline computes **50+ metrics** in real time:
 - **Double support time** — percentage of gait cycle with both feet on ground (diagnostic, from stance/swing ratio)
 - **Gait Deviation Index (simplified)** — sagittal-plane waveform deviation from normal reference (inspired by Schwartz & Rozumalski 2008; uses synthetic reference, not clinical PCA)
 - **DFA Scaling Exponent** — detrended fluctuation analysis of stride-to-stride intervals (Hausdorff 2001; diagnostic, requires ≥16 strides)
-- **Gait phase** — stance/swing detection with prominence-based heel strikes
+- **Heel contact detection** — video-based foot contact from heel landmark Y-position (refines gait event timing)
+- **Gait phase** — stance/swing detection with prominence-based heel strikes, heel-contact-refined when available
 
 ---
 
@@ -263,9 +264,9 @@ The research document identifies **16 signals** across 6 domains that form the b
 | Gait metrics engine | Implemented, 98% coverage (synthetic path) |
 | Movement Quality Score | 6-domain composite with frontal-plane symmetry, bilateral SPARC, and intra-limb CRP, validated on 9 profiles (58.7–98.3 range) |
 | Real-time dashboard | Implemented (bilateral overlays, MQS gauge, 6-domain breakdown) |
-| Video pose estimation | MediaPipe VIDEO mode with temporal smoothing, confidence-weighted MQS, 63% coverage |
+| Video pose estimation | MediaPipe VIDEO mode with temporal smoothing, heel contact detection, confidence-weighted MQS, 96% unit test coverage |
 | Gait Deviation Index | Simplified GDI (Schwartz & Rozumalski 2008), 100 = normal, validated on 9 profiles (78.1–100.0 range) |
-| CI/CD | GitHub Actions, 152 tests, ruff lint, 70% coverage gate (81% actual) |
+| CI/CD | GitHub Actions, 155 tests, ruff lint, 70% coverage gate (81% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
 | Learned MQS weights | Planned (expert rater calibration) |
 
