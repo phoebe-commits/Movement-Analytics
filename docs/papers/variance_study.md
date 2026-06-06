@@ -1232,9 +1232,11 @@ With $n = 17$--$22$ per group, our study has limited power to detect moderate va
 
 ### D.4 Multiple Comparison Correction {-}
 
-When performing $m$ simultaneous hypothesis tests, the probability of at least one false positive increases:
+When performing $m$ simultaneous **independent** hypothesis tests, the probability of at least one false positive increases:
 
 $$P(\text{at least one Type I error}) = 1 - (1 - \alpha)^m$$
+
+(This formula assumes independent tests. For correlated tests — as in our study where metrics share underlying signals — the true family-wise error rate is lower. The formula is presented here as a worst-case illustration.)
 
 For $m = 24$ tests at $\alpha = 0.05$:
 
@@ -1971,7 +1973,7 @@ $$\text{CSD} = \sqrt{-2\ln R}$$
 
 $$E[R] \approx 1 - \frac{1}{2\kappa}$$
 
-For large $\kappa$ (concentrated distribution), $-2\ln R \approx 1/\kappa$, which is analogous to $1/\sigma^2$ in the linear case. Taking the square root gives a quantity with the same interpretation as linear standard deviation but appropriate for circular data.
+For large $\kappa$ (concentrated distribution), $-2\ln R \approx 1/\kappa$, which is analogous to $\sigma^2$ in the linear case (since $\kappa \approx 1/\sigma^2$ for concentrated distributions). Taking the square root gives a quantity with the same interpretation as linear standard deviation but appropriate for circular data.
 
 The result is in radians; we convert to degrees by multiplying by $180°/\pi$.
 
@@ -2048,7 +2050,7 @@ In our study: PC1 explains 35.4%, PC2 explains 18.0%, PC3 explains 12.2%, for a 
 **Spread metrics in PC space.** Within each group $g$:
 
 - **Trace** (total variance): $\text{tr}(\mathbf{C}_g) = \sum_i \lambda_{g,i}$ — proportional to the "total spread" of the group
-- **Determinant** (generalized variance): $|\mathbf{C}_g| = \prod_i \lambda_{g,i}$ — proportional to the "volume" of the group's distribution
+- **Determinant** (generalized variance): $|\mathbf{C}_g| = \prod_i \lambda_{g,i}$ — ellipsoid volume scales as $\sqrt{|\mathbf{C}_g|}$, not $|\mathbf{C}_g|$ itself
 - **Mean centroid distance**: $\bar{d}_g = \frac{1}{n_g}\sum_i \|\mathbf{z}_i - \bar{\mathbf{z}}_g\|$ — average distance from each point to the group center
 
 ### P.5 Linear Discriminant Analysis (LDA) {-}
@@ -2894,9 +2896,9 @@ Under $H_1$, the observed variance ratio follows a **scaled central F-distributi
 
 $$\frac{s_C^2}{s_R^2} \sim R_\sigma \cdot F(n_C - 1, n_R - 1)$$
 
-The two-sided power is the probability of rejecting $H_0$:
+where $F(n_C - 1, n_R - 1)$ denotes a central F-distributed random variable. Let $F_q$ denote the $q$-th quantile of $F(n_C - 1, n_R - 1)$. The two-sided power is the probability that the observed ratio falls in the rejection region:
 
-$$\text{Power}(R_\sigma) = P\left(\frac{s_C^2/s_R^2}{R_\sigma} > F_{1-\alpha/2}\right) + P\left(\frac{s_C^2/s_R^2}{R_\sigma} < F_{\alpha/2}\right)$$
+$$\text{Power}(R_\sigma) = P\left(R_\sigma \cdot F > F_{1-\alpha/2}\right) + P\left(R_\sigma \cdot F < F_{\alpha/2}\right) = P\left(F > \frac{F_{1-\alpha/2}}{R_\sigma}\right) + P\left(F < \frac{F_{\alpha/2}}{R_\sigma}\right)$$
 
 ### AA.3 Power Estimates for Our Study {-}
 
@@ -3058,7 +3060,7 @@ $^{\dagger}$SPARC arc length sums terms $\sqrt{(\Delta f)^2 + (\Delta\hat{V})^2}
 
 **Domain grouping for results presentation** uses 8 categories: Kinematics (5 metrics), Smoothness (4), Symmetry (5), Coordination (2), Variability (2), Temporal (3), Upper Body (1), Composite (2). The MQS composite uses 6 weighted domains that partially overlap with these categories.
 
-**Note on metric naming.** This table presents the canonical metric specification. The computational pipeline may use slightly different metric names (e.g., `arm_swing_SI` in results vs. `pelvis_SI` here; `shoulder_ROM` and `elbow_ROM` in the pipeline vs. `pelvis_obliquity` and `trunk_lean` here) and domain assignments (e.g., the Results domain summary shows Kinematics=7 and Smoothness=2, reflecting that normalized jerk metrics were grouped under Kinematics in the analysis output). The total of 24 metrics and their mathematical definitions are consistent; only the labeling and domain grouping vary between this specification table and the pipeline output.
+**Note on metric set.** This table presents the canonical metric specification as designed. The computational pipeline's actual 24-metric set includes several metrics not listed here (e.g., `arm_swing_SI`, `shoulder_ROM`, `elbow_ROM`) and omits some listed here (e.g., `pelvis_SI` may be computed differently). Additionally, the Results domain summary shows different per-domain counts (Kinematics=7, Smoothness=2) than this table (Kinematics=5, Smoothness=4), reflecting that the pipeline groups metrics by different criteria. The total metric count (24) and the core mathematical definitions (SI, SPARC, NJ, CRP, etc.) are consistent; the specific metric set and domain assignments evolved between specification and implementation.
 
 ---
 
