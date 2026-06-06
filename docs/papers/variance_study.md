@@ -6,7 +6,7 @@ date: "2026"
 
 ## Abstract {-}
 
-We present a quantitative analysis comparing the kinematic variance of professional runway model walks against heterogeneous control internet walking video. Using a computational pipeline that extracts 24 biomechanical metrics from monocular video via MediaPipe pose estimation, we test the hypothesis that runway walks exhibit significantly lower kinematic variance across movement quality domains. Our analysis of 22 runway videos and 17 control internet walking videos reveals that control walking data exhibits 2.56$\times$ higher median variance (Levene's test), with 10 of 24 metrics showing statistically significant differences ($p < 0.05$), all in the hypothesized direction. The strongest effects appear in movement smoothness (17$\times$) and bilateral symmetry (14$\times$), while coordination (1.3$\times$) and temporal parameters (1.7$\times$) show smaller differences. Three of 24 metrics show the reverse direction (higher runway variance), though none significantly. Multivariate analysis via PCA confirms runway walks occupy a 2.13$\times$ tighter region in kinematic feature space ($\sim$5$\times$ by volume, 25$\times$ by generalized variance), though the multivariate analysis is limited by small complete-case sample sizes ($n = 20$). These findings provide partial but directionally consistent support for the thesis that professional runway walking constitutes a low-variance, high-quality kinematic distribution suitable as a training foundation for robotic movement learning.
+We present a quantitative analysis comparing the kinematic variance of professional runway model walks against heterogeneous control internet walking video. Using a computational pipeline that extracts 24 biomechanical metrics from monocular video via MediaPipe pose estimation, we test the hypothesis that runway walks exhibit significantly lower kinematic variance across movement quality domains. Our analysis of 22 runway videos and 17 control internet walking videos reveals that control walking data exhibits 2.56$\times$ higher median variance (Levene's test), with 10 of 24 metrics showing statistically significant differences ($p < 0.05$), all in the hypothesized direction. The strongest effects appear in movement smoothness (17$\times$) and bilateral symmetry (14$\times$), while coordination (1.3$\times$) and temporal parameters (1.7$\times$) show smaller differences. Three of 24 metrics show the reverse direction (higher runway variance), though none significantly. Multivariate analysis via PCA suggests runway walks occupy a 2.13$\times$ tighter region in kinematic feature space ($\sim$5$\times$ by volume, 25$\times$ by generalized variance), though the multivariate analysis is limited by small complete-case sample sizes ($n = 20$). These findings provide partial but directionally consistent support for the thesis that professional runway walking constitutes a low-variance, high-quality kinematic distribution that motivates evaluation as a training source for robotic movement learning.
 
 **Keywords:** gait analysis, kinematic variance, movement quality, pose estimation, robot learning, biomechanics
 
@@ -562,9 +562,9 @@ PCA on 21 standardized features (complete cases: 6 runway, 14 control) reveals:
 | Determinant (generalized variance) | — | — | 25.3$\times$ |
 | Mean centroid distance | 2.20 | 3.34 | 1.52$\times$ |
 
-The control distribution is **2.13$\times$ larger by trace** and **25.3$\times$ larger by generalized variance** (determinant ratio) in 3D PC space. Since ellipsoid volume scales as $\sqrt{\det(\mathbf{C})}$, this corresponds to approximately $\sqrt{25.3} \approx 5.0\times$ larger by volume. Both measures confirm that runway walks cluster tightly while control videos scatter across the kinematic feature space.
+The control distribution is **2.13$\times$ larger by trace** and **25.3$\times$ larger by generalized variance** (determinant ratio) in 3D PC space. Since ellipsoid volume scales as $\sqrt{\det(\mathbf{C})}$, this corresponds to approximately $\sqrt{25.3} \approx 5.0\times$ larger by volume. Both measures indicate that runway walks cluster tightly while control videos scatter across the kinematic feature space.
 
-**Caveat:** With only 6 runway samples in 21-dimensional feature space ($p \gg n_R$), the runway covariance matrix is rank-deficient ($\text{rank} \leq 5$). The trace and determinant ratios should be interpreted as lower bounds on the true spread difference — the runway distribution may be even tighter than estimated, since 21-dimensional structure cannot be reliably estimated from 6 samples. The PCA projection to 3 components mitigates this partially, but the runway covariance in PC space remains estimated from only 6 points. Additionally, 3 PCs explain only 65.7% of total variance; the remaining 34.3% could contain additional group differences not captured here.
+**Caveat:** With only 6 runway samples in 21-dimensional feature space ($p \gg n_R$), the runway covariance matrix is rank-deficient ($\text{rank} \leq 5$). The trace and determinant ratios are point estimates subject to high sampling uncertainty — the true spread difference could be larger or smaller than estimated, since 21-dimensional structure cannot be reliably estimated from 6 samples. The PCA projection to 3 components mitigates this partially, but the runway covariance in PC space remains estimated from only 6 points. Additionally, 3 PCs explain only 65.7% of total variance; the remaining 34.3% could contain additional group differences not captured here.
 
 **LDA classification:**
 
@@ -574,7 +574,7 @@ The control distribution is **2.13$\times$ larger by trace** and **25.3$\times$ 
 | LOO-CV | 70% |
 | Majority-class baseline | 70% (14/20 = control) |
 
-The LOO-CV accuracy of 70% equals the majority-class baseline (predicting "control" for all samples), indicating that the LDA classifier does not generalize reliably at this sample size. However, the 100% resubstitution accuracy confirms perfect linear separability in the full feature space — the groups are distinguishable, but the 6-sample runway class is too small for the LOO estimator to learn a stable decision boundary. With $p = 21$ features and only $n_R = 6$ runway samples, the runway covariance matrix is rank-deficient ($\text{rank} \leq 5$), making LDA estimation unstable. Larger samples would likely improve LOO-CV substantially.
+The LOO-CV accuracy of 70% equals the majority-class baseline (predicting "control" for all samples), indicating that the LDA classifier does not generalize reliably at this sample size. The 100% resubstitution accuracy indicates that the groups are linearly separable in the training set, but with $p = 21$ features and only $n_R = 6$ runway samples, this is expected even for random data ($p \gg n$ makes perfect separation trivial) and should not be interpreted as evidence of true group distinctiveness. The runway covariance matrix is rank-deficient ($\text{rank} \leq 5$), making LDA estimation unstable. Larger samples would likely improve LOO-CV substantially.
 
 ---
 
@@ -613,7 +613,7 @@ Analysis performed with Python 3.12, MediaPipe 0.10.x (PoseLandmarker heavy mode
 
 4. **Selection bias.** Runway videos were professionally filmed with controlled conditions, while control videos were opportunistically sampled. Some variance difference may reflect filming conditions rather than movement quality.
 
-5. **LDA generalization.** The LOO-CV accuracy (70%) equals the majority-class baseline, indicating that multivariate classification does not generalize at this sample size. The resubstitution accuracy (100%) confirms separability but may reflect overfitting.
+5. **LDA generalization.** The LOO-CV accuracy (70%) equals the majority-class baseline, indicating that multivariate classification does not generalize at this sample size. The resubstitution accuracy (100%) is expected when $p \gg n$ and does not constitute evidence of true group separability.
 
 6. **Non-independent metrics.** Several of the 24 metrics share underlying signal dependencies, inflating the apparent number of independent tests. The effective number of independent comparisons is likely lower than 24.
 
@@ -628,9 +628,9 @@ Analysis performed with Python 3.12, MediaPipe 0.10.x (PoseLandmarker heavy mode
 
 ## Conclusion
 
-This study provides quantitative evidence that professional runway model walks constitute a low-variance, high-quality kinematic distribution compared to general internet walking video. Across 24 biomechanical metrics spanning 6 movement quality domains, runway walks show **2.56$\times$ lower median variance**, with the strongest effects in movement smoothness ($17\times$) and bilateral symmetry ($14\times$). In multivariate kinematic feature space, runway walks occupy a region **$\sim$5$\times$ smaller by volume** ($25\times$ by generalized variance). All 10 statistically significant differences favor the hypothesized direction; 3 of 24 metrics show the reverse direction (higher runway variance), though none reach significance.
+This study provides quantitative evidence that professional runway model walks constitute a low-variance, high-quality kinematic distribution compared to general internet walking video. Across 24 biomechanical metrics spanning 8 movement quality domains, runway walks show **2.56$\times$ lower median variance**, with the strongest effects in movement smoothness ($17\times$) and bilateral symmetry ($14\times$). In multivariate kinematic feature space, runway walks occupy a region **$\sim$5$\times$ smaller by volume** ($25\times$ by generalized variance). All 10 statistically significant differences favor the hypothesized direction; 3 of 24 metrics show the reverse direction (higher runway variance), though none reach significance.
 
-These findings support the use of runway walking data as a curated, low-entropy training foundation for robotic movement learning systems.
+These findings support the use of runway walking data as a curated, low-entropy source that merits further evaluation for robotic movement learning systems.
 
 ---
 
@@ -640,7 +640,11 @@ Baker, R., McGinley, J. L., Schwartz, M. H., et al. (2009). The Gait Profile Sco
 
 Balasubramanian, S., Melendez-Calderon, A., & Burdet, E. (2012). A robust and sensitive metric for quantifying movement smoothness. *IEEE Transactions on Biomedical Engineering*, 59(8), 2126--2136.
 
+Brown, M. B., & Forsythe, A. B. (1974). Robust tests for the equality of variances. *Journal of the American Statistical Association*, 69(346), 364--367.
+
 Balasubramanian, S., Melendez-Calderon, A., Roby-Brami, A., & Burdet, E. (2015). On the analysis of movement smoothness. *Journal of NeuroEngineering and Rehabilitation*, 12(1), 112.
+
+Efron, B. (1979). Bootstrap methods: another look at the jackknife. *The Annals of Statistics*, 7(1), 1--26.
 
 Efron, B., & Tibshirani, R. J. (1993). *An Introduction to the Bootstrap*. Chapman & Hall/CRC.
 
@@ -3014,8 +3018,8 @@ The following table lists all 24 metrics used in the variance analysis, with the
 | 3 | ankle\_ROM | Kinematics | $\max\theta - \min\theta$ | degrees | $\to$ ref | NaN if <50% | Y | Y | Y |
 | 4 | pelvis\_obliquity | Kinematics | $|\text{atan2}(\Delta y, \Delta x)|$ | degrees | $\to 0$ | NaN if <50% | Y | Y | Y |
 | 5 | trunk\_lean | Kinematics | $\text{atan2}(\Delta x, \Delta y)$ | degrees | $\to 0$ | NaN if <50% | Y | Y | Y |
-| 6 | hip\_SPARC | Smoothness | $-\text{arc length}(\hat{V}_{\text{norm}})$ | unitless | $\to 0$ | NaN if FFT fails | Y | Y | Y |
-| 7 | knee\_SPARC | Smoothness | $-\text{arc length}(\hat{V}_{\text{norm}})$ | unitless | $\to 0$ | NaN if FFT fails | Y | Y | Y |
+| 6 | hip\_SPARC | Smoothness | $-\text{arc length}(\hat{V}_{\text{norm}})$ | Hz-dependent$^{\dagger}$ | $\to 0$ | NaN if FFT fails | Y | Y | Y |
+| 7 | knee\_SPARC | Smoothness | $-\text{arc length}(\hat{V}_{\text{norm}})$ | Hz-dependent$^{\dagger}$ | $\to 0$ | NaN if FFT fails | Y | Y | Y |
 | 8 | hip\_NJ | Smoothness | $\sqrt{T^5/(2A^2) \int \dddot{\theta}^2}$ | unitless | lower better | NaN if <10 frames | N | Y | Y |
 | 9 | knee\_NJ | Smoothness | $\sqrt{T^5/(2A^2) \int \dddot{\theta}^2}$ | unitless | lower better | NaN if <10 frames | N | Y | Y |
 | 10 | hip\_SI | Symmetry | $2|X_R - X_L|/(X_R + X_L)$ | % | $\to 0$ | NaN if either side missing | Y | Y | Y |
@@ -3040,7 +3044,9 @@ The following table lists all 24 metrics used in the variance analysis, with the
 - "Var": included in univariate variance analysis
 - "PCA": included in multivariate PCA/LDA (composites excluded to avoid circularity)
 
-**Domain grouping for results presentation** uses 8 categories: Kinematics (5 metrics), Smoothness (4), Symmetry (5), Coordination (2), Variability (2), Temporal (3), Upper Body (1), Composite (2). The MQS composite uses 6 weighted domains that partially overlap with these categories.
+$^{\dagger}$SPARC arc length sums terms $\sqrt{(\Delta f)^2 + (\Delta\hat{V})^2}$ where $\Delta f$ has units of Hz and $\Delta\hat{V}$ is dimensionless, making the result dependent on the frequency resolution. SPARC values are comparable only when computed with the same sampling rate and FFT parameters.
+
+**Domain grouping for results presentation** uses 8 categories: Kinematics (5 metrics), Smoothness (4), Symmetry (5), Coordination (2), Variability (2), Temporal (3), Upper Body (1), Composite (2). The MQS composite uses 6 weighted domains that partially overlap with these categories. The domain-level summary in Results uses the same 8 categories but the per-domain metric counts may differ slightly due to metrics whose domain assignment is context-dependent (e.g., normalized jerk can be classified under either Smoothness or Kinematics).
 
 ---
 
@@ -3074,7 +3080,7 @@ The rank-biserial correlation:
 
 $$r_{rb} = 1 - \frac{2U}{n_1 n_2}$$
 
-The sign depends on which group is designated as group 1 in the $U$ statistic. With group 1 = runway: positive $r_{rb}$ means runway values tend to be larger; negative means control values tend to be larger.
+The sign depends on which group is designated as group 1 in the $U$ statistic. With group 1 = runway: positive $r_{rb}$ means runway values tend to be **smaller** (lower ranks, smaller $U_1$); negative means runway values tend to be **larger** (higher ranks, larger $U_1$).
 
 SciPy's `mannwhitneyu(runway, control)` returns $U_1$, and $r_{rb} = 1 - 2U_1/(n_1 n_2)$. Verify the sign matches the intended interpretation for each metric.
 
@@ -3148,11 +3154,11 @@ SciPy's `medfilt` pads with zeros by default, which can introduce edge artifacts
 
 ### AG.2 PCHIP Endpoint Derivatives {-}
 
-PCHIP interpolation requires derivative estimates at each data point. At interior points, the Fritsch-Carlson algorithm uses a weighted harmonic mean of neighboring slopes:
+PCHIP interpolation requires derivative estimates at each data point. At interior points, the Fritsch-Carlson algorithm uses a harmonic mean of neighboring slopes:
 
 $$d_k = \begin{cases} 0 & \text{if } \delta_{k-1} \text{ and } \delta_k \text{ have different signs} \\ \dfrac{2}{\dfrac{1}{\delta_{k-1}} + \dfrac{1}{\delta_k}} & \text{otherwise} \end{cases}$$
 
-where $\delta_k = (\theta_{k+1} - \theta_k) / h_k$ is the slope of segment $k$.
+where $\delta_k = (\theta_{k+1} - \theta_k) / h_k$ is the slope of segment $k$. This is the simple harmonic mean form, which serves as the initial derivative estimate. Appendix K.5 presents the original Fritsch-Carlson (1980) weighted formula $d_k = 3(\delta_{k-1}+\delta_k) / [(\delta_{k-1}+2\delta_k)/\delta_{k-1} + (2\delta_{k-1}+\delta_k)/\delta_k]$, which is algebraically different but serves the same monotonicity-preserving purpose; SciPy's implementation uses the simple form above with subsequent monotonicity enforcement.
 
 At **endpoints**, only one neighboring slope exists. SciPy's `PchipInterpolator` uses the Fritsch-Carlson one-sided formula:
 
@@ -3162,7 +3168,7 @@ with a subsequent check to ensure monotonicity is preserved.
 
 For **non-uniform spacing** (irregular gaps from missing frames), the general weighted derivative formula with explicit $h_{k-1}$ and $h_k$ terms is:
 
-$$d_k = \frac{h_k \delta_{k-1} + h_{k-1} \delta_k}{h_{k-1} + h_k} \quad \text{(Fritsch-Butland variant)}$$
+$$d_k = \frac{h_k \delta_{k-1} + h_{k-1} \delta_k}{h_{k-1} + h_k} \quad \text{(spacing-weighted average for non-uniform grids)}$$
 
 subject to the same monotonicity constraint.
 
@@ -3287,6 +3293,8 @@ The original GDI uses PCA on a reference database of healthy gait:
 5. For a test subject, project their feature vector onto the PC space
 6. Compute the Euclidean distance from the normative mean in PC space
 7. Scale: $\text{GDI} = 100 - 10 \times d / \sigma_{\text{norm}}$, where $\sigma_{\text{norm}}$ is the SD of distances in the normative sample
+
+**Note:** This is a simplified summary for exposition. The original Schwartz & Rozumalski (2008) definition involves additional details regarding the number of retained PCs, the distance metric in truncated PC space, and the specific normalization procedure. Readers should consult the original paper for the complete specification.
 
 ### AI.2 Our Simplified GDI {-}
 
