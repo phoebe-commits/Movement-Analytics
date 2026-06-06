@@ -24,6 +24,8 @@ We hypothesize that professional runway model walks constitute a naturally low-v
 
 This paper tests this hypothesis quantitatively by extracting 24 biomechanical metrics from both runway and internet walking video using a computational pipeline, then applying rigorous statistical analysis to compare distributional properties across groups.
 
+The main paper presents the empirical comparison and its implications. The appendices (beginning on p. \pageref{sec:techref}) are included as a self-contained technical reference for readers who want to audit, reproduce, or extend the pipeline. They derive every metric, statistical test, signal-processing choice, and implementation caveat from first principles, assuming only single-variable calculus. Readers interested only in the empirical findings can stop at the References section.
+
 ---
 
 ## Methods
@@ -686,9 +688,23 @@ Winter, D. A. (2009). *Biomechanics and Motor Control of Human Movement* (4th ed
 
 ---
 
-# Appendices: Complete Mathematical Derivations {-}
+# Technical Reference: Metrics, Statistics, Signal Processing, and Implementation Details {-}
+\label{sec:techref}
 
-The following appendices provide complete mathematical derivations for every technique used in this study, starting from foundational calculus and building to the specific metrics and statistical tests. The target reader is assumed to have completed a first course in single-variable calculus (derivatives, integrals, chain rule) and basic algebra. All other mathematical machinery is derived from scratch.
+The following appendices form a self-contained technical reference for every technique used in this study. They derive metrics, statistical tests, signal-processing choices, and implementation caveats from first principles, starting from foundational calculus. The target reader is assumed to have completed a first course in single-variable calculus (derivatives, integrals, chain rule) and basic algebra. All other mathematical machinery is built up from scratch.
+
+**Reader Map**
+
+| If you want to...                         | See Appendix            |
+|-------------------------------------------|-------------------------|
+| Understand joint angle computation        | A (vectors), AC (camera geometry) |
+| Understand smoothness metrics (SPARC, NJ) | I (Fourier), L (SPARC), M (normalized jerk) |
+| Understand symmetry and coordination      | N (symmetry), O (Hilbert/CRP) |
+| Audit the statistical methods             | C--H (probability, hypothesis testing, Levene, Mann-Whitney, permutation, bootstrap), U (complex numbers), AE (test directionality) |
+| Audit PCA/LDA and small-sample limits     | P (multivariate analysis), AF (small-sample caveats) |
+| Reproduce the computational pipeline      | AD (metric inventory), AG (signal processing details), AH (gait event detection), AJ (bootstrap details) |
+| Understand MQS and GDI scoring            | T (MQS composite), AI (simplified vs. clinical GDI) |
+| Check notation                            | AK (notation index)     |
 
 ---
 
