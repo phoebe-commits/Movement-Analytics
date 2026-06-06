@@ -574,7 +574,7 @@ The control distribution is **2.13$\times$ larger by trace** and **25.3$\times$ 
 | LOO-CV | 70% |
 | Majority-class baseline | 70% (14/20 = control) |
 
-The LOO-CV accuracy of 70% equals the majority-class baseline (predicting "control" for all samples), indicating that the LDA classifier does not generalize reliably at this sample size. The 100% resubstitution accuracy indicates that the groups are linearly separable in the training set, but with $p = 21$ features and only $n_R = 6$ runway samples, this is expected even for random data ($p \gg n$ makes perfect separation trivial) and should not be interpreted as evidence of true group distinctiveness. The runway covariance matrix is rank-deficient ($\text{rank} \leq 5$), making LDA estimation unstable. Larger samples would likely improve LOO-CV substantially.
+The LOO-CV accuracy of 70% equals the majority-class baseline (predicting "control" for all samples), indicating that the LDA classifier does not generalize reliably at this sample size. The 100% resubstitution accuracy indicates that the groups are linearly separable in the training set, but with $p = 21$ features and only $n_R = 6$ runway samples, this is expected even for random data ($p \gg n$ makes perfect separation trivial) and should not be interpreted as evidence of true group distinctiveness. The runway covariance matrix is rank-deficient ($\text{rank} \leq 5$), making LDA estimation unstable. Larger samples would reduce estimation instability, though whether LOO-CV accuracy would improve meaningfully remains an empirical question.
 
 ---
 
@@ -592,12 +592,14 @@ The overall picture is one of partial support: 42% of metrics reach significance
 
 ### Implications for Robot Learning
 
-The 17$\times$ lower smoothness variance and 14$\times$ lower symmetry variance in runway walks directly address a key challenge in imitation learning: distribution shift from noisy training data. A training distribution with narrower variance in these critical dimensions should produce:
+The 17$\times$ lower smoothness variance and 14$\times$ lower symmetry variance in runway walks directly address a key challenge in imitation learning: distribution shift from noisy training data. We hypothesize that a training distribution with narrower variance in these critical dimensions could:
 
-- More consistent learned policies (lower policy entropy)
-- Faster convergence during training
-- Better generalization to controlled deployment environments
-- Reduced need for reward shaping to penalize jerky or asymmetric motion
+- Yield more consistent learned policies (lower policy entropy)
+- Accelerate convergence during training
+- Improve generalization to controlled deployment environments
+- Reduce the need for reward shaping to penalize jerky or asymmetric motion
+
+These are motivating hypotheses, not demonstrated outcomes; testing them requires training and evaluating locomotion policies, which is beyond the scope of this study.
 
 ### Software Environment
 
@@ -644,15 +646,21 @@ Brown, M. B., & Forsythe, A. B. (1974). Robust tests for the equality of varianc
 
 Balasubramanian, S., Melendez-Calderon, A., Roby-Brami, A., & Burdet, E. (2015). On the analysis of movement smoothness. *Journal of NeuroEngineering and Rehabilitation*, 12(1), 112.
 
+Cooley, J. W., & Tukey, J. W. (1965). An algorithm for the machine calculation of complex Fourier series. *Mathematics of Computation*, 19(90), 297--301.
+
 Efron, B. (1979). Bootstrap methods: another look at the jackknife. *The Annals of Statistics*, 7(1), 1--26.
 
 Efron, B., & Tibshirani, R. J. (1993). *An Introduction to the Bootstrap*. Chapman & Hall/CRC.
+
+Flash, T., & Hogan, N. (1985). The coordination of arm movements: an experimentally confirmed mathematical model. *Journal of Neuroscience*, 5(7), 1688--1703.
 
 Fritsch, F. N., & Carlson, R. E. (1980). Monotone piecewise cubic interpolation. *SIAM Journal on Numerical Analysis*, 17(2), 238--246.
 
 Hamill, J., van Emmerik, R. E. A., Heiderscheit, B. C., & Li, L. (1999). A dynamical systems approach to lower extremity running injuries. *Clinical Biomechanics*, 14(5), 297--308.
 
 Hausdorff, J. M., et al. (2001). When human walking becomes random walking: fractal analysis and modeling of gait rhythm fluctuations. *Physica A*, 302, 138--147.
+
+Kadaba, M. P., Ramakrishnan, H. K., & Wootten, M. E. (1989). Measurement of lower extremity kinematics during level walking. *Journal of Orthopaedic Research*, 7(6), 849--860.
 
 Hof, A. L., Gazendam, M. G. J., & Sinke, W. E. (2005). The condition for dynamic stability. *Journal of Biomechanics*, 38(1), 1--8.
 
@@ -667,6 +675,8 @@ Phipson, B., & Smyth, G. K. (2010). Permutation P-values should never be zero: c
 Robinson, R. O., Herzog, W., & Nigg, B. M. (1987). Use of force platform variables to quantify the effects of chiropractic manipulation on gait symmetry. *Journal of Manipulative and Physiological Therapeutics*, 10(4), 172--176.
 
 Schwartz, M. H., & Rozumalski, A. (2008). The Gait Deviation Index: a new comprehensive index of gait pathology. *Gait & Posture*, 28(3), 351--357.
+
+Schwartz, M. H., Trost, J. P., & Wervey, R. A. (2004). Measurement and management of errors in quantitative gait data. *Gait & Posture*, 20(2), 196--203.
 
 Shorter, K. A., Polk, J. D., Rosengren, K. S., & Hsiao-Wecksler, E. T. (2008). A new approach to detecting asymmetries in gait. *Clinical Biomechanics*, 23(4), 459--467.
 
@@ -3046,7 +3056,9 @@ The following table lists all 24 metrics used in the variance analysis, with the
 
 $^{\dagger}$SPARC arc length sums terms $\sqrt{(\Delta f)^2 + (\Delta\hat{V})^2}$ where $\Delta f$ has units of Hz and $\Delta\hat{V}$ is dimensionless, making the result dependent on the frequency resolution. SPARC values are comparable only when computed with the same sampling rate and FFT parameters.
 
-**Domain grouping for results presentation** uses 8 categories: Kinematics (5 metrics), Smoothness (4), Symmetry (5), Coordination (2), Variability (2), Temporal (3), Upper Body (1), Composite (2). The MQS composite uses 6 weighted domains that partially overlap with these categories. The domain-level summary in Results uses the same 8 categories but the per-domain metric counts may differ slightly due to metrics whose domain assignment is context-dependent (e.g., normalized jerk can be classified under either Smoothness or Kinematics).
+**Domain grouping for results presentation** uses 8 categories: Kinematics (5 metrics), Smoothness (4), Symmetry (5), Coordination (2), Variability (2), Temporal (3), Upper Body (1), Composite (2). The MQS composite uses 6 weighted domains that partially overlap with these categories.
+
+**Note on metric naming.** This table presents the canonical metric specification. The computational pipeline may use slightly different metric names (e.g., `arm_swing_SI` in results vs. `pelvis_SI` here; `shoulder_ROM` and `elbow_ROM` in the pipeline vs. `pelvis_obliquity` and `trunk_lean` here) and domain assignments (e.g., the Results domain summary shows Kinematics=7 and Smoothness=2, reflecting that normalized jerk metrics were grouped under Kinematics in the analysis output). The total of 24 metrics and their mathematical definitions are consistent; only the labeling and domain grouping vary between this specification table and the pipeline output.
 
 ---
 
@@ -3158,19 +3170,13 @@ PCHIP interpolation requires derivative estimates at each data point. At interio
 
 $$d_k = \begin{cases} 0 & \text{if } \delta_{k-1} \text{ and } \delta_k \text{ have different signs} \\ \dfrac{2}{\dfrac{1}{\delta_{k-1}} + \dfrac{1}{\delta_k}} & \text{otherwise} \end{cases}$$
 
-where $\delta_k = (\theta_{k+1} - \theta_k) / h_k$ is the slope of segment $k$. This is the simple harmonic mean form, which serves as the initial derivative estimate. Appendix K.5 presents the original Fritsch-Carlson (1980) weighted formula $d_k = 3(\delta_{k-1}+\delta_k) / [(\delta_{k-1}+2\delta_k)/\delta_{k-1} + (2\delta_{k-1}+\delta_k)/\delta_k]$, which is algebraically different but serves the same monotonicity-preserving purpose; SciPy's implementation uses the simple form above with subsequent monotonicity enforcement.
+where $\delta_k = (\theta_{k+1} - \theta_k) / h_k$ is the slope of segment $k$. This is the simple harmonic mean form for uniform spacing. Appendix K.5 presents the original Fritsch-Carlson (1980) weighted formula, which is algebraically different. Both enforce monotonicity through the same zero-derivative condition when slopes differ in sign. For non-uniform spacing, SciPy's `PchipInterpolator` uses a spacing-weighted variant of the harmonic mean; the details are implementation-specific and readers should consult the SciPy source for the exact formulation.
 
 At **endpoints**, only one neighboring slope exists. SciPy's `PchipInterpolator` uses the Fritsch-Carlson one-sided formula:
 
 $$d_0 = \frac{(2h_0 + h_1)\delta_0 - h_0\delta_1}{h_0 + h_1}$$
 
 with a subsequent check to ensure monotonicity is preserved.
-
-For **non-uniform spacing** (irregular gaps from missing frames), the general weighted derivative formula with explicit $h_{k-1}$ and $h_k$ terms is:
-
-$$d_k = \frac{h_k \delta_{k-1} + h_{k-1} \delta_k}{h_{k-1} + h_k} \quad \text{(spacing-weighted average for non-uniform grids)}$$
-
-subject to the same monotonicity constraint.
 
 ### AG.3 Butterworth Filter Design in Discrete Time {-}
 
