@@ -6,7 +6,7 @@ date: "2026"
 
 ## Abstract {-}
 
-We present a quantitative analysis comparing the kinematic variance of professional runway model walks against representative internet walking video. Using a computational pipeline that extracts 24 biomechanical metrics from monocular video via MediaPipe pose estimation, we test the hypothesis that runway walks exhibit significantly lower kinematic variance across movement quality domains. Our analysis of 22 runway videos and 17 control internet walking videos reveals that control walking data exhibits 2.56$\times$ higher median variance (Levene's test), with 10 of 24 metrics showing statistically significant differences ($p < 0.05$), all in the hypothesized direction. The strongest effects appear in movement smoothness (17$\times$) and bilateral symmetry (14$\times$), while coordination (1.3$\times$) and temporal parameters (1.7$\times$) show smaller differences. Three of 24 metrics show the reverse direction (higher runway variance), though none significantly. Multivariate analysis via PCA confirms runway walks occupy a 2.13$\times$ tighter region in kinematic feature space (25$\times$ by volume), though the multivariate analysis is limited by small complete-case sample sizes ($n = 20$). These findings provide partial but directionally consistent support for the thesis that professional runway walking constitutes a low-variance, high-quality kinematic distribution suitable as a training foundation for robotic movement learning.
+We present a quantitative analysis comparing the kinematic variance of professional runway model walks against heterogeneous control internet walking video. Using a computational pipeline that extracts 24 biomechanical metrics from monocular video via MediaPipe pose estimation, we test the hypothesis that runway walks exhibit significantly lower kinematic variance across movement quality domains. Our analysis of 22 runway videos and 17 control internet walking videos reveals that control walking data exhibits 2.56$\times$ higher median variance (Levene's test), with 10 of 24 metrics showing statistically significant differences ($p < 0.05$), all in the hypothesized direction. The strongest effects appear in movement smoothness (17$\times$) and bilateral symmetry (14$\times$), while coordination (1.3$\times$) and temporal parameters (1.7$\times$) show smaller differences. Three of 24 metrics show the reverse direction (higher runway variance), though none significantly. Multivariate analysis via PCA confirms runway walks occupy a 2.13$\times$ tighter region in kinematic feature space ($\sim$5$\times$ by volume, 25$\times$ by generalized variance), though the multivariate analysis is limited by small complete-case sample sizes ($n = 20$). These findings provide partial but directionally consistent support for the thesis that professional runway walking constitutes a low-variance, high-quality kinematic distribution suitable as a training foundation for robotic movement learning.
 
 **Keywords:** gait analysis, kinematic variance, movement quality, pose estimation, robot learning, biomechanics
 
@@ -112,7 +112,9 @@ This filter removes spikes up to 2 frames wide. It operates only on contiguous n
 
 **Stage 3: PCHIP interpolation.** Gaps (NaN sequences from occlusions or outlier rejection) are filled using Piecewise Cubic Hermite Interpolating Polynomial (PCHIP) interpolation. Given observed values at indices $\{t_k, \theta_k\}$, PCHIP constructs a $C^1$-continuous piecewise cubic:
 
-$$\hat{\theta}(t) = \sum_{k} \theta_k H_{00}\left(\frac{t - t_k}{t_{k+1} - t_k}\right) + h_k d_k H_{10}\left(\frac{t - t_k}{t_{k+1} - t_k}\right) + \theta_{k+1} H_{01}\left(\frac{t - t_k}{t_{k+1} - t_k}\right) + h_k d_{k+1} H_{11}\left(\frac{t - t_k}{t_{k+1} - t_k}\right)$$
+On each interval $[t_k, t_{k+1}]$, with $s = (t - t_k)/h_k$:
+
+$$\hat{\theta}(t) = \theta_k H_{00}(s) + h_k d_k H_{10}(s) + \theta_{k+1} H_{01}(s) + h_k d_{k+1} H_{11}(s)$$
 
 where $H_{ij}$ are the cubic Hermite basis functions, $h_k = t_{k+1} - t_k$, and $d_k$ are the monotonicity-preserving derivatives (Fritsch & Carlson, 1980). PCHIP avoids the Runge oscillation artifacts of standard cubic spline interpolation.
 
@@ -122,9 +124,9 @@ For signals with >50% missing data, we fall back to linear interpolation.
 
 **Stage 5: Confidence-adaptive Butterworth smoothing.** A two-pass low-pass Butterworth filter suppresses remaining high-frequency noise:
 
-$$H(s) = \frac{1}{\sqrt{1 + \left(\frac{s}{\omega_c}\right)^{2n}}}$$
+$$|H(j\omega)|^2 = \frac{1}{1 + \left(\frac{\omega}{\omega_c}\right)^{2n}}$$
 
-where $n = 2$ (filter order) and $\omega_c$ is the cutoff frequency. We apply `filtfilt` (zero-phase forward-backward filtering) for zero phase distortion:
+where $n = 2$ (filter order) and $\omega_c$ is the cutoff angular frequency. We apply `filtfilt` (zero-phase forward-backward filtering) for zero phase distortion:
 
 - **Pass 1 (low-confidence frames):** For frames where MediaPipe confidence $v_t < 0.7$, apply aggressive cutoff $f_c = 3$ Hz
 - **Pass 2 (all frames):** Standard cutoff $f_c = 6$ Hz across the full signal
@@ -167,7 +169,7 @@ where $K$ is the number of frequency bins up to $f_c^{\text{adapt}}$, and $f_k$ 
 
 SPARC is always negative; values closer to zero indicate smoother movement. Smooth movements have compact frequency spectra (short arc length); jerky movements spread energy across frequencies (long arc length). For healthy gait: SPARC $\approx -1.5$ to $-1.7$ for hip velocity.
 
-Note: The original Balasubramanian et al. (2012) formulation uses a continuous integral with a frequency normalization factor $(1/f_c)^2$. Our implementation follows the discrete unnormalized form, which preserves the relative ordering of smoothness values and is equivalent for within-study comparisons.
+Note: The original Balasubramanian et al. (2012) formulation uses a continuous integral with a frequency normalization factor $(1/f_c)^2$. Our implementation follows the discrete unnormalized form, which is an implementation variant that may change absolute values and can alter ordering when adaptive cutoffs differ across signals. Within-study relative comparisons remain valid as long as groups share similar frequency content ranges.
 
 #### Normalized Jerk (NJ)
 
@@ -219,11 +221,11 @@ where $\mathcal{H}$ denotes the Hilbert transform:
 
 $$\mathcal{H}\{x(t)\} = \frac{1}{\pi} \text{P.V.} \int_{-\infty}^{\infty} \frac{x(\tau)}{t - \tau} d\tau$$
 
-3. Extract instantaneous phase: $\phi_a(t) = \arg(z_a(t)) = \arctan\frac{\text{Im}(z_a)}{\text{Re}(z_a)}$
+3. Extract instantaneous phase: $\phi_a(t) = \text{atan2}(\text{Im}(z_a), \text{Re}(z_a))$
 
 4. Compute the continuous relative phase:
 
-$$\text{CRP}(t) = \phi_a(t) - \phi_b(t) \pmod{360°} - 180°$$
+$$\text{CRP}(t) = ((\phi_a(t) - \phi_b(t) + 180°) \bmod 360°) - 180°$$
 
 **CRP consistency** is quantified via the circular standard deviation of the CRP signal, using the mean resultant length $R$:
 
@@ -262,7 +264,7 @@ where $\sigma$ and $\mu$ are the standard deviation and mean of the stride inter
 
 Our simplified GDI (after Schwartz & Rozumalski, 2008) compares stride-normalized joint angle waveforms against a normal reference:
 
-1. Segment gait cycles using detected heel strikes $\{HS_1, HS_2, \ldots, HS_n\}$
+1. Segment gait cycles using detected heel strikes $\{HS_1, HS_2, \ldots, HS_{n+1}\}$, yielding $n$ complete strides (requiring at least 3 heel strikes for 2 strides)
 
 2. Normalize each stride to 101 points via linear interpolation:
 
@@ -276,11 +278,13 @@ $$d_j^{(i)} = \sqrt{\frac{1}{101}\sum_{p=0}^{100}\left(\theta_{\text{norm},j}^{(
 
 $$\bar{d} = \frac{1}{n \cdot |\mathcal{J}|} \sum_{i=1}^{n} \sum_{j \in \mathcal{J}} d_j^{(i)}$$
 
-5. Convert to GDI score (100 = normal, decreasing with deviation):
+5. Convert to GDI score (100 = normal, decreasing with deviation), clipped at 0:
 
-$$\text{GDI} = 100 - \frac{\bar{d}}{5°} \times 10$$
+$$\text{GDI} = \max\left(0, \; 100 - \frac{\bar{d}}{5°} \times 10\right)$$
 
-Each 5° RMS deviation reduces GDI by approximately 10 points. The 5° constant is calibrated to approximate the standard deviation of normal gait variability in clinical gait lab data: healthy subjects typically show ~5° RMS deviation from the mean waveform across repeated trials, so each additional SD of deviation reduces the score by 10 points. This is a simplified adaptation of the original Schwartz & Rozumalski (2008) GDI, which uses PCA on 9 kinematic features from clinical datasets; our version uses direct RMS comparison against a synthetic normal reference.
+6. Average bilateral scores: $\text{GDI} = (\text{GDI}_L + \text{GDI}_R) / 2$
+
+Each 5° RMS deviation reduces GDI by approximately 10 points. The 5° constant is calibrated to approximate the standard deviation of normal gait variability in clinical gait lab data: healthy subjects typically show ~5° RMS deviation from the mean waveform across repeated trials, so each additional SD of deviation reduces the score by 10 points. This is a simplified adaptation of the original Schwartz & Rozumalski (2008) GDI, which uses PCA on 9 kinematic features from clinical datasets; our version uses direct RMS comparison against a synthetic normal reference (see Appendix AI for a detailed comparison).
 
 #### Gait Event Detection
 
@@ -328,10 +332,11 @@ where the domain weights $w_d$ sum to 1:
 Each domain score $S_d$ is the mean of its constituent signal scores. Individual signal scores are computed by mapping metric values to [0, 100] via piecewise linear transfer functions anchored to clinical reference ranges:
 
 $$S_{\text{signal}}(v) = \begin{cases}
+0 & \text{if } v \leq v_{\text{worst,lo}} \\
+100 \cdot \dfrac{v - v_{\text{worst,lo}}}{v_{\text{opt,lo}} - v_{\text{worst,lo}}} & \text{if } v_{\text{worst,lo}} < v < v_{\text{opt,lo}} \\
 100 & \text{if } v_{\text{opt,lo}} \leq v \leq v_{\text{opt,hi}} \\
-100 \cdot \dfrac{v - v_{\text{worst,lo}}}{v_{\text{opt,lo}} - v_{\text{worst,lo}}} & \text{if } v < v_{\text{opt,lo}} \\
-100 \cdot \dfrac{v_{\text{worst,hi}} - v}{v_{\text{worst,hi}} - v_{\text{opt,hi}}} & \text{if } v > v_{\text{opt,hi}} \\
-0 & \text{if } v \leq v_{\text{worst,lo}} \text{ or } v \geq v_{\text{worst,hi}}
+100 \cdot \dfrac{v_{\text{worst,hi}} - v}{v_{\text{worst,hi}} - v_{\text{opt,hi}}} & \text{if } v_{\text{opt,hi}} < v < v_{\text{worst,hi}} \\
+0 & \text{if } v \geq v_{\text{worst,hi}}
 \end{cases}$$
 
 Reference ranges are sourced from Perry & Burnfield (2010), Winter (2009), Balasubramanian et al. (2012), Hausdorff et al. (2001), and Hamill et al. (1999).
@@ -356,9 +361,9 @@ We apply four layers of statistical testing to compare variance between groups, 
 
 For each metric $m$, we test $H_0$: $\sigma^2_{\text{runway}} = \sigma^2_{\text{control}}$ using Levene's test (Levene, 1960). Given two groups of sizes $n_1$ and $n_2$, define:
 
-$$Z_{ij} = |X_{ij} - \bar{X}_{i\cdot}|$$
+$$Z_{ij} = |X_{ij} - \tilde{X}_{i}|$$
 
-where $\bar{X}_{i\cdot}$ is the group mean (or median, for the Brown-Forsythe variant). The test statistic is:
+where $\tilde{X}_i$ is the group median. Our implementation uses SciPy's `levene` with its default `center='median'`, which is technically the **Brown-Forsythe variant** — more robust to non-normality than the original mean-centered Levene's test. We follow the common convention of referring to this as "Levene's test" throughout. The test statistic is:
 
 $$W = \frac{(N - k)}{(k - 1)} \cdot \frac{\sum_{i=1}^{k} n_i (\bar{Z}_{i\cdot} - \bar{Z}_{\cdot\cdot})^2}{\sum_{i=1}^{k} \sum_{j=1}^{n_i} (Z_{ij} - \bar{Z}_{i\cdot})^2}$$
 
@@ -372,13 +377,13 @@ where $s^2 = \frac{1}{n-1}\sum(x_i - \bar{x})^2$ is the sample variance with Bes
 
 #### Mann-Whitney U Test
 
-For group mean comparison, we use the non-parametric Mann-Whitney U test (Mann & Whitney, 1947), which does not assume normality:
+For group distributional comparison, we use the non-parametric Mann-Whitney U test (Mann & Whitney, 1947), which tests stochastic ordering without assuming normality:
 
-$$U = n_1 n_2 + \frac{n_1(n_1+1)}{2} - R_1$$
+$$U_1 = R_1 - \frac{n_1(n_1+1)}{2}$$
 
-where $R_1$ is the sum of ranks for group 1 in the combined ranked sample. The effect size is reported as:
+where $R_1$ is the sum of ranks for group 1 in the combined ranked sample. $U_1$ counts the number of $(i,j)$ pairs where observation $i$ from group 1 exceeds observation $j$ from group 2. The effect size is reported as:
 
-**Cohen's d** (standardized mean difference):
+**Cohen's d** (standardized mean difference, using unweighted pooled SD):
 
 $$d = \frac{\bar{X}_{\text{runway}} - \bar{X}_{\text{control}}}{s_{\text{pooled}}}, \quad s_{\text{pooled}} = \sqrt{\frac{s_1^2 + s_2^2}{2}}$$
 
@@ -388,7 +393,7 @@ $$r_{rb} = 1 - \frac{2U}{n_1 n_2}$$
 
 #### Permutation Tests
 
-To validate variance ratio significance without distributional assumptions, we use permutation testing with 10,000 iterations. For each metric:
+To validate variance ratio significance without distributional assumptions, we use one-sided permutation testing with 10,000 iterations (testing $H_1$: control variance > runway variance). For each metric:
 
 1. Compute observed variance ratio: $R_{\text{obs}} = s^2_{\text{control}} / s^2_{\text{runway}}$
 
@@ -412,7 +417,7 @@ We construct 95% confidence intervals on the variance ratio using the percentile
 
 2. Compute percentile CI: $[\hat{R}_{0.025}^*, \hat{R}_{0.975}^*]$
 
-3. Compute posterior probability: $P(R > 1) = \frac{1}{B}\sum_{b=1}^{B} \mathbb{1}[R_b^* > 1]$
+3. Compute bootstrap proportion: $\hat{P}(R > 1) = \frac{1}{B}\sum_{b=1}^{B} \mathbb{1}[R_b^* > 1]$
 
 #### Multiple Comparison Correction
 
@@ -554,10 +559,10 @@ PCA on 21 standardized features (complete cases: 6 runway, 14 control) reveals:
 | Metric | Runway | Control | Ratio |
 |--------|--------|---------|-------|
 | Trace (total variance) | 6.34 | 13.48 | 2.13$\times$ |
-| Determinant (volume) | — | — | 25.3$\times$ |
+| Determinant (generalized variance) | — | — | 25.3$\times$ |
 | Mean centroid distance | 2.20 | 3.34 | 1.52$\times$ |
 
-The control distribution is **2.13$\times$ larger by trace** and **25$\times$ larger by volume** in 3D PC space, confirming that runway walks cluster tightly while control videos scatter across the kinematic feature space.
+The control distribution is **2.13$\times$ larger by trace** and **25.3$\times$ larger by generalized variance** (determinant ratio) in 3D PC space. Since ellipsoid volume scales as $\sqrt{\det(\mathbf{C})}$, this corresponds to approximately $\sqrt{25.3} \approx 5.0\times$ larger by volume. Both measures confirm that runway walks cluster tightly while control videos scatter across the kinematic feature space.
 
 **Caveat:** With only 6 runway samples in 21-dimensional feature space ($p \gg n_R$), the runway covariance matrix is rank-deficient ($\text{rank} \leq 5$). The trace and determinant ratios should be interpreted as lower bounds on the true spread difference — the runway distribution may be even tighter than estimated, since 21-dimensional structure cannot be reliably estimated from 6 samples. The PCA projection to 3 components mitigates this partially, but the runway covariance in PC space remains estimated from only 6 points. Additionally, 3 PCs explain only 65.7% of total variance; the remaining 34.3% could contain additional group differences not captured here.
 
@@ -623,7 +628,7 @@ Analysis performed with Python 3.12, MediaPipe 0.10.x (PoseLandmarker heavy mode
 
 ## Conclusion
 
-This study provides quantitative evidence that professional runway model walks constitute a low-variance, high-quality kinematic distribution compared to general internet walking video. Across 24 biomechanical metrics spanning 6 movement quality domains, runway walks show **2.56$\times$ lower median variance**, with the strongest effects in movement smoothness ($17\times$) and bilateral symmetry ($14\times$). In multivariate kinematic feature space, runway walks occupy a region **25$\times$ smaller by volume**. All statistically significant differences favor the hypothesized direction with zero counter-evidence.
+This study provides quantitative evidence that professional runway model walks constitute a low-variance, high-quality kinematic distribution compared to general internet walking video. Across 24 biomechanical metrics spanning 6 movement quality domains, runway walks show **2.56$\times$ lower median variance**, with the strongest effects in movement smoothness ($17\times$) and bilateral symmetry ($14\times$). In multivariate kinematic feature space, runway walks occupy a region **$\sim$5$\times$ smaller by volume** ($25\times$ by generalized variance). All 10 statistically significant differences favor the hypothesized direction; 3 of 24 metrics show the reverse direction (higher runway variance), though none reach significance.
 
 These findings support the use of runway walking data as a curated, low-entropy training foundation for robotic movement learning systems.
 
@@ -780,9 +785,11 @@ $$\theta = \arccos\left(\frac{(\mathbf{A} - \mathbf{B}) \cdot (\mathbf{C} - \mat
 
 **Domain and range.** The arccos function is defined on $[-1, 1]$ and returns values in $[0, \pi]$ radians (or $[0°, 180°]$). This means:
 
-- $\theta = 0°$: vectors point in the same direction (fully extended limb)
-- $\theta = 90°$: vectors are perpendicular
-- $\theta = 180°$: vectors point in opposite directions (fully flexed limb)
+- $\theta = 0°$: vectors point in the same direction (limb fully flexed — proximal and distal segments folded together)
+- $\theta = 90°$: vectors are perpendicular (right-angle bend)
+- $\theta = 180°$: vectors point in opposite directions (limb fully extended — segments form a straight line)
+
+This is the **included angle**, not the flexion angle. The flexion angle convention used in the main text (Section 2.3) applies the transform $\theta_{\text{flex}} = 180° - \theta$, so that 0° = full extension and increasing values indicate flexion. See Appendix A.6 for the derivation.
 
 **Numerical stability.** Due to floating-point arithmetic, the argument to arccos can occasionally fall slightly outside $[-1, 1]$. The implementation clamps the value: $\theta = \arccos(\text{clip}(\cos\theta, -1, 1))$.
 
@@ -1233,7 +1240,7 @@ where $A_i$ is the event of rejecting $H_{0,i}$ when it's true.
 
 For our study: $\alpha_{\text{Bonf}} = 0.05 / 24 \approx 0.0021$.
 
-**Note on conservatism.** Bonferroni assumes all tests are independent. When tests are correlated (as ours are — many metrics derive from the same underlying signals), Bonferroni is overly conservative. The effective number of independent tests $m_{\text{eff}} < m$ could be estimated from the eigenvalues of the correlation matrix, but we use the conservative Bonferroni bound and report both corrected and uncorrected results.
+**Note on conservatism.** The Boole-Bonferroni inequality holds regardless of dependence structure — it does not assume independence. When tests are positively correlated (as ours are — many metrics derive from the same underlying signals), Bonferroni is overly conservative because the union probability is smaller than the sum of individual probabilities. The effective number of independent tests $m_{\text{eff}} < m$ could be estimated from the eigenvalues of the inter-metric correlation matrix, but we use the conservative Bonferroni bound and report both corrected and uncorrected results.
 
 ---
 
@@ -1326,9 +1333,9 @@ $H_1$: One group tends to produce larger values than the other.
 
 ### F.3 The U Statistic {-}
 
-$$U_1 = n_1 n_2 + \frac{n_1(n_1 + 1)}{2} - R_1$$
+$$U_1 = R_1 - \frac{n_1(n_1 + 1)}{2}$$
 
-**Derivation.** The minimum possible rank sum for group 1 (if all its values are smallest) is $R_1^{\min} = 1 + 2 + \cdots + n_1 = \frac{n_1(n_1+1)}{2}$. The quantity $R_1 - R_1^{\min}$ counts how many group-2 values fall below group-1 values. Adding $n_1 n_2$ and subtracting gives the complementary count.
+**Derivation.** The minimum possible rank sum for group 1 (if all its values are smallest) is $R_1^{\min} = 1 + 2 + \cdots + n_1 = \frac{n_1(n_1+1)}{2}$. The quantity $U_1 = R_1 - R_1^{\min}$ counts the number of pairs where a group-1 value exceeds a group-2 value.
 
 Equivalently, $U_1$ equals the number of pairs $(x_{1i}, x_{2j})$ where $x_{1i} > x_{2j}$:
 
@@ -1348,9 +1355,11 @@ $$Z = \frac{U - n_1 n_2 / 2}{\sqrt{n_1 n_2 (n_1 + n_2 + 1) / 12}}$$
 
 $$d = \frac{\bar{X}_1 - \bar{X}_2}{s_{\text{pooled}}}$$
 
-where the pooled standard deviation is:
+where the pooled standard deviation uses the unweighted average of group variances:
 
 $$s_{\text{pooled}} = \sqrt{\frac{s_1^2 + s_2^2}{2}}$$
+
+This differs from the weighted pooled SD $s_p = \sqrt{((n_1-1)s_1^2 + (n_2-1)s_2^2)/(n_1+n_2-2)}$, which assumes equal population variances. We use the unweighted version because our hypothesis is precisely that the population variances differ (see Appendix AE.2 for discussion).
 
 Interpretation: $|d| < 0.2$ small, $0.2$--$0.8$ medium, $>0.8$ large.
 
@@ -1372,7 +1381,7 @@ Under $H_0$, the group labels are irrelevant — any assignment of observations 
 
 For a total of $N = n_1 + n_2$ observations, there are $\binom{N}{n_1}$ possible ways to assign $n_1$ observations to group 1. Each assignment defines a permuted test statistic.
 
-For our sample sizes ($n_1 = 22$, $n_2 = 17$): $\binom{39}{22} = 17{,}383{,}860$ — too many for exact enumeration. We use Monte Carlo approximation.
+For our sample sizes ($n_1 = 22$, $n_2 = 17$): $\binom{39}{22} = 51{,}021{,}117{,}810$ — far too many for exact enumeration. We use Monte Carlo approximation.
 
 ### G.3 Monte Carlo Approximation {-}
 
@@ -1401,7 +1410,7 @@ includes the observed statistic as one of the permutations (since the observed l
 
 - The minimum p-value is $1/(B+1)$ (not 0)
 - The estimator is uniformly distributed on $\{1/(B+1), 2/(B+1), \ldots, 1\}$ under $H_0$
-- The test has exact Type I error control
+- The test has valid (conservative) Type I error control for Monte Carlo permutations; exact control holds only for full enumeration
 
 ---
 
@@ -1446,9 +1455,9 @@ where $\hat{R}^*_{(q)}$ is the $q$-th quantile of the bootstrap distribution.
 
 For a 95% CI: $[\hat{R}^*_{(0.025)}, \; \hat{R}^*_{(0.975)}]$
 
-3. **Posterior probability** that the variance ratio exceeds 1:
+3. **Bootstrap proportion** (frequentist, not a Bayesian posterior) that the variance ratio exceeds 1:
 
-$$P(R > 1) = \frac{1}{B}\sum_{b=1}^{B} \mathbb{1}[R_b^* > 1]$$
+$$\hat{P}(R > 1) = \frac{1}{B}\sum_{b=1}^{B} \mathbb{1}[R_b^* > 1]$$
 
 ### H.5 Why Percentile Bootstrap Works {-}
 
@@ -1526,7 +1535,7 @@ The frequency $f_{\text{Nyquist}} = f_s / 2$ is the **Nyquist frequency** — th
 
 For a 30 fps video: $f_{\text{Nyquist}} = 15$ Hz. This is sufficient for gait analysis since human walking involves frequencies primarily below 6 Hz.
 
-**Aliasing.** If a signal contains frequencies above $f_{\text{Nyquist}}$, these fold back into the representable range, creating artifacts. The Butterworth low-pass filter prevents aliasing by removing high-frequency components before analysis.
+**Aliasing.** If a signal contains frequencies above $f_{\text{Nyquist}}$, these fold back into the representable range, creating artifacts. True aliasing prevention requires anti-alias filtering *before* sampling; our Butterworth low-pass filter attenuates high-frequency noise in the already-sampled signal but cannot undo aliasing that occurred during digitization.
 
 ### I.6 The Amplitude Spectrum and Normalization {-}
 
@@ -1593,7 +1602,7 @@ A standard digital filter introduces a **phase delay** — the output is shifted
 
 The forward pass introduces phase $\phi(\omega)$; the backward pass introduces $-\phi(\omega)$. The net phase is zero.
 
-The effective magnitude response is squared: $|H_{\text{eff}}|^2 = |H|^4$ for an $n$-th order filter. With our $n = 2$, this gives the equivalent of a 4th-order filter with zero phase.
+The effective magnitude response is $|H_{\text{eff}}(\omega)| = |H(\omega)|^2$ (squared, not just the single-pass response). Equivalently, $|H_{\text{eff}}|^2 = |H|^4$. With our $n = 2$ Butterworth, this gives the rolloff equivalent of a 4th-order filter with zero phase distortion.
 
 ### J.5 Median Filtering {-}
 
@@ -1739,7 +1748,7 @@ The original formulation uses a continuous integral with frequency normalization
 
 $$\text{SPARC}_{\text{orig}} = -\int_0^{f_c} \sqrt{\left(\frac{1}{f_c}\right)^2 + \left(\frac{d\hat{V}_{\text{norm}}}{df}\right)^2} \, df$$
 
-Our discrete implementation omits the $(1/f_c)^2$ normalization factor. Since $f_c$ is computed per-signal (adaptive cutoff), the normalization would make SPARC values difficult to compare across signals with different cutoff frequencies. Our form preserves relative ordering within the study.
+Our discrete implementation omits the $(1/f_c)^2$ normalization factor. Since $f_c$ is computed per-signal (adaptive cutoff), the normalization would make SPARC values difficult to compare across signals with different cutoff frequencies. As noted in the main text, this is an implementation variant that may alter ordering when adaptive cutoffs differ substantially between signals; within-study relative comparisons remain valid when groups share similar frequency content ranges.
 
 ---
 
@@ -1897,7 +1906,9 @@ $$z(t) = A\cos(\omega t + \phi) + jA\sin(\omega t + \phi) = Ae^{j(\omega t + \ph
 
 The **instantaneous phase** is the argument (angle) of the analytic signal:
 
-$$\phi(t) = \arg(z(t)) = \arctan\frac{\text{Im}(z(t))}{\text{Re}(z(t))} = \arctan\frac{\mathcal{H}\{x(t)\}}{x(t)}$$
+$$\phi(t) = \arg(z(t)) = \text{atan2}(\text{Im}(z(t)),\; \text{Re}(z(t))) = \text{atan2}(\mathcal{H}\{x(t)\},\; x(t))$$
+
+The four-quadrant $\text{atan2}$ function is essential here; the two-argument form preserves quadrant information that single-argument $\arctan$ would lose.
 
 For the sinusoidal example: $\phi(t) = \omega t + \phi_0$, which linearly increases with time. For more complex signals, $\phi(t)$ captures the local oscillatory phase.
 
@@ -1917,9 +1928,9 @@ For two oscillating joint angle signals $\theta_a(t)$ and $\theta_b(t)$:
 
 4. Compute relative phase:
 
-$$\text{CRP}(t) = \phi_a(t) - \phi_b(t) \pmod{360°} - 180°$$
+$$\text{CRP}(t) = ((\phi_a(t) - \phi_b(t) + 180°) \bmod 360°) - 180°$$
 
-The modulo operation and $180°$ shift maps the result to $[-180°, 180°]$.
+This wrapping operation maps the result to $[-180°, 180°]$. Without the $+180°$ before the modulo, zero phase difference would map to $-180°$ rather than $0°$.
 
 **Interpretation:**
 - CRP $\approx 0°$: signals are **in-phase** (flexing together)
@@ -2121,11 +2132,13 @@ Divide $Y$ into $\lfloor N/n \rfloor$ non-overlapping windows of length $n$. In 
 
 $$\hat{Y}_n^{(j)}(k) = a_j + b_j k$$
 
-where $b_j = \frac{\sum_{k=1}^{n}(k - \bar{k})(Y_{jn+k} - \overline{Y_j})}{\sum_{k=1}^{n}(k - \bar{k})^2}$ and $a_j = \overline{Y_j} - b_j \bar{k}$
+where $b_j = \frac{\sum_{k=1}^{n}(k - \bar{k})(Y_{(j-1)n+k} - \overline{Y_j})}{\sum_{k=1}^{n}(k - \bar{k})^2}$ and $a_j = \overline{Y_j} - b_j \bar{k}$
+
+Here $j = 1, 2, \ldots, \lfloor N/n \rfloor$ (one-based indexing).
 
 2. Compute the root-mean-square residual:
 
-$$F_j(n) = \sqrt{\frac{1}{n}\sum_{k=1}^{n}\left(Y(jn + k) - \hat{Y}_n^{(j)}(k)\right)^2}$$
+$$F_j(n) = \sqrt{\frac{1}{n}\sum_{k=1}^{n}\left(Y((j-1)n + k) - \hat{Y}_n^{(j)}(k)\right)^2}$$
 
 **Step 3: Average across segments.**
 
@@ -2145,11 +2158,12 @@ The "detrended" part is crucial. Without detrending, slow drifts (non-stationari
 
 ### Q.5 Relationship to the Hurst Exponent {-}
 
-For stationary processes with long-range correlations, the DFA scaling exponent $\alpha$ relates to the **Hurst exponent** $H$:
+The DFA scaling exponent $\alpha$ relates to the **Hurst exponent** $H$, but the relationship depends on the process type:
 
-$$\alpha = H$$
+- **Fractional Gaussian noise (fGn):** $\alpha = H$ (stationary, long-range correlated)
+- **Fractional Brownian motion (fBm):** $\alpha = H + 1$ (non-stationary, integrated process)
 
-for fractional Brownian motion. The Hurst exponent was originally defined through rescaled range ($R/S$) analysis. DFA is preferred because it handles non-stationarity better.
+For stride interval sequences (which are stationary time series, not integrated processes), the fGn relationship $\alpha = H$ applies. The Hurst exponent was originally defined through rescaled range ($R/S$) analysis. DFA is preferred because it handles non-stationarity and short-range correlations better.
 
 ---
 
@@ -2426,7 +2440,7 @@ This ensures the confidence factor never drops below $0.5 \cdot f_{\text{obs}} \
 
 ### U.1 Distribution of the Variance Ratio Under $H_0$ {-}
 
-Under the null hypothesis $\sigma_1^2 = \sigma_2^2 = \sigma^2$, the ratio of sample variances:
+Under the null hypothesis $\sigma_1^2 = \sigma_2^2 = \sigma^2$, **assuming both samples are drawn independently from normal distributions**, the ratio of sample variances:
 
 $$F = \frac{s_1^2}{s_2^2}$$
 
@@ -2450,7 +2464,988 @@ While the above derivation is elegant, it requires that the underlying data be n
 
 This is why we use:
 1. **Levene's test** (robust to non-normality via the absolute deviation transformation)
-2. **Permutation tests** (assumption-free)
-3. **Bootstrap CIs** (distribution-free)
+2. **Permutation tests** (nonparametric under the exchangeability assumption)
+3. **Bootstrap CIs** (nonparametric, though coverage guarantees require regularity conditions)
 
 The F-distribution derivation remains useful for understanding the expected behavior of variance ratios and for calibrating our bootstrap results.
+
+---
+
+## Appendix V: Matrix Algebra from Scratch {-}
+
+A Calculus 1 background does not include matrix algebra, yet matrices are essential for PCA (Appendix P), LDA (Appendix P.5), neural networks (Appendix R), and covariance computation. This appendix builds the necessary foundation.
+
+### V.1 Matrices and Basic Operations {-}
+
+A **matrix** is a rectangular array of numbers. An $m \times n$ matrix has $m$ rows and $n$ columns:
+
+$$\mathbf{A} = \begin{pmatrix} a_{11} & a_{12} & \cdots & a_{1n} \\ a_{21} & a_{22} & \cdots & a_{2n} \\ \vdots & \vdots & \ddots & \vdots \\ a_{m1} & a_{m2} & \cdots & a_{mn} \end{pmatrix}$$
+
+We write $\mathbf{A} \in \mathbb{R}^{m \times n}$. When $m = n$, the matrix is **square**.
+
+**Matrix addition** (element-wise, same dimensions required):
+
+$$(\mathbf{A} + \mathbf{B})_{ij} = a_{ij} + b_{ij}$$
+
+**Scalar multiplication:**
+
+$$(c\mathbf{A})_{ij} = c \cdot a_{ij}$$
+
+**Transpose:** The transpose $\mathbf{A}^T$ swaps rows and columns: $(\mathbf{A}^T)_{ij} = a_{ji}$. If $\mathbf{A}$ is $m \times n$, then $\mathbf{A}^T$ is $n \times m$.
+
+A matrix is **symmetric** if $\mathbf{A} = \mathbf{A}^T$ (equivalently, $a_{ij} = a_{ji}$ for all $i, j$). Covariance matrices are always symmetric.
+
+### V.2 Matrix Multiplication {-}
+
+For $\mathbf{A} \in \mathbb{R}^{m \times p}$ and $\mathbf{B} \in \mathbb{R}^{p \times n}$, the product $\mathbf{C} = \mathbf{AB}$ is an $m \times n$ matrix:
+
+$$c_{ij} = \sum_{k=1}^{p} a_{ik} b_{kj}$$
+
+Each entry is the dot product of the $i$-th row of $\mathbf{A}$ with the $j$-th column of $\mathbf{B}$.
+
+**Example ($2 \times 2$):**
+
+$$\begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix}\begin{pmatrix} 5 & 6 \\ 7 & 8 \end{pmatrix} = \begin{pmatrix} 1\cdot5+2\cdot7 & 1\cdot6+2\cdot8 \\ 3\cdot5+4\cdot7 & 3\cdot6+4\cdot8 \end{pmatrix} = \begin{pmatrix} 19 & 22 \\ 43 & 50 \end{pmatrix}$$
+
+**Matrix multiplication is NOT commutative:** $\mathbf{AB} \neq \mathbf{BA}$ in general.
+
+**Matrix-vector multiplication.** A matrix $\mathbf{A} \in \mathbb{R}^{m \times n}$ multiplied by a vector $\mathbf{x} \in \mathbb{R}^n$ gives a vector $\mathbf{y} \in \mathbb{R}^m$:
+
+$$y_i = \sum_{j=1}^{n} a_{ij} x_j$$
+
+This is the operation performed at each layer of a neural network: $\mathbf{y} = \mathbf{W}\mathbf{x} + \mathbf{b}$.
+
+### V.3 The Identity Matrix and Inverse {-}
+
+The **identity matrix** $\mathbf{I}_n$ is the $n \times n$ matrix with 1s on the diagonal and 0s elsewhere:
+
+$$\mathbf{I}_n = \begin{pmatrix} 1 & 0 & \cdots & 0 \\ 0 & 1 & \cdots & 0 \\ \vdots & \vdots & \ddots & \vdots \\ 0 & 0 & \cdots & 1 \end{pmatrix}$$
+
+For any matrix $\mathbf{A}$: $\mathbf{AI} = \mathbf{IA} = \mathbf{A}$.
+
+The **inverse** $\mathbf{A}^{-1}$ of a square matrix $\mathbf{A}$ satisfies:
+
+$$\mathbf{A}^{-1}\mathbf{A} = \mathbf{A}\mathbf{A}^{-1} = \mathbf{I}$$
+
+Not all matrices have inverses. A matrix is **invertible** (or non-singular) if and only if its determinant is non-zero.
+
+**For $2 \times 2$ matrices:**
+
+$$\mathbf{A} = \begin{pmatrix} a & b \\ c & d \end{pmatrix}, \quad \mathbf{A}^{-1} = \frac{1}{ad - bc}\begin{pmatrix} d & -b \\ -c & a \end{pmatrix}$$
+
+The inverse is used in LDA: $\mathbf{w}^* \propto \mathbf{S}_W^{-1}(\boldsymbol{\mu}_1 - \boldsymbol{\mu}_2)$.
+
+### V.4 The Determinant {-}
+
+The **determinant** of a square matrix is a scalar that encodes several properties:
+
+**For $2 \times 2$:**
+
+$$\det\begin{pmatrix} a & b \\ c & d \end{pmatrix} = ad - bc$$
+
+**For $3 \times 3$** (cofactor expansion along the first row):
+
+$$\det\begin{pmatrix} a & b & c \\ d & e & f \\ g & h & i \end{pmatrix} = a(ei - fh) - b(di - fg) + c(dh - eg)$$
+
+**Geometric interpretation:** The absolute value of the determinant equals the volume of the parallelepiped spanned by the column vectors. For a covariance matrix, $\det(\mathbf{C})$ is the **generalized variance**. The volume of the confidence ellipsoid is proportional to $\sqrt{\det(\mathbf{C})}$, not $\det(\mathbf{C})$ itself (see Appendix AF.2). A determinant ratio of $25\times$ corresponds to a volume ratio of $\sqrt{25} = 5\times$.
+
+### V.5 The Trace {-}
+
+The **trace** of a square matrix is the sum of its diagonal elements:
+
+$$\text{tr}(\mathbf{A}) = \sum_{i=1}^{n} a_{ii}$$
+
+**Properties:**
+- $\text{tr}(\mathbf{A} + \mathbf{B}) = \text{tr}(\mathbf{A}) + \text{tr}(\mathbf{B})$
+- $\text{tr}(c\mathbf{A}) = c \cdot \text{tr}(\mathbf{A})$
+- $\text{tr}(\mathbf{AB}) = \text{tr}(\mathbf{BA})$ (cyclic property)
+- For a covariance matrix: $\text{tr}(\mathbf{C}) = \sum \lambda_i = \text{total variance}$
+
+The trace of the covariance matrix equals the sum of all eigenvalues, which equals the total variance across all dimensions. This is why we use the trace ratio to compare total spread: $\rho = \text{tr}(\mathbf{C}_{\text{control}}) / \text{tr}(\mathbf{C}_{\text{runway}})$.
+
+### V.6 Positive Semi-Definite Matrices {-}
+
+A symmetric matrix $\mathbf{A}$ is **positive semi-definite** (PSD) if:
+
+$$\mathbf{x}^T\mathbf{A}\mathbf{x} \geq 0 \quad \text{for all } \mathbf{x} \in \mathbb{R}^n$$
+
+Equivalently, all eigenvalues are non-negative: $\lambda_i \geq 0$.
+
+**Covariance matrices are always PSD.** Proof: for the sample covariance matrix $\mathbf{C} = \frac{1}{n-1}\tilde{\mathbf{X}}^T\tilde{\mathbf{X}}$:
+
+$$\mathbf{x}^T\mathbf{C}\mathbf{x} = \frac{1}{n-1}\mathbf{x}^T\tilde{\mathbf{X}}^T\tilde{\mathbf{X}}\mathbf{x} = \frac{1}{n-1}\|\tilde{\mathbf{X}}\mathbf{x}\|^2 \geq 0$$
+
+since the squared norm is always non-negative.
+
+---
+
+## Appendix W: Complex Numbers and Euler's Formula {-}
+
+The Hilbert transform (Appendix O), Fourier analysis (Appendix I), and the DFT all use complex numbers and complex exponentials. A Calculus 1 background does not typically cover these topics.
+
+### W.1 Complex Numbers {-}
+
+A **complex number** has the form:
+
+$$z = a + jb$$
+
+where $a$ is the **real part** ($\text{Re}(z)$), $b$ is the **imaginary part** ($\text{Im}(z)$), and $j = \sqrt{-1}$ is the **imaginary unit** (engineers use $j$; mathematicians use $i$).
+
+The key property of $j$: $j^2 = -1$.
+
+**Arithmetic:**
+- Addition: $(a + jb) + (c + jd) = (a+c) + j(b+d)$
+- Multiplication: $(a + jb)(c + jd) = (ac - bd) + j(ad + bc)$
+
+**The complex conjugate** of $z = a + jb$ is $z^* = a - jb$. Note: $z \cdot z^* = a^2 + b^2$.
+
+**Modulus (magnitude):**
+
+$$|z| = \sqrt{a^2 + b^2} = \sqrt{z \cdot z^*}$$
+
+**Argument (phase angle):**
+
+$$\arg(z) = \arctan2(b, a)$$
+
+### W.2 The Complex Plane {-}
+
+Complex numbers can be visualized as points in the **complex plane** (Argand diagram):
+- The horizontal axis represents the real part
+- The vertical axis represents the imaginary part
+- The point $z = a + jb$ is at coordinates $(a, b)$
+
+**Polar form:** A complex number can also be written as:
+
+$$z = r(\cos\phi + j\sin\phi) = r \cdot \text{cis}(\phi)$$
+
+where $r = |z|$ is the modulus and $\phi = \arg(z)$ is the argument.
+
+### W.3 Euler's Formula {-}
+
+**Euler's formula** connects the exponential function with trigonometry:
+
+$$e^{j\phi} = \cos\phi + j\sin\phi$$
+
+**Derivation from Taylor series.** The Taylor series for the exponential, cosine, and sine functions are:
+
+$$e^x = \sum_{n=0}^{\infty} \frac{x^n}{n!} = 1 + x + \frac{x^2}{2!} + \frac{x^3}{3!} + \frac{x^4}{4!} + \cdots$$
+
+$$\cos\phi = \sum_{n=0}^{\infty} \frac{(-1)^n \phi^{2n}}{(2n)!} = 1 - \frac{\phi^2}{2!} + \frac{\phi^4}{4!} - \cdots$$
+
+$$\sin\phi = \sum_{n=0}^{\infty} \frac{(-1)^n \phi^{2n+1}}{(2n+1)!} = \phi - \frac{\phi^3}{3!} + \frac{\phi^5}{5!} - \cdots$$
+
+Substituting $x = j\phi$ into the exponential series:
+
+$$e^{j\phi} = 1 + j\phi + \frac{(j\phi)^2}{2!} + \frac{(j\phi)^3}{3!} + \frac{(j\phi)^4}{4!} + \frac{(j\phi)^5}{5!} + \cdots$$
+
+Using powers of $j$: $j^2 = -1$, $j^3 = -j$, $j^4 = 1$, $j^5 = j$, etc.:
+
+$$= 1 + j\phi - \frac{\phi^2}{2!} - j\frac{\phi^3}{3!} + \frac{\phi^4}{4!} + j\frac{\phi^5}{5!} - \cdots$$
+
+Grouping real and imaginary parts:
+
+$$= \underbrace{\left(1 - \frac{\phi^2}{2!} + \frac{\phi^4}{4!} - \cdots\right)}_{\cos\phi} + j\underbrace{\left(\phi - \frac{\phi^3}{3!} + \frac{\phi^5}{5!} - \cdots\right)}_{\sin\phi}$$
+
+$$= \cos\phi + j\sin\phi \quad \square$$
+
+**Key consequences:**
+
+1. $|e^{j\phi}| = \sqrt{\cos^2\phi + \sin^2\phi} = 1$ — the unit circle in the complex plane
+2. $e^{j\pi} = -1$ (**Euler's identity**, often called "the most beautiful equation in mathematics")
+3. Any complex number in polar form: $z = re^{j\phi}$
+
+### W.4 Complex Exponentials in the DFT {-}
+
+The DFT uses the complex exponential $e^{-j2\pi kn/N}$ as the "basis function" for frequency analysis. By Euler's formula:
+
+$$e^{-j2\pi kn/N} = \cos\left(\frac{2\pi kn}{N}\right) - j\sin\left(\frac{2\pi kn}{N}\right)$$
+
+The DFT simultaneously extracts both the cosine and sine components at each frequency — the real part captures the cosine component and the imaginary part captures the sine component.
+
+### W.5 Multiplication as Rotation {-}
+
+Multiplying two complex numbers in polar form:
+
+$$z_1 z_2 = r_1 e^{j\phi_1} \cdot r_2 e^{j\phi_2} = r_1 r_2 \, e^{j(\phi_1 + \phi_2)}$$
+
+The magnitudes multiply and the angles add. Multiplication by $e^{j\phi}$ rotates a complex number by angle $\phi$ in the complex plane. The Hilbert transform uses this: it shifts positive frequencies by $-90°$ (multiplication by $-j$) and negative frequencies by $+90°$ (multiplication by $+j$). This frequency-sign-dependent phase shift is what creates the analytic signal (see Appendix O.2).
+
+---
+
+## Appendix X: Lagrange Multipliers and Constrained Optimization {-}
+
+PCA (Appendix P.4) and LDA (Appendix P.5) are both constrained optimization problems. This appendix derives the method of Lagrange multipliers from first principles.
+
+### X.1 The Problem {-}
+
+**Unconstrained optimization:** find $\mathbf{x}$ that minimizes (or maximizes) $f(\mathbf{x})$. Solution: set $\nabla f = 0$.
+
+**Constrained optimization:** find $\mathbf{x}$ that maximizes $f(\mathbf{x})$ subject to $g(\mathbf{x}) = 0$.
+
+The constraint restricts the search to a surface (or curve) defined by $g(\mathbf{x}) = 0$.
+
+### X.2 Geometric Intuition (Two Variables) {-}
+
+Consider maximizing $f(x, y)$ subject to $g(x, y) = 0$.
+
+The constraint $g(x, y) = 0$ defines a curve in the $(x, y)$ plane. As we move along this curve, $f$ increases and decreases. The maximum occurs where the **level curve** of $f$ is tangent to the constraint curve.
+
+At a tangent point, the gradient of $f$ is parallel to the gradient of $g$ (both are perpendicular to the constraint curve):
+
+$$\nabla f = \lambda \nabla g$$
+
+for some scalar $\lambda$ (the **Lagrange multiplier**).
+
+### X.3 The Method {-}
+
+To maximize $f(\mathbf{x})$ subject to $g(\mathbf{x}) = 0$:
+
+1. Form the **Lagrangian**: $\mathcal{L}(\mathbf{x}, \lambda) = f(\mathbf{x}) - \lambda g(\mathbf{x})$
+
+2. Set all partial derivatives to zero:
+
+$$\frac{\partial\mathcal{L}}{\partial x_i} = 0 \quad \text{for all } i, \qquad \frac{\partial\mathcal{L}}{\partial\lambda} = 0$$
+
+The condition $\frac{\partial\mathcal{L}}{\partial\lambda} = 0$ recovers the constraint $g(\mathbf{x}) = 0$.
+
+### X.4 Application to PCA {-}
+
+PCA maximizes $f(\mathbf{w}) = \mathbf{w}^T\mathbf{C}\mathbf{w}$ (projected variance) subject to $g(\mathbf{w}) = \mathbf{w}^T\mathbf{w} - 1 = 0$ (unit vector).
+
+Lagrangian:
+
+$$\mathcal{L}(\mathbf{w}, \lambda) = \mathbf{w}^T\mathbf{C}\mathbf{w} - \lambda(\mathbf{w}^T\mathbf{w} - 1)$$
+
+Setting $\frac{\partial\mathcal{L}}{\partial\mathbf{w}} = 0$. **Why $\frac{\partial}{\partial\mathbf{w}}(\mathbf{w}^T\mathbf{C}\mathbf{w}) = 2\mathbf{C}\mathbf{w}$:** In components, $\mathbf{w}^T\mathbf{C}\mathbf{w} = \sum_i \sum_j w_i C_{ij} w_j$. Taking $\partial/\partial w_k$: each term where $i = k$ contributes $C_{kj}w_j$ and each term where $j = k$ contributes $w_i C_{ik}$. Since $\mathbf{C}$ is symmetric ($C_{ij} = C_{ji}$), both sums equal $\sum_j C_{kj} w_j = (\mathbf{C}\mathbf{w})_k$, giving $2(\mathbf{C}\mathbf{w})_k$. Similarly, $\frac{\partial}{\partial\mathbf{w}}(\mathbf{w}^T\mathbf{w}) = 2\mathbf{w}$. Therefore:
+
+$$2\mathbf{C}\mathbf{w} - 2\lambda\mathbf{w} = 0 \implies \mathbf{C}\mathbf{w} = \lambda\mathbf{w}$$
+
+This is the eigenvalue equation. The optimal $\mathbf{w}$ is an eigenvector of $\mathbf{C}$, and the maximum variance equals the largest eigenvalue.
+
+### X.5 Worked Example (Two Dimensions) {-}
+
+Consider data with covariance matrix:
+
+$$\mathbf{C} = \begin{pmatrix} 4 & 2 \\ 2 & 3 \end{pmatrix}$$
+
+**Finding eigenvalues.** Solve $\det(\mathbf{C} - \lambda\mathbf{I}) = 0$:
+
+$$\det\begin{pmatrix} 4-\lambda & 2 \\ 2 & 3-\lambda \end{pmatrix} = (4-\lambda)(3-\lambda) - 4 = \lambda^2 - 7\lambda + 8 = 0$$
+
+$$\lambda = \frac{7 \pm \sqrt{49 - 32}}{2} = \frac{7 \pm \sqrt{17}}{2}$$
+
+$$\lambda_1 \approx 5.56, \quad \lambda_2 \approx 1.44$$
+
+**Finding eigenvectors.** For $\lambda_1 \approx 5.56$:
+
+$$(4 - 5.56)w_1 + 2w_2 = 0 \implies w_2 = 0.78 w_1$$
+
+Normalizing: $\mathbf{v}_1 \approx (0.79, 0.62)^T$. This is the first principal component direction.
+
+**Variance explained:** $\lambda_1 / (\lambda_1 + \lambda_2) = 5.56 / 7 = 79.4\%$ — the first PC captures 79.4% of the total variance.
+
+---
+
+## Appendix Y: The Central Limit Theorem {-}
+
+### Y.1 Statement {-}
+
+**Central Limit Theorem (CLT).** Let $X_1, X_2, \ldots, X_n$ be independent and identically distributed random variables with mean $\mu$ and finite variance $\sigma^2$. Then as $n \to \infty$:
+
+$$\frac{\bar{X}_n - \mu}{\sigma/\sqrt{n}} \xrightarrow{d} N(0, 1)$$
+
+where $\bar{X}_n = \frac{1}{n}\sum_{i=1}^{n} X_i$ is the sample mean.
+
+Equivalently: $\bar{X}_n \approx N(\mu, \sigma^2/n)$ for large $n$.
+
+### Y.2 Why the CLT Matters for This Study {-}
+
+1. **Bootstrap**: Bootstrap consistency relies on the empirical distribution converging to the true distribution (Glivenko-Cantelli), not solely on CLT normality. However, the CLT provides intuition for why bootstrap distributions of means and standardized statistics are approximately normal
+2. **P-values**: Many test statistics are approximately normally distributed under $H_0$, which allows computing p-values from normal tables
+3. **Confidence intervals**: The $\pm 1.96\sigma/\sqrt{n}$ formula relies on the normality of $\bar{X}$
+
+### Y.3 Intuition: Sum of Random Variables {-}
+
+**Why does averaging tend to produce normality (given finite variance and independence)?** Consider summing $n$ independent random variables with finite variance. Each variable shifts the sum by a random amount. For each possible value of the first $n-1$ variables, the $n$-th variable "smears" the distribution a little. After enough smearing, the shape converges to the bell curve regardless of the original distribution (provided it has finite variance).
+
+More precisely: the convolution of any distribution with itself, repeated enough times, approaches a Gaussian. This is because:
+
+- Convolution in the time domain = multiplication in the frequency domain
+- The characteristic function of a sum is the product of individual characteristic functions
+- The Gaussian is the unique fixed point of this product operation (among distributions with finite variance)
+
+### Y.4 Rate of Convergence {-}
+
+The CLT is a limit theorem — it holds as $n \to \infty$. How large must $n$ be in practice?
+
+**Rules of thumb:**
+- Symmetric distributions (e.g., uniform): $n \geq 10$ usually sufficient
+- Moderately skewed: $n \geq 30$
+- Heavily skewed or heavy-tailed: $n \geq 100$ or more
+
+Our study has $n = 17$--$22$ per group. This is marginal for the CLT, which is one reason we use:
+- **Mann-Whitney U** (non-parametric, does not assume normality)
+- **Permutation tests** (exact under exchangeability, no distributional assumption)
+- **Bootstrap** (approximates the sampling distribution directly)
+
+---
+
+## Appendix Z: Worked Fourier and SPARC Example {-}
+
+### Z.1 DFT of a Simple Signal {-}
+
+Consider a 4-point signal: $x = [1, 0, -1, 0]$ sampled at $f_s = 4$ Hz.
+
+The DFT is:
+
+$$X_k = \sum_{n=0}^{3} x_n \, e^{-j2\pi kn/4}$$
+
+**$k = 0$** (DC component):
+
+$$X_0 = 1 \cdot e^0 + 0 \cdot e^0 + (-1) \cdot e^0 + 0 \cdot e^0 = 1 + 0 - 1 + 0 = 0$$
+
+**$k = 1$** (frequency $f_1 = 1$ Hz):
+
+$$X_1 = 1 \cdot e^0 + 0 \cdot e^{-j\pi/2} + (-1) \cdot e^{-j\pi} + 0 \cdot e^{-j3\pi/2}$$
+
+Using Euler: $e^0 = 1$, $e^{-j\pi} = -1$:
+
+$$X_1 = 1 + 0 + (-1)(-1) + 0 = 1 + 1 = 2$$
+
+**$k = 2$** (frequency $f_2 = 2$ Hz = Nyquist):
+
+$$X_2 = 1 \cdot e^0 + 0 \cdot e^{-j\pi} + (-1) \cdot e^{-j2\pi} + 0 \cdot e^{-j3\pi} = 1 + 0 - 1 + 0 = 0$$
+
+**$k = 3$** (negative-frequency mirror of $k = 1$; for real signals, $X_{N-k} = X_k^*$):
+
+$$X_3 = 1 + 0 + (-1)(e^{-j3\pi}) + 0 = 1 + 0 + 1 + 0 = 2$$
+
+Result: $X = [0, 2, 0, 2]$. The amplitude spectrum $|X| = [0, 2, 0, 2]$ shows energy at $k = 1$ (1 Hz) and its negative-frequency mirror $k = 3$. For real signals, SPARC uses only the one-sided spectrum ($k = 0, \ldots, N/2$), so we would analyze $|X_0| = 0$, $|X_1| = 2$, $|X_2| = 0$. The signal is a pure 1 Hz oscillation, as expected.
+
+### Z.2 SPARC Computation on Synthetic Data {-}
+
+Consider a smooth hip velocity signal at 30 fps with energy concentrated at 1--2 Hz (typical gait). The normalized amplitude spectrum might look like:
+
+| Frequency $f_k$ (Hz) | $\hat{V}_{\text{norm}}(f_k)$ |
+|---|---|
+| 0.0 | 0.10 |
+| 0.5 | 0.30 |
+| 1.0 | 1.00 |
+| 1.5 | 0.85 |
+| 2.0 | 0.40 |
+| 2.5 | 0.15 |
+| 3.0 | 0.03 |
+
+The adaptive cutoff: $f_c^{\text{adapt}} = 2.5$ Hz (last frequency where $\hat{V}_{\text{norm}} \geq 0.05$).
+
+Arc length computation (frequency spacing $\Delta f = 0.5$ Hz):
+
+$$L_1 = \sqrt{(0.5-0)^2 + (0.30-0.10)^2} = \sqrt{0.25 + 0.04} = 0.539$$
+
+$$L_2 = \sqrt{0.25 + (1.00-0.30)^2} = \sqrt{0.25 + 0.49} = 0.860$$
+
+$$L_3 = \sqrt{0.25 + (0.85-1.00)^2} = \sqrt{0.25 + 0.0225} = 0.522$$
+
+$$L_4 = \sqrt{0.25 + (0.40-0.85)^2} = \sqrt{0.25 + 0.2025} = 0.673$$
+
+$$L_5 = \sqrt{0.25 + (0.15-0.40)^2} = \sqrt{0.25 + 0.0625} = 0.559$$
+
+Total: $L = 0.539 + 0.860 + 0.522 + 0.673 + 0.559 = 3.153$
+
+$$\text{SPARC} = -3.153$$
+
+For comparison, a jerky signal might have SPARC $= -8.5$ (longer arc length due to spectral ripple).
+
+---
+
+## Appendix AA: Statistical Power Analysis {-}
+
+### AA.1 Definition of Power {-}
+
+The **power** of a statistical test is the probability of correctly rejecting $H_0$ when it is actually false:
+
+$$\text{Power} = 1 - \beta = P(\text{reject } H_0 \mid H_1 \text{ true})$$
+
+Power depends on:
+1. **Effect size** — how large the true difference is
+2. **Sample size** ($n$) — more data increases power
+3. **Significance level** ($\alpha$) — stricter $\alpha$ reduces power
+4. **Variability** — more variable data reduces power
+
+### AA.2 Power for Variance Ratio Tests {-}
+
+For testing $H_0: \sigma_1^2 = \sigma_2^2$ vs. $H_1: \sigma_C^2 / \sigma_R^2 = R_\sigma$ using the F-test under normality:
+
+Under $H_1$, the observed variance ratio follows a **scaled central F-distribution**:
+
+$$\frac{s_C^2}{s_R^2} \sim R_\sigma \cdot F(n_C - 1, n_R - 1)$$
+
+The two-sided power is the probability of rejecting $H_0$:
+
+$$\text{Power}(R_\sigma) = P\left(\frac{s_C^2/s_R^2}{R_\sigma} > F_{1-\alpha/2}\right) + P\left(\frac{s_C^2/s_R^2}{R_\sigma} < F_{\alpha/2}\right)$$
+
+### AA.3 Power Estimates for Our Study {-}
+
+With $n_R = 22$, $n_C = 17$, $\alpha = 0.05$ (two-sided), approximate power:
+
+| True variance ratio $R_\sigma$ | Power (two-sided) |
+|---|---|
+| 1.0 | 5% (= $\alpha$, by definition) |
+| 2.0 | ~30% |
+| 3.0 | ~55% |
+| 5.0 | ~80% |
+| 10.0 | ~97% |
+| 20.0 | ~99.9% |
+
+This explains our results: only metrics with $R_\sigma \geq 3.8$ reached Levene's significance. With our sample sizes, we simply lack power to detect variance ratios below ~$5\times$ reliably.
+
+### AA.4 Sample Size Calculations {-}
+
+To achieve 80% power for detecting $R_\sigma = 2.0$ at $\alpha = 0.05$ (two-sided), using the log-ratio asymptotic approximation $\text{Var}(\ln(s_C^2/s_R^2)) \approx 2/(n_C-1) + 2/(n_R-1) \approx 4/(n-1)$ for equal group sizes:
+
+$$n \approx \frac{4(z_{\alpha/2} + z_\beta)^2}{(\ln R_\sigma)^2} + 1$$
+
+For $R_\sigma = 2.0$: $n \approx \frac{4(1.96 + 0.84)^2}{(\ln 2)^2} + 1 \approx \frac{4 \times 7.84}{0.48} + 1 \approx 66$ per group.
+
+This confirms the Discussion's recommendation to increase sample sizes substantially for future studies.
+
+---
+
+## Appendix AB: Numerical Stability and Floating-Point Arithmetic {-}
+
+### AB.1 IEEE 754 Floating-Point Representation {-}
+
+Computers represent real numbers using **floating-point** format. A 64-bit double-precision number stores:
+
+- 1 bit for sign
+- 11 bits for exponent
+- 52 bits for mantissa (significand)
+
+The represented value is: $(-1)^s \times 1.\text{mantissa} \times 2^{\text{exponent} - 1023}$
+
+**Machine epsilon** is the smallest $\epsilon$ such that $1 + \epsilon \neq 1$ in floating-point arithmetic:
+
+$$\epsilon_{\text{mach}} = 2^{-52} \approx 2.22 \times 10^{-16}$$
+
+### AB.2 Why arccos Needs Clamping {-}
+
+The arccos function is defined only for inputs in $[-1, 1]$. When computing:
+
+$$\cos\theta = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\| \cdot \|\mathbf{v}\|}$$
+
+floating-point rounding can produce values like $1.0000000000000002$ or $-1.0000000000000004$. Calling `arccos` on these values produces `NaN` (domain error).
+
+**Solution:** clamp the argument: $\theta = \arccos(\max(-1, \min(1, \cos\theta)))$.
+
+### AB.3 Catastrophic Cancellation in Variance {-}
+
+The computational formula for variance:
+
+$$\sigma^2 = E[X^2] - (E[X])^2$$
+
+can suffer from **catastrophic cancellation** when $E[X]$ is large relative to $\sigma$. Example in single-precision floating point (7 significant digits):
+
+$$X = [123456.0, 123457.0, 123458.0]$$
+
+In exact arithmetic: $E[X] = 123457.0$, $E[X^2] = 15241628849.667$, so $\sigma^2 = 15241628849.667 - 15241628849.0 = 0.667$.
+
+In single-precision: $E[X^2]$ rounds to $1.524163 \times 10^{10}$ and $(E[X])^2$ also rounds to $1.524163 \times 10^{10}$. The subtraction produces $0.0$ — complete loss of the variance information. The two-pass algorithm (compute $\bar{x}$ first, then $\sum(x_i - \bar{x})^2$) avoids this by working with small residuals. NumPy's `var` function uses this stable algorithm.
+
+### AB.4 NaN Propagation in the Pipeline {-}
+
+Our pipeline uses `NaN` (Not a Number) as a sentinel for missing or unreliable data. IEEE 754 defines:
+
+- Any arithmetic operation with NaN produces NaN
+- NaN $\neq$ NaN (this is the only value not equal to itself)
+- NumPy functions like `nanmean`, `nanstd` ignore NaN values
+
+This propagation ensures that unreliable measurements automatically exclude themselves from downstream computations without explicit bookkeeping.
+
+---
+
+## Appendix AC: Coordinate Systems and Camera Geometry {-}
+
+### AC.1 Normalized Image Coordinates {-}
+
+MediaPipe returns landmarks in **normalized image coordinates**:
+
+$$x_{\text{norm}} \in [0, 1], \quad y_{\text{norm}} \in [0, 1]$$
+
+where $(0, 0)$ is the top-left corner and $(1, 1)$ is the bottom-right. The pixel coordinates are:
+
+$$x_{\text{px}} = x_{\text{norm}} \times W, \quad y_{\text{px}} = y_{\text{norm}} \times H$$
+
+where $W$ and $H$ are image width and height in pixels.
+
+**The y-axis points downward** in image coordinates. This means:
+- Shoulder landmarks have *smaller* $y$ values than hip landmarks (shoulders are higher in the image but have lower $y$ coordinates)
+- "Above" in the real world corresponds to "smaller $y$" in image coordinates
+
+### AC.2 Left-Right Convention {-}
+
+MediaPipe uses the subject's perspective: "left hip" is the subject's left hip, which appears on the *right* side of the image when the subject faces the camera. This is consistent with clinical convention but opposite to the viewer's perspective.
+
+### AC.3 Sagittal vs. Frontal Plane Projection {-}
+
+Our camera setup captures primarily frontal-plane motion (subject walks toward/away from camera). However, joint angles are computed from 2D projections of 3D anatomy:
+
+**Sagittal-plane angles** (hip flexion, knee flexion, ankle dorsiflexion): These are best captured by a side-view camera. In our frontal camera setup, sagittal-plane motion projects onto the image plane with foreshortening that depends on the angle between the camera viewing direction and the sagittal plane. For a perfectly frontal view, sagittal-plane flexion would be invisible (zero projected angle). The exact projection relationship depends on limb segment lengths, camera distance, and lens model — no simple closed-form applies in general.
+
+In practice, runway walks involve the model walking *toward* the camera at a slight angle, and MediaPipe's 3D landmark estimation partially compensates for projection effects. However, our angular measurements should be interpreted as **apparent 2D angles**, not true anatomical 3D angles.
+
+**Frontal-plane angles** (pelvis obliquity, trunk lean): These are well-captured by our frontal camera setup, as the relevant motion occurs in the plane facing the camera.
+
+### AC.4 Angle Wrapping {-}
+
+The $\text{atan2}$ function returns values in $(-\pi, \pi]$ (or equivalently $(-180°, 180°]$). When computing angle differences or tracking angles over time, wrapping discontinuities can occur at $\pm 180°$. Our CRP computation explicitly handles this with the modular wrapping formula (Appendix O.5).
+
+For joint angles computed via the dot product ($\arccos$), the result is always in $[0°, 180°]$, so wrapping is not an issue.
+
+---
+
+## Appendix AD: Complete Metric Inventory {-}
+
+The following table lists all 24 metrics used in the variance analysis, with their domains, formulas, units, directionality, missing-data rules, and inclusion in each analysis.
+
+| # | Metric | Domain | Formula | Units | Better$\to$ | Missing Rule | MQS | Var | PCA |
+|---|--------|--------|---------|-------|-------------|-------------|-----|-----|-----|
+| 1 | hip\_ROM | Kinematics | $\max\theta - \min\theta$ | degrees | $\to$ ref | NaN if <50% | Y | Y | Y |
+| 2 | knee\_ROM | Kinematics | $\max\theta - \min\theta$ | degrees | $\to$ ref | NaN if <50% | Y | Y | Y |
+| 3 | ankle\_ROM | Kinematics | $\max\theta - \min\theta$ | degrees | $\to$ ref | NaN if <50% | Y | Y | Y |
+| 4 | pelvis\_obliquity | Kinematics | $|\text{atan2}(\Delta y, \Delta x)|$ | degrees | $\to 0$ | NaN if <50% | Y | Y | Y |
+| 5 | trunk\_lean | Kinematics | $\text{atan2}(\Delta x, \Delta y)$ | degrees | $\to 0$ | NaN if <50% | Y | Y | Y |
+| 6 | hip\_SPARC | Smoothness | $-\text{arc length}(\hat{V}_{\text{norm}})$ | unitless | $\to 0$ | NaN if FFT fails | Y | Y | Y |
+| 7 | knee\_SPARC | Smoothness | $-\text{arc length}(\hat{V}_{\text{norm}})$ | unitless | $\to 0$ | NaN if FFT fails | Y | Y | Y |
+| 8 | hip\_NJ | Smoothness | $\sqrt{T^5/(2A^2) \int \dddot{\theta}^2}$ | unitless | lower better | NaN if <10 frames | N | Y | Y |
+| 9 | knee\_NJ | Smoothness | $\sqrt{T^5/(2A^2) \int \dddot{\theta}^2}$ | unitless | lower better | NaN if <10 frames | N | Y | Y |
+| 10 | hip\_SI | Symmetry | $2|X_R - X_L|/(X_R + X_L)$ | % | $\to 0$ | NaN if either side missing | Y | Y | Y |
+| 11 | knee\_SI | Symmetry | $2|X_R - X_L|/(X_R + X_L)$ | % | $\to 0$ | NaN if either side missing | Y | Y | Y |
+| 12 | ankle\_SI | Symmetry | $2|X_R - X_L|/(X_R + X_L)$ | % | $\to 0$ | NaN if either side missing | Y | Y | Y |
+| 13 | pelvis\_SI | Symmetry | $2|X_R - X_L|/(X_R + X_L)$ | % | $\to 0$ | NaN if either side missing | Y | Y | Y |
+| 14 | hip\_waveform\_sym | Symmetry | $|\text{NCC}(\theta_L, \theta_R)| \times 100$ | % | $\to 100$ | NaN if <30 frames | Y | Y | Y |
+| 15 | CRP\_bilateral\_hip | Coordination | CSD of bilateral hip CRP | degrees | $\to 0$ | NaN if Hilbert fails | Y | Y | Y |
+| 16 | CRP\_ipsilateral | Coordination | CSD of hip-knee CRP | degrees | $\to 0$ | NaN if Hilbert fails | Y | Y | Y |
+| 17 | stride\_time\_CV | Variability | $\sigma/\mu \times 100$ | % | $\to 0$ | NaN if <3 strides | Y | Y | Y |
+| 18 | kinematic\_CV | Variability | mean per-joint ROM CV | % | $\to 0$ | NaN if <3 strides | Y | Y | Y |
+| 19 | cadence | Temporal | $60/\bar{\Delta t} \times 2$ | steps/min | $\to$ ref | NaN if <2 strides | Y | Y | Y |
+| 20 | stride\_time | Temporal | $\bar{\Delta t}_{\text{stride}}$ | seconds | $\to$ ref | NaN if <2 strides | Y | Y | Y |
+| 21 | double\_support\_pct | Temporal | $\max(0, 2S-1) \times 100$ | % | $\to$ ref | NaN if no toe-off | N | Y | Y |
+| 22 | arm\_swing\_ratio | Upper Body | $\text{ROM}_{\text{arm}}/25°$ | unitless | $\to 1$ | NaN if arms missing | N | Y | Y |
+| 23 | GDI | Composite | $100 - \bar{d}/5° \times 10$ | score | $\to 100$ | NaN if <3 strides | N | Y | N |
+| 24 | MQS | Composite | $\sum w_d S_d$ | 0--100 | $\to 100$ | NaN if <50% complete | N | Y | N |
+
+**Column key:**
+- "Better$\to$": direction of clinically better values ($\to$ ref = closer to reference range, $\to 0$ = closer to zero, $\to 100$ = closer to 100)
+- "MQS": included in MQS composite score
+- "Var": included in univariate variance analysis
+- "PCA": included in multivariate PCA/LDA (composites excluded to avoid circularity)
+
+**Domain grouping for results presentation** uses 8 categories: Kinematics (5 metrics), Smoothness (4), Symmetry (5), Coordination (2), Variability (2), Temporal (3), Upper Body (1), Composite (2). The MQS composite uses 6 weighted domains that partially overlap with these categories.
+
+---
+
+## Appendix AE: Statistical Test Directionality and Effect Size Conventions {-}
+
+### AE.1 One-Sided vs. Two-Sided Tests {-}
+
+**Levene's test** is inherently two-sided: it tests $H_0: \sigma_1^2 = \sigma_2^2$ against $H_1: \sigma_1^2 \neq \sigma_2^2$. The test statistic $W$ is always non-negative and compared to the upper tail of the $F$-distribution.
+
+**Permutation test for variance ratio**: Our implementation is one-sided, testing $H_1: \sigma_C^2 > \sigma_R^2$ (control variance exceeds runway variance). We count only permutations where $R^* \geq R_{\text{obs}}$. For a two-sided test, one would use $\max(R^*, 1/R^*)$ as the test statistic.
+
+**Mann-Whitney U test**: As implemented via SciPy's `mannwhitneyu`, this is a two-sided test of stochastic dominance: $H_0$: the two distributions are identical vs. $H_1$: one stochastically dominates the other.
+
+### AE.2 Cohen's d Variants {-}
+
+Multiple definitions of the pooled standard deviation exist:
+
+**Weighted pooled SD** (Cohen's original, assumes equal population variances):
+
+$$s_p = \sqrt{\frac{(n_1-1)s_1^2 + (n_2-1)s_2^2}{n_1 + n_2 - 2}}$$
+
+**Unweighted average SD** (what we use):
+
+$$s_{\text{avg}} = \sqrt{\frac{s_1^2 + s_2^2}{2}}$$
+
+With $n_1 = 22$ and $n_2 = 17$, the difference is small but nonzero. We use the unweighted version because the core hypothesis is that the two groups have *different* variances, making the equal-variance assumption of the weighted version suspect. The unweighted version treats both groups' variability as equally informative.
+
+### AE.3 Rank-Biserial Correlation Sign {-}
+
+The rank-biserial correlation:
+
+$$r_{rb} = 1 - \frac{2U}{n_1 n_2}$$
+
+The sign depends on which group is designated as group 1 in the $U$ statistic. With group 1 = runway: positive $r_{rb}$ means runway values tend to be larger; negative means control values tend to be larger.
+
+SciPy's `mannwhitneyu(runway, control)` returns $U_1$, and $r_{rb} = 1 - 2U_1/(n_1 n_2)$. Verify the sign matches the intended interpretation for each metric.
+
+---
+
+## Appendix AF: PCA and LDA in the Small-Sample Regime {-}
+
+### AF.1 Rank Deficiency {-}
+
+A covariance matrix $\mathbf{C} \in \mathbb{R}^{p \times p}$ estimated from $n$ observations has rank at most $\min(n-1, p)$. In our study:
+
+- Runway group: $n_R = 6$ complete cases, $p = 21$ features $\Rightarrow \text{rank}(\mathbf{C}_R) \leq 5$
+- Control group: $n_C = 14$ complete cases, $p = 21$ features $\Rightarrow \text{rank}(\mathbf{C}_C) \leq 13$
+
+The runway covariance matrix has at most 5 nonzero eigenvalues out of 21, meaning 16 dimensions have zero estimated variance. The distribution appears artificially concentrated in a 5-dimensional subspace.
+
+### AF.2 Determinant vs. Volume {-}
+
+The $k$-dimensional confidence ellipsoid of a distribution with covariance $\mathbf{C}$ has volume proportional to:
+
+$$V \propto \sqrt{\det(\mathbf{C})} = \sqrt{\prod_{i=1}^{k} \lambda_i}$$
+
+Therefore, the **volume ratio** between two distributions is:
+
+$$\frac{V_C}{V_R} = \sqrt{\frac{\det(\mathbf{C}_C)}{\det(\mathbf{C}_R)}}$$
+
+Our reported determinant ratio of $25.3\times$ corresponds to a volume ratio of $\sqrt{25.3} \approx 5.0\times$. We report both: the determinant ratio as generalized variance, and note the volume interpretation.
+
+### AF.3 Complete-Case Deletion {-}
+
+Our PCA/LDA analysis uses **listwise deletion**: any sample with any missing metric is excluded entirely. From 39 total samples, only 20 have complete data across all 21 features. This introduces potential bias if missingness correlates with group membership or metric values.
+
+The complete-case group sizes ($n_R = 6$, $n_C = 14$) are substantially smaller than the full-data sizes ($n_R = 22$, $n_C = 17$), which:
+- Reduces power for all multivariate tests
+- Makes the runway covariance matrix severely rank-deficient
+- Potentially over-represents "easy" videos (high pose detection quality)
+
+### AF.4 Cross-Validation Leakage {-}
+
+In our LOO-CV implementation, the feature standardization (centering and scaling) is applied to the entire dataset *before* the LOO splits. This means each test fold's standardization parameters are influenced by the test observation itself — a form of **data leakage**.
+
+For honest LOO-CV:
+1. Remove observation $i$
+2. Compute mean and standard deviation from the remaining $n-1$ observations
+3. Standardize all $n-1$ training observations and the held-out observation $i$ using these statistics
+4. Fit LDA on the standardized training set
+5. Predict the held-out observation
+
+The leakage from our implementation is typically small (each observation contributes $1/n$ to the scaling parameters), but it systematically inflates accuracy estimates, especially with small $n$.
+
+### AF.5 Resubstitution Accuracy in High Dimensions {-}
+
+When $p \geq n$ (features exceed samples), a linear classifier can almost always achieve 100% resubstitution accuracy — in general position, $n$ points in $\mathbb{R}^p$ with $p \geq n$ are linearly separable regardless of their labels (provided no two points from different classes coincide). This is not evidence of meaningful class structure — it is a geometric near-inevitability.
+
+With $p = 21$ features and $n = 20$ complete-case samples, we are in the $p \approx n$ regime. The 100% resubstitution accuracy should be interpreted as "the data is linearly separable" (expected in high dimensions), not as "the classifier works well."
+
+The LOO-CV accuracy of 70% (equal to the majority-class baseline) is the more honest estimate and correctly indicates that the LDA classifier does not generalize.
+
+---
+
+## Appendix AG: Signal Processing Boundary Conditions {-}
+
+### AG.1 Median Filter Edge Handling {-}
+
+At signal boundaries, the median filter has insufficient context. For a window of half-width $w$ at position $t$:
+
+- At the left edge ($t < w$): the window is truncated to $[0, t+w]$
+- At the right edge ($t > N-1-w$): the window is truncated to $[t-w, N-1]$
+
+SciPy's `medfilt` pads with zeros by default, which can introduce edge artifacts near signal boundaries. Our implementation uses `mode='reflect'` or operates only on interior points of contiguous non-NaN segments.
+
+### AG.2 PCHIP Endpoint Derivatives {-}
+
+PCHIP interpolation requires derivative estimates at each data point. At interior points, the Fritsch-Carlson algorithm uses a weighted harmonic mean of neighboring slopes:
+
+$$d_k = \begin{cases} 0 & \text{if } \delta_{k-1} \text{ and } \delta_k \text{ have different signs} \\ \dfrac{2}{\dfrac{1}{\delta_{k-1}} + \dfrac{1}{\delta_k}} & \text{otherwise} \end{cases}$$
+
+where $\delta_k = (\theta_{k+1} - \theta_k) / h_k$ is the slope of segment $k$.
+
+At **endpoints**, only one neighboring slope exists. SciPy's `PchipInterpolator` uses the Fritsch-Carlson one-sided formula:
+
+$$d_0 = \frac{(2h_0 + h_1)\delta_0 - h_0\delta_1}{h_0 + h_1}$$
+
+with a subsequent check to ensure monotonicity is preserved.
+
+For **non-uniform spacing** (irregular gaps from missing frames), the general weighted derivative formula with explicit $h_{k-1}$ and $h_k$ terms is:
+
+$$d_k = \frac{h_k \delta_{k-1} + h_{k-1} \delta_k}{h_{k-1} + h_k} \quad \text{(Fritsch-Butland variant)}$$
+
+subject to the same monotonicity constraint.
+
+### AG.3 Butterworth Filter Design in Discrete Time {-}
+
+The Butterworth filter is designed in the continuous-time (analog) domain and then converted to discrete time. SciPy's `butter(n, Wn)` function:
+
+1. Designs an analog $n$-th order Butterworth prototype with cutoff at 1 rad/s
+2. Applies the bilinear transform to convert to a digital filter:
+
+$$s = \frac{2}{T}\frac{1 - z^{-1}}{1 + z^{-1}}$$
+
+3. Pre-warps the cutoff frequency to compensate for the bilinear transform's frequency compression:
+
+$$\omega_a = \frac{2}{T}\tan\left(\frac{\omega_d T}{2}\right)$$
+
+where $\omega_d$ is the desired digital cutoff frequency and $\omega_a$ is the corresponding analog frequency.
+
+The parameter `Wn` is the normalized cutoff frequency: $W_n = f_c / (f_s/2)$, where $f_c$ is the desired cutoff in Hz.
+
+### AG.4 `filtfilt` Padding {-}
+
+SciPy's `filtfilt` pads the signal at both ends to minimize startup transients. The default padding method (`padtype='odd'`) reflects the signal about the endpoint:
+
+$$x_{\text{pad}}[-k] = 2x[0] - x[k], \quad k = 1, \ldots, 3n_{\text{filt}}$$
+
+where $n_{\text{filt}}$ is the filter order. This ensures the padded signal has the same derivative at the boundary, reducing edge artifacts. The padded regions are removed after filtering.
+
+### AG.5 Finite Difference Edge Behavior {-}
+
+NumPy's `gradient` function uses:
+- **Central differences** at interior points: $f'(x_i) = \frac{f(x_{i+1}) - f(x_{i-1})}{2h}$
+- **Forward/backward differences** at edges: $f'(x_0) = \frac{f(x_1) - f(x_0)}{h}$
+
+For our third derivative (jerk) computation via three cascaded `gradient` calls, the edge effects compound: the first call loses accuracy at 2 edge points, the second at 4, and the third at 6. With a 30 fps signal of 30 seconds (900 frames), this affects $<1\%$ of the data.
+
+### AG.6 NaN Segment Handling {-}
+
+When a joint angle time series contains NaN gaps (from occlusions or outlier rejection), filters cannot operate across gaps. Our pipeline:
+
+1. **Identifies contiguous non-NaN segments** using `numpy.isnan` and run-length encoding
+2. **Applies each processing stage independently** to each segment
+3. **Segments shorter than the filter kernel** (e.g., <5 frames for the median filter, <6 frames for the Butterworth) are left unfiltered
+4. **After PCHIP interpolation**, gaps are filled and subsequent stages operate on the complete signal
+
+This segment-aware approach prevents filter artifacts from propagating across data gaps.
+
+---
+
+## Appendix AH: Gait Event Detection — Derivation and Validation {-}
+
+### AH.1 Hip Flexion Peak Logic {-}
+
+In normal gait, maximum hip flexion occurs at **initial contact** (heel strike). This is because the hip is maximally flexed as the swing leg reaches forward to contact the ground.
+
+We detect heel strikes as peaks in the filtered hip flexion signal using SciPy's `find_peaks` with:
+
+$$\text{prominence} \geq \max(0.15 \times \text{ROM}_{\text{hip}}, 1°)$$
+
+The prominence threshold adapts to the signal amplitude:
+- For large ROM (e.g., 40°): threshold = 6° — rejects minor fluctuations
+- For small ROM (e.g., 5°): threshold = 1° — minimum absolute threshold to prevent silence
+
+### AH.2 Heel-Y Refinement {-}
+
+When heel landmark $y$-coordinates are available with sufficient confidence, heel strike timing is refined. The maximum pixel $y$-coordinate (lowest point in the image, accounting for the inverted y-axis) corresponds to the instant the heel contacts the ground.
+
+Within $\pm 0.15$ seconds of each hip flexion peak:
+
+$$t_{\text{HS}}^* = \arg\max_{|t - t_{\text{peak}}| \leq 0.15 f_s} y_{\text{heel}}(t)$$
+
+The 0.15-second window (±4.5 frames at 30 fps) is chosen to span the typical timing offset between peak hip flexion and actual ground contact.
+
+### AH.3 Toe-Off Estimation {-}
+
+Toe-off timing (transition from stance to swing) is not directly detected from landmark motion. Instead, we estimate it from the stance phase fraction:
+
+$$t_{\text{TO}} = t_{\text{HS}} + S \cdot \Delta t_{\text{stride}}$$
+
+where $S \approx 0.6$ is the typical stance fraction at comfortable walking speed (Perry & Burnfield, 2010). This is an approximation; true toe-off detection would require foot contact sensors or more sophisticated kinematic analysis.
+
+### AH.4 False Positive and False Negative Modes {-}
+
+**False positives** (spurious detections):
+- Arm swing or trunk oscillation coupling into the hip signal
+- Noise spikes surviving the Butterworth filter
+- Subject turning or stopping mid-walk
+
+Mitigation: the prominence threshold and minimum inter-peak distance ($0.3 \times f_s$ frames) suppress most spurious detections.
+
+**False negatives** (missed events):
+- Low-amplitude gait (very small hip flexion ROM)
+- Heavily occluded hip landmarks
+- Non-standard gait patterns (shuffling, toe-walking)
+
+### AH.5 Uncertainty Propagation {-}
+
+Gait event timing uncertainty propagates to downstream metrics:
+
+**Cadence**: If heel strike timing has uncertainty $\delta t$, cadence uncertainty is:
+
+$$\delta\text{cadence} \approx \text{cadence}^2 \cdot \frac{\delta t}{60}$$
+
+At 120 steps/min with $\delta t = 1/30$ s (one frame): $\delta\text{cadence} \approx 8$ steps/min.
+
+**Stride time CV**: Both the mean and standard deviation of stride intervals are affected. With $\delta t = 1$ frame, the minimum detectable stride time difference is $2/f_s = 0.067$ s, placing a floor on CV measurements.
+
+**Double support**: Depends on toe-off estimation accuracy ($S \approx 0.6$ assumption), which introduces systematic bias of unknown magnitude.
+
+---
+
+## Appendix AI: Simplified GDI vs. Clinical GDI {-}
+
+### AI.1 The Clinical GDI (Schwartz & Rozumalski, 2008) {-}
+
+The original GDI uses PCA on a reference database of healthy gait:
+
+1. Collect 9 kinematic variables per side (hip flex/ext, hip ab/ad, hip rotation, knee flex/ext, ankle dorsi/plantar, pelvis tilt, obliquity, rotation, and foot progression) from a large normative database ($n > 100$ subjects). Left and right sides are scored separately.
+2. Stride-normalize each waveform to 51 points (0--100% gait cycle at 2% intervals)
+3. Concatenate all waveforms into a feature vector (for one side: $9 \times 51 = 459$ elements)
+4. Perform PCA on the normative database, retaining components explaining 95% of variance
+5. For a test subject, project their feature vector onto the PC space
+6. Compute the Euclidean distance from the normative mean in PC space
+7. Scale: $\text{GDI} = 100 - 10 \times d / \sigma_{\text{norm}}$, where $\sigma_{\text{norm}}$ is the SD of distances in the normative sample
+
+### AI.2 Our Simplified GDI {-}
+
+Our version differs from the clinical GDI in several ways:
+
+| Aspect | Clinical GDI | Our GDI |
+|--------|-------------|---------|
+| Reference | Large normative database ($n > 100$) | Synthetic reference waveforms |
+| Features | 9 bilateral kinematic waveforms | Available joints (hip, knee, ankle) |
+| Method | PCA-based distance | Direct RMS distance |
+| Scaling | $\sigma_{\text{norm}}$ from database | Fixed $5°$ constant |
+| Bilateral | Separate L/R GDI scores | Averaged L/R |
+| Clipping | No floor | Clipped at 0 |
+
+### AI.3 Calibration of the $5°$ Constant {-}
+
+Our scoring formula $\text{GDI} = 100 - (\bar{d}/5°) \times 10$ maps each $5°$ of RMS deviation to a 10-point GDI reduction. The $5°$ value is chosen to approximate the within-subject variability of healthy gait:
+
+- Kadaba et al. (1989): within-session variability of hip flexion RMS $\approx 3\text{--}5°$
+- Schwartz et al. (2004): inter-session variability of knee flexion RMS $\approx 4\text{--}6°$
+
+At $\bar{d} = 5°$: $\text{GDI} = 90$ (mild deviation, consistent with normal variability)
+At $\bar{d} = 15°$: $\text{GDI} = 70$ (moderate deviation, clinically meaningful)
+At $\bar{d} = 50°$: $\text{GDI} = 0$ (clipped at 0, severe deviation)
+
+### AI.4 Bilateral Averaging {-}
+
+The clinical GDI computes separate left and right scores. Our implementation averages:
+
+$$\text{GDI} = \frac{\text{GDI}_L + \text{GDI}_R}{2}$$
+
+This simplification loses information about unilateral pathology but is appropriate for our variance comparison, where we are interested in overall gait quality rather than side-specific deviations.
+
+---
+
+## Appendix AJ: Bootstrap and Permutation Implementation Details {-}
+
+### AJ.1 Random Number Generation {-}
+
+All resampling procedures use NumPy's `default_rng` with a fixed seed for reproducibility:
+
+```
+rng = numpy.random.default_rng(seed=42)
+```
+
+This ensures identical results across runs. The seed is arbitrary; changing it would produce slightly different p-values and confidence intervals, but the substantive conclusions should not change for well-powered comparisons.
+
+### AJ.2 Degenerate Bootstrap Samples {-}
+
+When resampling with replacement from a small group ($n = 17$ or $n = 22$), some bootstrap samples may have zero variance (all identical values drawn). The probability of this is negligible for continuous data but can occur with discrete or heavily tied data.
+
+When $s^{*2}_R = 0$, the variance ratio $R^* = s^{*2}_C / s^{*2}_R$ is undefined ($\infty$). Our implementation:
+- Skips degenerate resamples (does not include them in the count)
+- This is equivalent to conditioning on non-degenerate samples
+
+The number of skipped resamples is not logged in the current implementation; for full transparency, it should be reported.
+
+### AJ.3 Percentile Interval Limitations {-}
+
+The percentile bootstrap CI $[\hat{R}^*_{(0.025)}, \hat{R}^*_{(0.975)}]$ has known limitations:
+
+1. **Bias**: If the bootstrap distribution is asymmetric (as variance ratios often are — they are bounded below by 0 and unbounded above), the percentile interval can be biased
+2. **Coverage**: The nominal 95% coverage may be below 95% for skewed distributions
+3. **Alternatives**: The BCa (bias-corrected and accelerated) interval or the basic bootstrap interval may have better coverage properties
+
+For variance ratios, the distribution is typically right-skewed (long right tail), so the upper confidence limit may be underestimated by the percentile method.
+
+### AJ.4 Bootstrap Proportion vs. Bayesian Posterior {-}
+
+The quantity $\hat{P}(R > 1) = \frac{1}{B}\sum \mathbb{1}[R_b^* > 1]$ is a **frequentist bootstrap proportion**, not a Bayesian posterior probability. The distinction:
+
+- **Bootstrap proportion**: fraction of resampled datasets where the variance ratio exceeds 1. This estimates the probability that a new dataset (drawn from the same population) would show $R > 1$.
+- **Bayesian posterior**: $P(\sigma_C^2 > \sigma_R^2 \mid \text{data})$ under some prior. Would require specifying a prior distribution on variance parameters.
+
+The bootstrap proportion is a reasonable proxy for directional confidence but should not be interpreted as a posterior probability without Bayesian justification.
+
+---
+
+## Appendix AK: Notation Index {-}
+
+To reduce ambiguity from overloaded symbols, we provide a complete notation index. Where a symbol has multiple meanings, the context (section reference) disambiguates.
+
+### Latin Symbols {-}
+
+| Symbol | Meaning | Section |
+|--------|---------|---------|
+| $A$ | Peak-to-peak amplitude $\max\theta - \min\theta$ | Normalized Jerk (M) |
+| $B$ | Number of bootstrap/permutation iterations | Permutation (G), Bootstrap (H) |
+| $\mathbf{C}$ | Covariance matrix | PCA (P), Matrix Algebra (V) |
+| $d$ | Cohen's d effect size | Mann-Whitney (F), Effect Sizes (AE) |
+| $d_k$ | PCHIP derivative at knot $k$ | Interpolation (K) |
+| $F$ | F-distribution test statistic | Appendix U |
+| $F(n)$ | DFA fluctuation function at scale $n$ | DFA (Q) |
+| $f_c$ | Butterworth cutoff frequency | Signal Processing Pipeline |
+| $f_c^{\text{adapt}}$ | SPARC adaptive frequency cutoff | SPARC (L) |
+| $f_s$ | Sampling frequency (frame rate) | Throughout |
+| $H$ | Hurst exponent | DFA (Q) |
+| $H_{ij}$ | Hermite basis functions | Interpolation (K) |
+| $h_k$ | Interval length $t_{k+1} - t_k$ | Interpolation (K) |
+| $j$ | Imaginary unit $\sqrt{-1}$ | Complex Numbers (W) |
+| $K$ | Number of frequency bins | SPARC (L) |
+| $k$ | Frequency bin index; also DFA segment index | Fourier (I), DFA (Q) |
+| $N$ | Total sample size $n_1 + n_2$; also signal length | Statistics, DFA |
+| $n$ | Sample size; also filter order; also DFA scale | Context-dependent |
+| $n_R, n_C$ | Runway and control group sizes | Throughout |
+| $p$ | Number of features (dimensions) | PCA (P) |
+| $R$ | Mean resultant length (circular statistics) | CRP (O) |
+| $R_\sigma$ | Variance ratio $s_C^2 / s_R^2$ | Variance analysis |
+| $R_{\text{obs}}, R_b^*$ | Observed and permuted/bootstrap variance ratios | Permutation (G), Bootstrap (H) |
+| $R_1$ | Rank sum for group 1 | Mann-Whitney (F) |
+| $r_{rb}$ | Rank-biserial correlation | Mann-Whitney (F) |
+| $S$ | Stance phase fraction | Gait Events |
+| $\mathbf{S}_B, \mathbf{S}_W$ | Between/within-class scatter matrices | LDA (P.5) |
+| $s^2$ | Sample variance | Throughout |
+| $T$ | Signal duration; also number of time points | Context-dependent |
+| $U$ | Mann-Whitney U statistic | Mann-Whitney (F) |
+| $W$ | Levene's test statistic; also image width | Levene (E); Camera (AC) |
+| $\mathbf{w}$ | Projection vector | PCA (P), LDA (P.5) |
+
+### Greek Symbols {-}
+
+| Symbol | Meaning | Section |
+|--------|---------|---------|
+| $\alpha$ | Significance level; also DFA scaling exponent | Hypothesis Testing (D); DFA (Q) |
+| $\beta$ | Type II error probability | Power Analysis (AA) |
+| $\lambda$ | Eigenvalue; also interpolation penalty factor | PCA (P); MQS |
+| $\mu$ | Population/sample mean | Statistics (C) |
+| $\phi$ | Phase angle; also Euler's formula angle | CRP (O); Complex Numbers (W) |
+| $\rho$ | Spread ratio (trace ratio) | PCA Results |
+| $\sigma^2$ | Population variance | Statistics (C) |
+| $\theta$ | Joint angle | Throughout |
+| $\tau$ | Integration variable (Hilbert transform) | Hilbert (O) |
+| $\Delta t$ | Sampling interval $1/f_s$ | Throughout |
+| $\delta_k$ | Slope of PCHIP segment $k$: $(\theta_{k+1}-\theta_k)/h_k$ | Interpolation (K), Boundaries (AG) |
+| $\omega$ | Angular frequency $2\pi f$ | Fourier (I), Filtering (J) |
+
+### Operators and Functions {-}
+
+| Symbol | Meaning |
+|--------|---------|
+| $\|\cdot\|_2$ | Euclidean (L2) norm |
+| $\mathcal{H}\{\cdot\}$ | Hilbert transform |
+| $\text{atan2}(y, x)$ | Four-quadrant arctangent |
+| $\text{tr}(\cdot)$ | Matrix trace |
+| $\det(\cdot)$ | Matrix determinant |
+| $\mathbb{1}[\cdot]$ | Indicator function (1 if true, 0 if false) |
+| P.V. | Cauchy principal value |
+| $E[\cdot]$ | Expected value |
+| $\text{Var}(\cdot)$ | Variance |
+| $\text{Cov}(\cdot, \cdot)$ | Covariance |
+| $P(\cdot)$ | Probability |
+| $\text{Re}(\cdot), \text{Im}(\cdot)$ | Real and imaginary parts |
+| $\arg(\cdot)$ | Complex argument (phase angle) |
+| $\nabla$ | Gradient operator |
+| $\bmod$ | Modulo operation |
+| $\text{clip}(x, a, b)$ | Clamp $x$ to $[a, b]$ |
+| $\text{FFT}\{\cdot\}$ | Fast Fourier Transform |
+| $Z_{ij}$ | Absolute deviation from group center (Levene's test) |
+| $X_{ij}$ | Observation $j$ in group $i$ |
+| $\mathcal{D}$ | Set of MQS domains |
+| $w_d, S_d$ | Domain weight and score in MQS |
+| $c_f$ | MQS confidence factor |

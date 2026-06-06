@@ -345,7 +345,7 @@ The research document identifies **20 signals** across 6 domains that form the b
 
 **Do professional runway walks have lower kinematic variance than general internet walking data?** We tested this quantitatively by processing 22 runway videos and 17 YouTube-sourced control walking videos through the full Movement Analytics pipeline, then applying rigorous multivariate statistical analysis across 24 biomechanical metrics.
 
-**[Full paper with complete mathematical derivations →](docs/papers/variance_study.md)**
+**[Full paper with complete mathematical derivations →](docs/papers/variance_study.pdf)**
 
 ### Key Finding: 2.56× Lower Variance in Runway Walks
 
@@ -431,7 +431,7 @@ $$\text{MQS} = \sum_{d \in \mathcal{D}} w_d \cdot S_d, \quad w = \{0.25, 0.18, 0
 
 $$W = \frac{(N-k)}{(k-1)} \cdot \frac{\sum_i n_i(\bar{Z}_{i\cdot} - \bar{Z}_{\cdot\cdot})^2}{\sum_i \sum_j (Z_{ij} - \bar{Z}_{i\cdot})^2}, \quad Z_{ij} = |X_{ij} - \bar{X}_{i\cdot}|$$
 
-Full derivations of all 24 metrics, the 6-stage signal processing pipeline, and all statistical tests are in the [paper](docs/papers/variance_study.md).
+Full derivations of all 24 metrics, the 6-stage signal processing pipeline, and all statistical tests are in the [paper](docs/papers/variance_study.pdf).
 
 ### Static Figures
 
@@ -496,7 +496,7 @@ Results: `data/results/` (report, CSVs, JSONs). Figures: `data/figures/` (7 PNGs
 | Gait Deviation Index | Simplified GDI (Schwartz & Rozumalski 2008), 100 = normal, validated on 9 profiles (78.1–100.0 range) |
 | CI/CD | GitHub Actions, 236 tests (incl. MQS regression baselines), ruff lint, 70% coverage gate (95% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
-| Variance study | 22 runway vs. 17 control videos, 24 metrics, 4-layer statistical analysis, 7 figures, 5 animated GIFs, [full paper](docs/papers/variance_study.md) |
+| Variance study | 22 runway vs. 17 control videos, 24 metrics, 4-layer statistical analysis, 7 figures, 5 animated GIFs, [full paper](docs/papers/variance_study.pdf) |
 | Learned MQS weights | Planned (expert rater calibration) |
 
 ---
