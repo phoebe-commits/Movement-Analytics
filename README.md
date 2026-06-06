@@ -341,6 +341,145 @@ The research document identifies **20 signals** across 6 domains that form the b
 
 ---
 
+## Variance Study: Runway Walks vs. Internet Walking Video
+
+**Do professional runway walks have lower kinematic variance than general internet walking data?** We tested this quantitatively by processing 22 runway videos and 17 YouTube-sourced control walking videos through the full Movement Analytics pipeline, then applying rigorous multivariate statistical analysis across 24 biomechanical metrics.
+
+**[Full paper with complete mathematical derivations →](docs/papers/variance_study.md)**
+
+### Key Finding: 2.56× Lower Variance in Runway Walks
+
+<p align="center">
+  <img src="docs/assets/variance_forest_animated.gif" alt="Animated variance ratio forest plot" width="85%">
+  <br>
+  <em>Variance ratio forest plot: bars right of 1.0 = control has MORE variance. Red = statistically significant (p&lt;0.05).</em>
+</p>
+
+Control walking data exhibits **2.56× higher median kinematic variance** than runway walks. Of the 10 metrics reaching statistical significance (Levene's test, $p < 0.05$), **all 10 show higher variance in control** — zero in the reverse direction. Six survive Bonferroni correction ($\alpha = 0.0021$).
+
+### Strongest Effects by Domain
+
+<p align="center">
+  <img src="docs/assets/domain_summary_animated.gif" alt="Animated domain-level variance summary" width="85%">
+  <br>
+  <em>Variance ratio by movement quality domain. Red = strong support for lower runway variance.</em>
+</p>
+
+| Domain | Median Variance Ratio | Significant / Total |
+|--------|----------------------|-------------------|
+| **Smoothness** | **17.0×** | 2/2 |
+| **Symmetry** | **13.9×** | 3/5 |
+| Composite (GDI) | 28.8× | 1/2 |
+| Kinematics | 2.7× | 3/7 |
+| Temporal | 1.7× | 1/3 |
+| Coordination | 1.3× | 0/2 |
+
+The variance reduction is strongest in **smoothness** (how fluid the movement is) and **symmetry** (left-right consistency) — exactly the qualities that matter for robot movement learning.
+
+### Multivariate Separation: PCA
+
+<p align="center">
+  <img src="docs/assets/pca_scatter_animated.gif" alt="Animated PCA scatter plot" width="85%">
+  <br>
+  <em>PCA projection: runway walks (blue) cluster tightly; control videos (orange) scatter widely. Ellipses = 95% confidence regions.</em>
+</p>
+
+In the multivariate kinematic feature space:
+- Runway spread is **2.13× smaller by trace** and **25× smaller by volume**
+- 3 principal components explain 65.7% of total variance
+- PC1 loads on ROM and smoothness; PC2 loads on temporal and symmetry
+
+### Bootstrap Confidence
+
+<p align="center">
+  <img src="docs/assets/bootstrap_distribution_animated.gif" alt="Animated bootstrap variance ratio distribution" width="85%">
+  <br>
+  <em>Bootstrap resampling (10,000 iterations) for GDI variance ratio. P(control variance > runway) = 100%.</em>
+</p>
+
+### Effect Sizes
+
+<p align="center">
+  <img src="docs/assets/effect_size_waterfall.gif" alt="Animated effect size waterfall" width="85%">
+  <br>
+  <em>Cohen's d effect sizes across all 24 metrics. Red = significant (p&lt;0.05). Dashed lines = large effect threshold (|d| = 0.8).</em>
+</p>
+
+### Mathematical Framework
+
+The analysis pipeline extracts joint angles from pose estimation landmarks using the vector dot product:
+
+$$\theta = \arccos\left(\frac{(\mathbf{A} - \mathbf{B}) \cdot (\mathbf{C} - \mathbf{B})}{\|\mathbf{A} - \mathbf{B}\| \cdot \|\mathbf{C} - \mathbf{B}\|}\right)$$
+
+**Movement smoothness** is quantified via Spectral Arc Length (SPARC), the arc length of the normalized velocity spectrum:
+
+$$\text{SPARC} = -\sum_{k=1}^{K-1} \sqrt{(f_{k+1} - f_k)^2 + (\hat{V}_{\text{norm}}(f_{k+1}) - \hat{V}_{\text{norm}}(f_k))^2}$$
+
+**Bilateral symmetry** uses the Robinson Symmetry Index:
+
+$$\text{SI} = \frac{2|X_R - X_L|}{X_R + X_L} \times 100\%$$
+
+**Inter-limb coordination** via Continuous Relative Phase (Hilbert transform):
+
+$$\text{CRP}(t) = \arg\left(\mathcal{H}\{\theta_a(t)\}\right) - \arg\left(\mathcal{H}\{\theta_b(t)\}\right)$$
+
+**Movement Quality Score** — composite 0–100 weighted sum across 6 domains:
+
+$$\text{MQS} = \sum_{d \in \mathcal{D}} w_d \cdot S_d, \quad w = \{0.25, 0.18, 0.18, 0.14, 0.13, 0.12\}$$
+
+**Variance equality** tested via Levene's statistic:
+
+$$W = \frac{(N-k)}{(k-1)} \cdot \frac{\sum_i n_i(\bar{Z}_{i\cdot} - \bar{Z}_{\cdot\cdot})^2}{\sum_i \sum_j (Z_{ij} - \bar{Z}_{i\cdot})^2}, \quad Z_{ij} = |X_{ij} - \bar{X}_{i\cdot}|$$
+
+Full derivations of all 24 metrics, the 6-stage signal processing pipeline, and all statistical tests are in the [paper](docs/papers/variance_study.md).
+
+### Static Figures
+
+<details>
+<summary><strong>Variance forest plot with bootstrap CIs (click to expand)</strong></summary>
+<p align="center">
+  <img src="data/figures/02_variance_forest.png" alt="Variance ratio forest plot" width="90%">
+</p>
+</details>
+
+<details>
+<summary><strong>PCA scatter with 95% confidence ellipses</strong></summary>
+<p align="center">
+  <img src="data/figures/04_pca_scatter.png" alt="PCA scatter" width="90%">
+</p>
+</details>
+
+<details>
+<summary><strong>Coefficient of variation comparison</strong></summary>
+<p align="center">
+  <img src="data/figures/03_cv_comparison.png" alt="CV comparison" width="90%">
+</p>
+</details>
+
+<details>
+<summary><strong>Domain-level variance summary</strong></summary>
+<p align="center">
+  <img src="data/figures/07_domain_summary.png" alt="Domain summary" width="90%">
+</p>
+</details>
+
+### Reproduce
+
+```bash
+# Process videos through MediaPipe pipeline
+python scripts/variance_study.py --process
+
+# Run statistical analysis + generate figures
+python scripts/variance_study.py --analyze
+
+# Generate animated GIFs
+python scripts/generate_gifs.py
+```
+
+Results: `data/results/` (report, CSVs, JSONs). Figures: `data/figures/` (7 PNGs). GIFs: `docs/assets/` (5 animations).
+
+---
+
 ## Project Status
 
 | Component | Status |
@@ -355,8 +494,9 @@ The research document identifies **20 signals** across 6 domains that form the b
 | Video pose estimation | MediaPipe VIDEO mode with pelvis-based person tracking, PCHIP interpolation, adaptive confidence-weighted smoothing, physiological outlier rejection, heel contact detection, confidence-weighted MQS, per-joint detection rates, memory-efficient headless mode, 96% unit test coverage |
 | Multi-view analysis | Sagittal + frontal camera merging into unified MQS, auto-detects best view per signal domain |
 | Gait Deviation Index | Simplified GDI (Schwartz & Rozumalski 2008), 100 = normal, validated on 9 profiles (78.1–100.0 range) |
-| CI/CD | GitHub Actions, 224 tests, ruff lint, 70% coverage gate (95% actual) |
+| CI/CD | GitHub Actions, 236 tests (incl. MQS regression baselines), ruff lint, 70% coverage gate (95% actual) |
 | Reproducible benchmark | JSON output with locked regression baselines |
+| Variance study | 22 runway vs. 17 control videos, 24 metrics, 4-layer statistical analysis, 7 figures, 5 animated GIFs, [full paper](docs/papers/variance_study.md) |
 | Learned MQS weights | Planned (expert rater calibration) |
 
 ---

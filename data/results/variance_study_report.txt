@@ -1,0 +1,159 @@
+================================================================================
+ELYSIUM VARIANCE STUDY: Runway Walks vs. Internet Walking Videos
+================================================================================
+Runway: n=22  |  Control: n=17
+
+────────────────────────────────────────────────────────────────────────────────
+1. VARIANCE COMPARISON
+   Core test: do runway walks have lower kinematic variance?
+   Levene's test (H0: equal variances)
+────────────────────────────────────────────────────────────────────────────────
+  hip_ROM               σ²ratio=   3.76↑  CV: R= 71.5% C= 55.8%  Levene p=0.0008 ***
+  knee_ROM              σ²ratio=   2.65↑  CV: R=116.3% C= 69.6%  Levene p=0.0027 **
+  ankle_ROM             σ²ratio=   8.73↑  CV: R= 53.9% C= 57.0%  Levene p=0.0000 ***
+  pelvis_obliquity      σ²ratio=   0.33↓  CV: R= 91.7% C= 26.6%  Levene p=0.1216 
+  trunk_lean_ROM        σ²ratio=  22.47↑  CV: R= 24.7% C= 89.6%  Levene p=0.1017 
+  shoulder_ROM          σ²ratio=   1.63↑  CV: R=101.4% C= 44.9%  Levene p=0.0699 
+  elbow_ROM             σ²ratio=   1.41↑  CV: R=109.8% C= 46.6%  Levene p=0.1468 
+  hip_SPARC             σ²ratio=  20.78↑  CV: R= 18.9% C= 42.2%  Levene p=0.0000 ***
+  knee_SPARC            σ²ratio=  13.30↑  CV: R= 20.4% C= 48.2%  Levene p=0.0000 ***
+  hip_SI                σ²ratio=  13.86↑  CV: R= 88.7% C=124.2%  Levene p=0.0301 *
+  knee_SI               σ²ratio=   2.47↑  CV: R= 70.2% C=103.2%  Levene p=0.3460 
+  ankle_SI              σ²ratio=  48.40↑  CV: R= 82.9% C= 85.5%  Levene p=0.0038 **
+  hip_waveform_sym      σ²ratio=   1.05↑  CV: R= 43.3% C= 50.4%  Levene p=0.9321 
+  cadence               σ²ratio=   1.69↑  CV: R= 31.2% C= 62.4%  Levene p=0.1820 
+  stride_time           σ²ratio=  11.03↑  CV: R= 39.1% C= 70.5%  Levene p=0.0037 **
+  stride_time_CV        σ²ratio=   2.26↑  CV: R= 68.8% C= 42.1%  Levene p=0.2052 
+  kinematic_CV          σ²ratio=   3.63↑  CV: R= 48.5% C= 52.7%  Levene p=0.3073 
+  hip_CRP_MAD           σ²ratio=   1.03↑  CV: R= 47.5% C= 37.4%  Levene p=0.7108 
+  hip_knee_CRP          σ²ratio=   1.61↑  CV: R= 21.6% C= 28.0%  Levene p=0.3530 
+  arm_swing_ROM         σ²ratio=   1.63↑  CV: R=101.4% C= 44.9%  Levene p=0.0699 
+  arm_swing_SI          σ²ratio= 100.18↑  CV: R= 42.3% C=103.7%  Levene p=0.0006 ***
+  double_support        σ²ratio=   0.71↓  CV: R=108.0% C= 51.2%  Levene p=0.7098 
+  MQS                   σ²ratio=   0.60↓  CV: R= 30.2% C= 36.1%  Levene p=0.4010 
+  GDI                   σ²ratio=  57.00↑  CV: R= 18.3% C= 68.4%  Levene p=0.0000 ***
+
+  Significant variance differences: 10/24
+  Control variance HIGHER: 10  |  LOWER: 0
+  Median variance ratio (control/runway): 2.56×
+  Mean variance ratio: 13.43×
+  Significant after Bonferroni (α=0.0021): 6/24
+
+────────────────────────────────────────────────────────────────────────────────
+2. GROUP MEAN COMPARISON (Mann-Whitney U, non-parametric)
+────────────────────────────────────────────────────────────────────────────────
+  hip_ROM               R̄=   27.11  C̄=   67.41  d=-1.35  r=+0.70  p=0.0002 ***
+  knee_ROM              R̄=   27.78  C̄=   75.59  d=-1.10  r=+0.59  p=0.0019 **
+  ankle_ROM             R̄=   27.17  C̄=   76.01  d=-1.51  r=+0.73  p=0.0001 ***
+  pelvis_obliquity      R̄=   15.25  C̄=   30.42  d=-1.33  r=+0.71  p=0.0091 **
+  trunk_lean_ROM        R̄=   30.18  C̄=   39.38  d=-0.36  r=+0.00  p=1.0000 
+  shoulder_ROM          R̄=   35.58  C̄=  102.66  d=-1.62  r=+0.72  p=0.0001 ***
+  elbow_ROM             R̄=   39.24  C̄=  109.88  d=-1.49  r=+0.74  p=0.0001 ***
+  hip_SPARC             R̄=  -12.47  C̄=  -25.53  d=+1.68  r=-0.65  p=0.0006 ***
+  knee_SPARC            R̄=  -15.14  C̄=  -23.32  d=+0.99  r=-0.39  p=0.0400 *
+  hip_SI                R̄=    9.04  C̄=   24.01  d=-0.69  r=+0.34  p=0.0767 
+  knee_SI               R̄=   26.85  C̄=   28.69  d=-0.07  r=-0.06  p=0.7662 
+  ankle_SI              R̄=    2.03  C̄=   13.66  d=-1.40  r=+0.89  p=0.0000 ***
+  hip_waveform_sym      R̄=   57.29  C̄=   50.47  d=+0.27  r=-0.17  p=0.3877 
+  cadence               R̄=   96.80  C̄=   62.91  d=+0.97  r=-0.52  p=0.0063 **
+  stride_time           R̄=    1.39  C̄=    2.55  d=-0.88  r=+0.49  p=0.0115 *
+  stride_time_CV        R̄=   28.96  C̄=   71.13  d=-1.66  r=+0.73  p=0.0003 ***
+  kinematic_CV          R̄=   30.77  C̄=   53.93  d=-1.02  r=+0.49  p=0.0114 *
+  hip_CRP_MAD           R̄=   46.27  C̄=   59.72  d=-0.61  r=+0.37  p=0.0524 
+  hip_knee_CRP          R̄=   65.64  C̄=   64.16  d=+0.09  r=-0.09  p=0.6607 
+  arm_swing_ROM         R̄=   35.58  C̄=  102.66  d=-1.62  r=+0.72  p=0.0001 ***
+  arm_swing_SI          R̄=    4.62  C̄=   18.87  d=-1.03  r=+0.60  p=0.0014 **
+  double_support        R̄=   11.33  C̄=   20.12  d=-0.78  r=+0.53  p=0.0057 **
+  MQS                   R̄=   37.00  C̄=   24.08  d=+1.29  r=-0.63  p=0.0009 ***
+  GDI                   R̄=   12.16  C̄=   24.59  d=-1.04  r=+0.50  p=0.0105 *
+
+────────────────────────────────────────────────────────────────────────────────
+3. PERMUTATION TESTS FOR VARIANCE RATIO (10,000 permutations)
+────────────────────────────────────────────────────────────────────────────────
+  hip_ROM               ratio=  3.76  perm-p=0.0015 **
+  knee_ROM              ratio=  2.65  perm-p=0.0240 *
+  ankle_ROM             ratio=  8.73  perm-p=0.0002 ***
+  pelvis_obliquity      ratio=  0.33  perm-p=0.9691 
+  trunk_lean_ROM        ratio= 22.47  perm-p=0.0452 *
+  shoulder_ROM          ratio=  1.63  perm-p=0.0719 
+  elbow_ROM             ratio=  1.41  perm-p=0.1119 
+  hip_SPARC             ratio= 20.78  perm-p=0.0001 ***
+  knee_SPARC            ratio= 13.30  perm-p=0.0001 ***
+  hip_SI                ratio= 13.86  perm-p=0.0235 *
+  knee_SI               ratio=  2.47  perm-p=0.1489 
+  ankle_SI              ratio= 48.40  perm-p=0.0001 ***
+  hip_waveform_sym      ratio=  1.05  perm-p=0.4505 
+  cadence               ratio=  1.69  perm-p=0.0968 
+  stride_time           ratio= 11.03  perm-p=0.0011 **
+  stride_time_CV        ratio=  2.26  perm-p=0.0168 *
+  kinematic_CV          ratio=  3.63  perm-p=0.0686 
+  hip_CRP_MAD           ratio=  1.03  perm-p=0.4616 
+  hip_knee_CRP          ratio=  1.61  perm-p=0.1116 
+  arm_swing_ROM         ratio=  1.63  perm-p=0.0727 
+  arm_swing_SI          ratio=100.18  perm-p=0.0001 ***
+  double_support        ratio=  0.71  perm-p=0.7484 
+  MQS                   ratio=  0.60  perm-p=0.9329 
+  GDI                   ratio= 57.00  perm-p=0.0001 ***
+
+────────────────────────────────────────────────────────────────────────────────
+4. BOOTSTRAP 95% CIs ON VARIANCE RATIO (control/runway)
+────────────────────────────────────────────────────────────────────────────────
+  hip_ROM               median=  3.70  95% CI=[1.81, 14.27]  P(ratio>1)=99.9%
+  knee_ROM              median=  2.73  95% CI=[0.96, 83.56]  P(ratio>1)=96.6%
+  ankle_ROM             median=  8.97  95% CI=[3.12, 96.71]  P(ratio>1)=100.0%
+  pelvis_obliquity      median=  0.36  95% CI=[0.12, 1.27]  P(ratio>1)=3.7%
+  trunk_lean_ROM        median= 25.96  95% CI=[5.74, 125.23]  P(ratio>1)=99.9%
+  shoulder_ROM          median=  1.69  95% CI=[0.58, 8.58]  P(ratio>1)=81.2%
+  elbow_ROM             median=  1.41  95% CI=[0.57, 7.88]  P(ratio>1)=76.1%
+  hip_SPARC             median= 20.37  95% CI=[8.43, 60.64]  P(ratio>1)=100.0%
+  knee_SPARC            median= 13.16  95% CI=[6.94, 26.72]  P(ratio>1)=100.0%
+  hip_SI                median= 13.28  95% CI=[2.51, 34.71]  P(ratio>1)=99.3%
+  knee_SI               median=  2.35  95% CI=[0.52, 6.62]  P(ratio>1)=86.6%
+  ankle_SI              median= 48.44  95% CI=[11.78, 197.31]  P(ratio>1)=100.0%
+  hip_waveform_sym      median=  1.03  95% CI=[0.51, 2.04]  P(ratio>1)=53.8%
+  cadence               median=  1.67  95% CI=[0.74, 3.96]  P(ratio>1)=89.5%
+  stride_time           median= 10.59  95% CI=[2.03, 49.17]  P(ratio>1)=99.9%
+  stride_time_CV        median=  2.33  95% CI=[0.67, 8.92]  P(ratio>1)=90.7%
+  kinematic_CV          median=  3.52  95% CI=[0.78, 10.00]  P(ratio>1)=95.5%
+  hip_CRP_MAD           median=  1.01  95% CI=[0.45, 2.43]  P(ratio>1)=51.5%
+  hip_knee_CRP          median=  1.59  95% CI=[0.67, 3.52]  P(ratio>1)=87.2%
+  arm_swing_ROM         median=  1.67  95% CI=[0.57, 8.30]  P(ratio>1)=80.3%
+  arm_swing_SI          median= 96.65  95% CI=[22.62, 238.11]  P(ratio>1)=100.0%
+  double_support        median=  0.71  95% CI=[0.25, 2.27]  P(ratio>1)=26.4%
+  MQS                   median=  0.59  95% CI=[0.17, 1.57]  P(ratio>1)=14.3%
+  GDI                   median= 56.56  95% CI=[23.50, 128.68]  P(ratio>1)=100.0%
+
+────────────────────────────────────────────────────────────────────────────────
+5. MULTIVARIATE ANALYSIS
+────────────────────────────────────────────────────────────────────────────────
+  Features used: 21
+  Samples: 6 runway, 14 control
+  PCA variance explained: PC1=35.4%  PC2=18.0%  PC3=12.2%  PC4=7.4%  PC5=5.4%
+  Cumulative (3 PC): 65.7%
+  Runway spread  (trace): 6.339
+  Control spread (trace): 13.483
+  Spread ratio (control/runway): 2.13×
+  Volume ratio (det): 25.32×
+  Mean dist to centroid: runway=2.20  control=3.34
+  LDA accuracy (resubstitution): 100.0%
+  LDA accuracy (LOO-CV): 70.0%
+  PC1 top loadings: hip_ROM(+0.32), shoulder_ROM(+0.31), arm_swing_ROM(+0.31), knee_SPARC(-0.31), hip_SPARC(-0.30)
+  PC2 top loadings: stride_time(+0.44), cadence(-0.42), hip_SI(+0.40), ankle_SI(+0.36), hip_knee_CRP(-0.25)
+
+────────────────────────────────────────────────────────────────────────────────
+6. DOMAIN-LEVEL VARIANCE SUMMARY
+────────────────────────────────────────────────────────────────────────────────
+  Kinematics       median σ²ratio= 2.65×  sig: 3/7
+  Smoothness       median σ²ratio=17.04×  sig: 2/2
+  Symmetry         median σ²ratio=13.86×  sig: 3/5
+  Temporal         median σ²ratio= 1.69×  sig: 1/3
+  Variability      median σ²ratio= 2.95×  sig: 0/2
+  Coordination     median σ²ratio= 1.32×  sig: 0/2
+  Upper Body       median σ²ratio= 1.63×  sig: 0/1
+  Composite        median σ²ratio=28.80×  sig: 1/2
+
+────────────────────────────────────────────────────────────────────────────────
+7. CONCLUSION
+────────────────────────────────────────────────────────────────────────────────
+  Hypothesis: PARTIALLY SUPPORTED
+  Control variance is higher (median ratio 2.6×) but significance is limited.
